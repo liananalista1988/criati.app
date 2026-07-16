@@ -9,7 +9,7 @@ A aplicação será publicada como uma única unidade, mas o código será organ
 ## Tecnologias principais
 
 - Java 17;
-- Spring Boot 3.x;
+- Spring Boot 4.1.0;
 - Spring MVC;
 - Spring Security;
 - Spring Data JPA;

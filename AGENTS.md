@@ -37,7 +37,7 @@ Artifact: criati
 Package base: br.app.criati
 Java: 17
 Build: Maven
-Backend: Spring Boot 3.x
+Backend: Spring Boot 4.1.0
 Frontend: Thymeleaf, HTML, CSS e JavaScript
 Banco: PostgreSQL
 Banco local: criati_db

@@ -51,7 +51,7 @@ Criati
 ## Tecnologias
 
 - Java 17;
-- Spring Boot 3.x;
+- Spring Boot 4.1.0;
 - Spring MVC;
 - Spring Security;
 - Spring Data JPA;
@@ -191,6 +191,23 @@ spring.datasource.password=${DB_PASSWORD}
 ```
 
 Nunca incluir valores reais neste arquivo.
+
+## Execução local segura (VS Code)
+
+1. copiar `.env.example` para `.env`:
+
+```cmd
+copy .env.example .env
+```
+
+2. abrir o `.env` e preencher `DB_PASSWORD` com a senha local do PostgreSQL (nunca commitar esse arquivo);
+3. iniciar a aplicação pelo VS Code ou pelo Maven Wrapper.
+
+O perfil `local` é usado como padrão quando nenhum perfil for informado. O
+`.env` da raiz do projeto é carregado opcionalmente tanto com `criati` aberto
+diretamente quanto a partir da pasta `workspace`. Variáveis definidas pelo
+sistema operacional continuam tendo prioridade. O `.env` é ignorado pelo Git;
+apenas o `.env.example` deve ser versionado.
 
 ## Executando no Windows
 

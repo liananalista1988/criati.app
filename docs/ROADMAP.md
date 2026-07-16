@@ -30,7 +30,7 @@ Status: **EM ANDAMENTO**
 
 - definição da Criati como SaaS genérico e multiempresa;
 - Java 17;
-- Spring Boot 3.x;
+- Spring Boot 4.1.0;
 - Maven;
 - VS Code;
 - PostgreSQL instalado;
@@ -687,7 +687,7 @@ Status: **EM ANDAMENTO**
 
 - definição da Criati como SaaS genérico e multiempresa;
 - Java 17;
-- Spring Boot 3.x;
+- Spring Boot 4.1.0;
 - Maven;
 - VS Code;
 - PostgreSQL instalado;
