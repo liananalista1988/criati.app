@@ -21,7 +21,7 @@ Situação atual:
 - PostgreSQL instalado;
 - banco local `criati_db` criado;
 - Git configurado;
-- repositório privado no GitHub;
+- repositório público no GitHub;
 - arquitetura multiempresa definida;
 - documentação do MVP em construção.
 
@@ -286,6 +286,8 @@ Antes de trabalhar no projeto, leia:
 - [Banco de Dados](docs/BANCO_DE_DADOS.md)
 - [Segurança](docs/SEGURANCA.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Criati Quality Assurance](docs/CQA.md)
+- [Como contribuir](CONTRIBUTING.md)
 - [Regras para agentes](AGENTS.md)
 
 ## Segurança
@@ -306,6 +308,8 @@ Regras essenciais:
 Consulte [SEGURANCA.md](docs/SEGURANCA.md).
 
 ## Fluxo de trabalho
+
+Toda alteração destinada à branch `main` deve ser desenvolvida em uma branch dedicada e enviada por Pull Request. O Pull Request passa por validação automática, checklist CQA e revisão humana antes do merge.
 
 Antes de alterar:
 
@@ -348,7 +352,7 @@ Novas estratégias de branches poderão ser definidas quando houver necessidade 
 https://github.com/liananalista1988/criati.app
 ```
 
-O repositório é privado.
+O repositório é público. Contribuições devem seguir o fluxo por Pull Request descrito em [CONTRIBUTING.md](CONTRIBUTING.md) e os critérios do [Criati Quality Assurance](docs/CQA.md).
 
 ## Roadmap resumido
 
@@ -385,11 +389,9 @@ Consulte [ROADMAP.md](docs/ROADMAP.md).
 
 ## Contribuição
 
-Este é um projeto privado.
+Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para o fluxo de contribuição e [CQA.md](docs/CQA.md) para os critérios de qualidade. Qualquer pessoa ou agente que trabalhar no projeto deverá seguir também o arquivo [AGENTS.md](AGENTS.md).
 
-Qualquer pessoa ou agente que trabalhar no projeto deverá seguir o arquivo [AGENTS.md](AGENTS.md).
-
-Mudanças estruturais exigem aprovação e atualização da documentação.
+Mudanças estruturais exigem aprovação, Pull Request e atualização da documentação.
 
 ## Licença
 
