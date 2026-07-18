@@ -1,0 +1,69 @@
+name: Relato de bug
+description: Informe um comportamento incorreto ou inesperado na Criati.app.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a melhorar a Criati.app. Não inclua senhas, tokens, dados de clientes ou outras informações sensíveis.
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição
+      description: Explique o problema e o comportamento observado.
+      placeholder: Descreva o que aconteceu.
+    validations:
+      required: true
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Passos para reproduzir
+      description: Liste passos mínimos e objetivos para reproduzir o problema.
+      placeholder: |
+        1. Acesse...
+        2. Selecione...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Comportamento esperado
+      description: Informe o resultado correto esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: Ambiente
+      description: Informe sistema operacional, navegador, perfil da aplicação e versão ou commit, quando disponíveis.
+      placeholder: Windows 11, Chrome, ambiente local, commit abc1234
+    validations:
+      required: true
+  - type: dropdown
+    id: impacto
+    attributes:
+      label: Impacto
+      options:
+        - Baixo — existe alternativa simples
+        - Médio — afeta uma funcionalidade importante
+        - Alto — bloqueia um fluxo crítico
+        - Crítico — risco de segurança, perda ou exposição de dados
+    validations:
+      required: true
+  - type: textarea
+    id: evidencias
+    attributes:
+      label: Evidências adicionais
+      description: Adicione logs seguros, imagens ou contexto relevante, removendo dados sensíveis.
+  - type: checkboxes
+    id: confirmacoes
+    attributes:
+      label: Confirmações
+      options:
+        - label: Pesquisei issues existentes e não encontrei uma duplicada.
+          required: true
+        - label: Removi segredos e dados pessoais ou empresariais das evidências.
+          required: true

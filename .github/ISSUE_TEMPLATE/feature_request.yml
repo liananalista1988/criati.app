@@ -1,0 +1,64 @@
+name: Solicitação de funcionalidade
+description: Proponha uma melhoria alinhada à visão e ao escopo da Criati.app.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Descreva o problema antes da solução. Mudanças de arquitetura ou escopo exigem discussão e aprovação.
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema ou necessidade
+      description: Qual problema real deve ser resolvido e quem é afetado?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Resultado desejado
+      description: Descreva o comportamento esperado sem impor detalhes técnicos desnecessários.
+    validations:
+      required: true
+  - type: textarea
+    id: valor
+    attributes:
+      label: Valor para o usuário
+      description: Explique o benefício e a frequência esperada de uso.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Núcleo SaaS
+        - Tarefas e Processos
+        - Segurança e privacidade
+        - Experiência do usuário
+        - Infraestrutura e qualidade
+        - Documentação
+        - Outro módulo futuro
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas
+      description: Informe soluções alternativas ou contornos atuais.
+  - type: textarea
+    id: riscos
+    attributes:
+      label: Riscos e impactos
+      description: Considere segurança, isolamento multiempresa, dados, dependências e manutenção.
+  - type: checkboxes
+    id: confirmacoes
+    attributes:
+      label: Confirmações
+      options:
+        - label: Pesquisei issues existentes e não encontrei uma solicitação equivalente.
+          required: true
+        - label: A proposta respeita ou identifica explicitamente impactos no escopo e nas decisões existentes.
+          required: true
