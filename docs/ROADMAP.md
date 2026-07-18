@@ -1313,3 +1313,17 @@ Prioridade baixa:
 # Princípio principal
 
 A Criati deverá crescer conforme problemas reais de clientes, preservando uma base comum, segura, modular e sustentável.
+
+## Atualização — Fundação multiempresa
+
+A fundação técnica de persistência passa a incluir:
+
+- Flyway como proprietário exclusivo do esquema;
+- Hibernate em modo `validate`;
+- UUID como chave principal das entidades do núcleo;
+- usuário global com vínculos por `usuario_empresa`;
+- perfis pertencentes à empresa e permissões globais;
+- constraints que impedem atribuição de perfil entre empresas;
+- testes de migration, validação do esquema e isolamento das associações.
+
+Permanecem para as próximas fases: autenticação, TenantContext, seleção e troca de empresa, unidades, módulos, planos e assinaturas.
