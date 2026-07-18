@@ -398,3 +398,7 @@ Mudanças estruturais exigem aprovação, Pull Request e atualização da docume
 Uso privado e proprietário da Criati.app.
 
 Todos os direitos reservados.
+
+## Proteção da branch principal
+
+A branch main utiliza regras de proteção, revisão por Pull Request e validação automática pelo GitHub Actions.
