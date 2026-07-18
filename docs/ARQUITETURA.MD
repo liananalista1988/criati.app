@@ -52,3 +52,22 @@ br.app.criati
 ├── notificacao
 ├── arquivo
 └── tarefa
+```
+
+## Persistência multiempresa
+
+A fundação utiliza um banco PostgreSQL compartilhado e um único esquema compartilhado. O isolamento lógico ocorre por `empresa_id` nas tabelas empresariais e deve ser reforçado por constraints, consultas contextualizadas e testes automatizados.
+
+O usuário é global e pode possuir vínculos com várias empresas por meio de `usuario_empresa`. Perfis são empresariais, permissões são globais e a atribuição de perfil ocorre sobre o vínculo. A associação `usuario_empresa_perfil` inclui a empresa nas chaves estrangeiras compostas para impedir atribuições entre empresas diferentes.
+
+O Flyway é o único proprietário da criação e evolução do esquema. O Hibernate utiliza obrigatoriamente `spring.jpa.hibernate.ddl-auto=validate` e apenas verifica a compatibilidade entre entidades e migrations.
+
+Riscos futuros que exigem atenção:
+
+- consultas empresariais sem o filtro da empresa atual;
+- associações que permitam relacionar registros de empresas diferentes;
+- cache ou tarefas assíncronas sem empresa explícita;
+- uso de identificadores recebidos do cliente como contexto confiável;
+- evolução de migrations sem constraints e índices multiempresa equivalentes.
+
+TenantContext, filtros automáticos e autenticação serão implementados em entregas posteriores e não fazem parte desta fundação.
