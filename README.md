@@ -167,30 +167,33 @@ A senha deverá permanecer fora do Git.
 
 ## Variáveis de ambiente
 
-A configuração definitiva será adicionada durante a preparação técnica.
+A aplicação usa perfis Spring separados por ambiente: `local`, `test`, `homolog` e `prod`. O perfil `local` é usado por padrão quando `SPRING_PROFILES_ACTIVE` não é informado. O perfil `test` usa H2 em memória e não depende de variáveis de ambiente.
 
-Variáveis planejadas:
+Variáveis obrigatórias para os perfis `local`, `homolog` e `prod`:
 
 ```text
+SPRING_PROFILES_ACTIVE
 DB_URL
 DB_USERNAME
 DB_PASSWORD
-MAIL_HOST
-MAIL_PORT
-MAIL_USERNAME
-MAIL_PASSWORD
-APP_BASE_URL
 ```
 
-Exemplo conceitual:
+No perfil `local`, `DB_URL` e `DB_USERNAME` têm valores padrão seguros para desenvolvimento (`jdbc:postgresql://localhost:5432/criati_db` e `criati_app`); `DB_PASSWORD` nunca tem valor padrão. Nos perfis `homolog` e `prod`, todas as variáveis são obrigatórias, sem valor padrão.
 
-```properties
-spring.datasource.url=${DB_URL}
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
+Nunca incluir valores reais em arquivos versionados.
+
+## Execução local
+
+1. copiar `.env.example` para `.env`:
+
+```cmd
+copy .env.example .env
 ```
 
-Nunca incluir valores reais neste arquivo.
+2. preencher `DB_PASSWORD` no `.env` com a senha local do PostgreSQL (o `.env` nunca deve ser commitado);
+3. iniciar a aplicação pelo Maven Wrapper ou pelo VS Code.
+
+O `.env` é carregado automaticamente pela aplicação quando presente na raiz do projeto (`spring.config.import`), e também é ignorado pelo Git. Apenas o `.env.example` deve ser versionado.
 
 ## Executando no Windows
 
