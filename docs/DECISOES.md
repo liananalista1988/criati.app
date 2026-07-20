@@ -177,6 +177,15 @@ O MVP será dividido em duas etapas:
 - Os arquivos serão separados logicamente por empresa.
 - Planos poderão definir limites de armazenamento.
 
+## Autenticação
+
+- A autenticação do MVP utilizará API REST com sessão HTTP controlada pelo servidor (cookie de sessão), sem JWT e sem OAuth2/OIDC nesta fase.
+- A senha é recebida em texto puro apenas no DTO de entrada de cadastro e de login; o hash é sempre gerado pelo backend, nunca aceito pronto do cliente.
+- O algoritmo de hashing é BCrypt (fator de trabalho 12): Argon2id foi avaliado primeiro, conforme preferência de `docs/SEGURANCA.MD`, mas exigiria adicionar a biblioteca externa BouncyCastle (ausente do projeto), incompatibilidade comprovada em execução (`NoClassDefFoundError`). BCrypt é o fallback previsto no próprio `docs/SEGURANCA.MD` para essa situação.
+- O acesso é negado por padrão; somente o endpoint de login é público.
+- O login troca o ID da sessão após autenticação bem-sucedida (`ChangeSessionIdAuthenticationStrategy`), prevenindo session fixation; o e-mail é normalizado (trim + minúsculas) tanto no cadastro quanto no login.
+- Contexto de empresa ativa, autorização por perfil (ADMINISTRADOR/GESTOR/USUARIO) e Superadministrador ficam fora desta fase e serão tratados em decisão futura.
+
 ## Regra de alteração
 
 Nenhuma decisão estrutural registrada neste documento deverá ser alterada silenciosamente.

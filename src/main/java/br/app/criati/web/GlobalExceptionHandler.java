@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -20,6 +21,13 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<ApiErrorResponse> tratarAutenticacaoInvalida(
+			AuthenticationException exception,
+			HttpServletRequest request) {
+		return criarResposta(HttpStatus.UNAUTHORIZED, "E-mail ou senha invalidos", request, Map.of());
+	}
 
 	@ExceptionHandler(DadosInvalidosException.class)
 	public ResponseEntity<ApiErrorResponse> tratarDadosInvalidos(

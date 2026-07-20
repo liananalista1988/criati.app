@@ -7,5 +7,5 @@ public record CadastrarUsuarioRequest(
 		@NotBlank(message = "Nome e obrigatorio") String nome,
 		@NotBlank(message = "E-mail e obrigatorio")
 		@Email(message = "E-mail deve ser valido") String email,
-		@NotBlank(message = "Hash da senha e obrigatorio") String senhaHash) {
+		@NotBlank(message = "Senha e obrigatoria") String senha) {
 }

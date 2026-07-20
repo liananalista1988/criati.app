@@ -24,7 +24,7 @@ public class UsuarioController {
 	@PostMapping
 	public ResponseEntity<UsuarioResponse> cadastrar(@Valid @RequestBody CadastrarUsuarioRequest request) {
 		Usuario usuario = cadastrarUsuarioService.executar(
-				request.nome(), request.email(), request.senhaHash());
+				request.nome(), request.email(), request.senha());
 		UsuarioResponse response = new UsuarioResponse(
 				usuario.getId(),
 				usuario.getNome(),

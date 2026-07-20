@@ -14,6 +14,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
@@ -27,6 +28,9 @@ class CadastrarUsuarioServiceTests {
 	@Mock
 	private UsuarioRepository usuarioRepository;
 
+	@Mock
+	private PasswordEncoder passwordEncoder;
+
 	@Captor
 	private ArgumentCaptor<Usuario> usuarioCaptor;
 
@@ -34,27 +38,31 @@ class CadastrarUsuarioServiceTests {
 	private CadastrarUsuarioService service;
 
 	@Test
-	void deveCadastrarUsuarioValido() {
+	void deveCadastrarUsuarioAplicandoHashENaoArmazenarSenhaBruta() {
+		when(passwordEncoder.encode("senha-bruta-segura")).thenReturn("hash-codificado-pelo-encoder");
 		when(usuarioRepository.save(any(Usuario.class)))
 				.thenAnswer(invocacao -> invocacao.getArgument(0));
 
 		Usuario resultado = service.executar(
 				"Usuario Criati",
 				"usuario@criati.test",
-				"senha-hash-segura");
+				"senha-bruta-segura");
 
 		verify(usuarioRepository).save(usuarioCaptor.capture());
 		Usuario usuarioSalvo = usuarioCaptor.getValue();
 		assertThat(resultado).isSameAs(usuarioSalvo);
 		assertThat(usuarioSalvo.getNome()).isEqualTo("Usuario Criati");
 		assertThat(usuarioSalvo.getEmail()).isEqualTo("usuario@criati.test");
-		assertThat(usuarioSalvo.getSenha()).isEqualTo("senha-hash-segura");
+		assertThat(usuarioSalvo.getSenha()).isEqualTo("hash-codificado-pelo-encoder");
+		assertThat(usuarioSalvo.getSenha()).isNotEqualTo("senha-bruta-segura");
 		assertThat(usuarioSalvo.getStatus()).isEqualTo(StatusCadastro.ATIVO);
 	}
 
 	@Test
 	void deveNormalizarEmail() {
-		service.executar("Usuario Normalizado", "  Usuario@Criati.Test  ", "senha-hash-segura");
+		when(passwordEncoder.encode(any())).thenReturn("hash-codificado-pelo-encoder");
+
+		service.executar("Usuario Normalizado", "  Usuario@Criati.Test  ", "senha-bruta-segura");
 
 		verify(usuarioRepository).existsByEmailIgnoreCase("usuario@criati.test");
 		verify(usuarioRepository).save(usuarioCaptor.capture());
@@ -68,7 +76,7 @@ class CadastrarUsuarioServiceTests {
 		assertThatThrownBy(() -> service.executar(
 				"Usuario Duplicado",
 				"  Usuario@Criati.Test  ",
-				"senha-hash-segura"))
+				"senha-bruta-segura"))
 				.isInstanceOf(EmailJaCadastradoException.class);
 
 		verify(usuarioRepository, never()).save(any(Usuario.class));
@@ -76,7 +84,7 @@ class CadastrarUsuarioServiceTests {
 
 	@Test
 	void deveRejeitarEmailVazio() {
-		assertThatThrownBy(() -> service.executar("Usuario", "   ", "senha-hash-segura"))
+		assertThatThrownBy(() -> service.executar("Usuario", "   ", "senha-bruta-segura"))
 				.isInstanceOf(DadosInvalidosException.class)
 				.hasMessage("E-mail e obrigatorio");
 
@@ -84,10 +92,10 @@ class CadastrarUsuarioServiceTests {
 	}
 
 	@Test
-	void deveRejeitarSenhaHashVazia() {
+	void deveRejeitarSenhaVazia() {
 		assertThatThrownBy(() -> service.executar("Usuario", "usuario@criati.test", "   "))
 				.isInstanceOf(DadosInvalidosException.class)
-				.hasMessage("Hash da senha e obrigatorio");
+				.hasMessage("Senha e obrigatoria");
 
 		verify(usuarioRepository, never()).save(any(Usuario.class));
 	}

@@ -29,7 +29,7 @@ class UsuarioControllerTests {
 			{
 			  "nome": "Lian Nascimento",
 			  "email": "lian@criati.app.br",
-			  "senhaHash": "hash-da-senha"
+			  "senha": "hash-da-senha"
 			}
 			""";
 
@@ -78,7 +78,7 @@ class UsuarioControllerTests {
 						{
 						  "nome": "Lian Nascimento",
 						  "email": "email-invalido",
-						  "senhaHash": "hash-da-senha"
+						  "senha": "hash-da-senha"
 						}
 						"""))
 				.andExpect(status().isBadRequest())
