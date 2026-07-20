@@ -20,7 +20,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.app.criati.acesso.model.UsuarioEmpresa;
+import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
+import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
+import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.usuario.model.Usuario;
 import br.app.criati.usuario.repository.UsuarioRepository;
@@ -41,6 +45,9 @@ class AdminEmpresaControllerTests {
 
 	@Autowired
 	private EmpresaRepository empresaRepository;
+
+	@Autowired
+	private UsuarioEmpresaRepository usuarioEmpresaRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -194,6 +201,77 @@ class AdminEmpresaControllerTests {
 				.andExpect(jsonPath("$.message").value("CNPJ ja cadastrado"));
 
 		assertThat(usuarioRepository.existsByEmailIgnoreCase("administrador.dois@criati.test")).isFalse();
+	}
+
+	@Test
+	void deveRetornar400ParaEntradaInvalidaNaCriacaoInicial() throws Exception {
+		MockHttpSession session = loginSuperAdministrador("superadmin.400.admin@criati.test");
+
+		mockMvc.perform(post("/api/admin/empresas")
+				.session(session)
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "empresa": {
+						    "nome": "",
+						    "cnpj": ""
+						  },
+						  "administrador": {
+						    "nome": "",
+						    "email": "email-invalido",
+						    "senha": ""
+						  }
+						}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.fieldErrors['empresa.nome']").value("Nome e obrigatorio"))
+				.andExpect(jsonPath("$.fieldErrors['empresa.cnpj']").value("CNPJ e obrigatorio"))
+				.andExpect(jsonPath("$.fieldErrors['administrador.email']").value("E-mail deve ser valido"));
+
+		assertThat(empresaRepository.findAll()).isEmpty();
+	}
+
+	@Test
+	void deveRetornar403ParaAdministradorEmpresarialComVinculoEContextoAtivos() throws Exception {
+		// ADMINISTRADOR empresarial (com vinculo ATIVO e contexto de empresa
+		// selecionado) nao e Superadministrador: ROLE_SUPERADMIN nunca deriva de
+		// perfil empresarial (UsuarioEmpresa.perfil nao alimenta GrantedAuthority),
+		// entao mesmo com contexto valido a rota global deve permanecer negada.
+		Empresa empresa = empresaRepository.saveAndFlush(
+				new Empresa("Empresa do Administrador Ltda", "Empresa do Administrador", "55555555000195",
+						StatusCadastro.ATIVO));
+		Usuario administrador = usuarioRepository.saveAndFlush(
+				new Usuario("Administrador Empresarial", "administrador.empresarial@criati.test",
+						passwordEncoder.encode(SENHA), StatusCadastro.ATIVO));
+		usuarioEmpresaRepository.saveAndFlush(
+				new UsuarioEmpresa(administrador, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO));
+
+		MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "email": "administrador.empresarial@criati.test",
+						  "senha": "%s"
+						}
+						""".formatted(SENHA)))
+				.andExpect(status().isOk())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+		mockMvc.perform(post("/api/contexto/empresa-ativa")
+				.session(session)
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "empresaId": "%s" }
+						""".formatted(empresa.getId())))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/admin/empresas").session(session))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("Acesso negado"));
 	}
 
 	@Test

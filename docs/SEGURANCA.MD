@@ -390,6 +390,8 @@ Regras:
 
 - Papel representado por `Usuario.superAdministrador` (booleano), concedendo a autoridade `ROLE_SUPERADMIN`; não é um vínculo `UsuarioEmpresa` e não pertence a nenhuma empresa.
 - O primeiro Superadministrador é criado somente por um bootstrap de inicialização (`SuperAdministradorBootstrapService`), lido de variáveis de ambiente (`CRIATI_BOOTSTRAP_NOME`, `CRIATI_BOOTSTRAP_EMAIL`, `CRIATI_BOOTSTRAP_PASSWORD`); não existe endpoint público para essa criação, não existe senha padrão, e a rotina se autodesabilita quando já existe um Superadministrador cadastrado.
+- E-mail de bootstrap já em uso: a rotina nunca promove um usuário existente nem cria duplicado; ela apenas encerra sem criar nada e registra um aviso, exigindo correção manual da configuração. Ver `docs/DECISOES.MD`.
+- Risco operacional no primeiro bootstrap: iniciar múltiplas instâncias simultaneamente antes de existir qualquer Superadministrador pode causar falha transitória de inicialização em uma das instâncias (a unicidade de e-mail impede duplicidade de dados, mas não evita a corrida). Recomendação: o primeiro deploy deve usar uma única réplica ou subida gradual; a janela de risco desaparece após o primeiro Superadministrador ser criado. Ver `docs/DECISOES.MD`.
 - Reautenticação para operações críticas, MFA e auditoria persistida de ações administrativas seguem como prioridades futuras (fora desta fase).
 
 ## Suporte temporário
