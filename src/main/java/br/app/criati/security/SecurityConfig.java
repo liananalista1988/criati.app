@@ -61,7 +61,11 @@ public class SecurityConfig {
 						.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 						// login precisa ser alcancavel sem token CSRF previamente emitido;
 						// a sessao e recriada no login, o que mitiga fixacao.
-						.ignoringRequestMatchers("/api/auth/login"));
+						.ignoringRequestMatchers("/api/auth/login"))
+					// a API nao usa redirecionamento pos-login (login e um endpoint JSON
+					// proprio), entao o RequestCache padrao so criaria sessao anonima
+					// desnecessaria a cada 401 sem nenhum uso real.
+					.requestCache(cache -> cache.disable());
 		return http.build();
 	}
 }
