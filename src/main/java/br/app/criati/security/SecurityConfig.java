@@ -79,6 +79,8 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/usuarios")
 								.hasAuthority(UsuarioPrincipal.ROLE_SUPERADMIN)
 						.requestMatchers("/api/admin/**").hasAuthority(UsuarioPrincipal.ROLE_SUPERADMIN)
+						.requestMatchers(HttpMethod.GET, "/app/admin/**")
+								.hasAuthority(UsuarioPrincipal.ROLE_SUPERADMIN)
 						.anyRequest().authenticated())
 				.securityContext(context -> context.securityContextRepository(securityContextRepository))
 				.exceptionHandling(exception -> exception

@@ -198,6 +198,14 @@ CRIATI_CONVITE_EXPIRACAO_HORAS
 
 Padrão de 72 horas se não informada.
 
+Variável opcional para a carga de dados de demonstração (Clínica Vida Demo; qualquer perfil):
+
+```text
+CRIATI_DADOS_DEMO_HABILITADOS
+```
+
+Padrão `false`. Só habilitar em ambiente local/test; nunca em produção. Ver [Decisões](docs/DECISOES.md), seção "Catálogo de aplicações e Clínica Vida Demo".
+
 Nunca incluir valores reais em arquivos versionados.
 
 ## Execução local
@@ -306,6 +314,22 @@ DELETE /api/contexto/usuarios/{id}             (ADMINISTRADOR, empresa ativa)
 
 Suspensão e remoção são lógicas (o vínculo vira `INATIVO`; nunca há `DELETE` físico), preservam o `Usuario` global e os vínculos com outras empresas, e são bloqueadas quando afetariam o próprio vínculo do chamador ou o último `ADMINISTRADOR` ativo da empresa. Detalhes completos em [Decisões](docs/DECISOES.MD), seção "Gestão de acessos por empresa".
 
+## Catálogo de aplicações
+
+A plataforma mantém um catálogo global de aplicações (`FINANCEIRO`, `CLINICA`) que cada empresa pode habilitar independentemente:
+
+```text
+GET  /api/admin/aplicacoes                                    (ROLE_SUPERADMIN; catalogo completo)
+GET  /api/admin/empresas/{empresaId}/aplicacoes                (ROLE_SUPERADMIN; catalogo + situacao do vinculo)
+POST /api/admin/empresas/{empresaId}/aplicacoes/{codigo}/habilitar    (ROLE_SUPERADMIN, CSRF, idempotente)
+POST /api/admin/empresas/{empresaId}/aplicacoes/{codigo}/desabilitar  (ROLE_SUPERADMIN, CSRF, idempotente)
+GET  /api/contexto/aplicacoes                                  (autenticado; somente aplicacoes ativas da empresa ativa)
+```
+
+Páginas: `GET /app/aplicacoes` (lista as aplicações da empresa ativa), `GET /app/financeiro` e `GET /app/clinica` (cada uma exige a aplicação correspondente habilitada para a empresa ativa; sem isso, redirecionam para `/app/aplicacoes`) e `GET /app/admin/empresas` (ROLE_SUPERADMIN; habilita/desabilita aplicações por empresa).
+
+`FINANCEIRO` (Gerenciador Financeiro) é um produto real, disponível no catálogo para qualquer empresa. `CLINICA` (Gestão de Clínica) é demonstrativo; a única empresa de exemplo é a "Clínica Vida Demo", criada de forma idempotente apenas quando `CRIATI_DADOS_DEMO_HABILITADOS=true` (padrão `false`, nunca em produção) — sem usuário, sem senha e sem Superadministrador adicional. Aplicação (o que a empresa contratou) e perfil (`ADMINISTRADOR`/`GESTOR`/`USUARIO`, o que o usuário pode fazer) são conceitos independentes; nenhuma regra depende do nome ou do CNPJ da empresa. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Catálogo de aplicações e Clínica Vida Demo".
+
 ## Migrations
 
 O Flyway será responsável pela estrutura do banco.
@@ -337,6 +361,7 @@ br.app.criati
 ├── unidade
 ├── usuario
 ├── acesso
+├── aplicacao
 ├── perfil
 ├── permissao
 ├── modulo

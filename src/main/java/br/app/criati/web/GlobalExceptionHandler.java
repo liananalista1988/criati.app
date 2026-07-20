@@ -12,11 +12,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import br.app.criati.exception.AcessoNegadoException;
+import br.app.criati.exception.AplicacaoInativaException;
+import br.app.criati.exception.AplicacaoNaoEncontradaException;
 import br.app.criati.exception.AutoAlteracaoNaoPermitidaException;
 import br.app.criati.exception.CnpjJaCadastradoException;
 import br.app.criati.exception.ConviteInvalidoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
+import br.app.criati.exception.EmpresaInativaException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
@@ -68,7 +71,9 @@ public class GlobalExceptionHandler {
 			UsuarioEmpresaJaVinculadoException.class,
 			UltimoAdministradorAtivoException.class,
 			AutoAlteracaoNaoPermitidaException.class,
-			VinculoStatusInvalidoException.class
+			VinculoStatusInvalidoException.class,
+			EmpresaInativaException.class,
+			AplicacaoInativaException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -79,7 +84,8 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler({
 			UsuarioNaoEncontradoException.class,
 			EmpresaNaoEncontradaException.class,
-			ConviteInvalidoException.class
+			ConviteInvalidoException.class,
+			AplicacaoNaoEncontradaException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

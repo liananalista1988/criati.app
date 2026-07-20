@@ -219,6 +219,8 @@ Regras:
 - um módulo desativado não deverá aparecer no menu;
 - desativar um módulo não apagará seus dados.
 
+Implementação atual (fase de fundação): o catálogo global chama-se `Aplicacao` (tabela `aplicacao`, código único — `FINANCEIRO`, `CLINICA`) e o vínculo empresa↔catálogo chama-se `EmpresaAplicacao` (tabela `empresa_aplicacao`, `UNIQUE(empresa_id, aplicacao_id)`), equivalentes ao `modulo`/`empresa_modulo` descritos acima. Apenas o Superadministrador habilita/desabilita (`POST/GET /api/admin/empresas/{id}/aplicacoes/**`), nunca por nome ou CNPJ da empresa; o vínculo nunca é excluído fisicamente (desabilitar marca `INATIVO`). `FINANCEIRO` é um produto real, disponível no catálogo para qualquer empresa; `CLINICA` é demonstrativo, com uma única empresa de exemplo (Clínica Vida Demo, carga opcional controlada por `CRIATI_DADOS_DEMO_HABILITADOS`). Unidades, permissões granulares, planos e assinaturas continuam fora do escopo. Detalhes completos em `docs/DECISOES.md`, seção "Catálogo de aplicações e Clínica Vida Demo".
+
 ## Planos e assinaturas
 
 O plano definirá os limites comerciais da empresa.

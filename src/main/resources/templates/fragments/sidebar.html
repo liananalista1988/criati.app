@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-	<aside th:fragment="sidebar" class="criati-sidebar" id="criati-sidebar">
+	<aside th:fragment="sidebar(paginaAtiva)" class="criati-sidebar" id="criati-sidebar">
 		<div class="criati-sidebar-brand">
 			<div class="criati-sidebar-logo" aria-hidden="true">C</div>
 			<span>Criati</span>
@@ -10,7 +10,11 @@
 		<nav aria-label="Navegacao principal">
 			<ul class="criati-nav">
 				<li>
-					<a class="criati-nav-link is-active" href="/app/dashboard" aria-current="page">
+					<a
+						class="criati-nav-link"
+						th:classappend="${paginaAtiva == 'dashboard'} ? 'is-active' : ''"
+						th:attr="aria-current=${paginaAtiva == 'dashboard'} ? 'page' : null"
+						href="/app/dashboard">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<rect x="3" y="3" width="7" height="7" rx="1.5" />
 							<rect x="14" y="3" width="7" height="7" rx="1.5" />
@@ -20,6 +24,24 @@
 						Dashboard
 					</a>
 				</li>
+				<li>
+					<a
+						class="criati-nav-link"
+						th:classappend="${paginaAtiva == 'aplicacoes'} ? 'is-active' : ''"
+						th:attr="aria-current=${paginaAtiva == 'aplicacoes'} ? 'page' : null"
+						href="/app/aplicacoes">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+							<rect x="4" y="4" width="16" height="4" rx="1" />
+							<rect x="4" y="10" width="16" height="4" rx="1" />
+							<rect x="4" y="16" width="16" height="4" rx="1" />
+						</svg>
+						Aplicacoes
+					</a>
+				</li>
+				<!-- Aplicacoes especificas (Financeiro/Clinica) sao inseridas aqui pelo
+				     JavaScript (criati-aplicacoes.js), somente quando habilitadas para a
+				     empresa ativa; este item nunca e exibido. -->
+				<li id="criati-nav-apps-dinamicas" hidden></li>
 				<li>
 					<a class="criati-nav-link is-disabled" href="#" aria-disabled="true" data-em-breve="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
