@@ -23,12 +23,12 @@ Este documento registra as decisões oficiais do projeto. Mudanças relevantes d
 
 ## Cadastro de empresas e usuários
 
-- No MVP, somente a equipe da Criati poderá cadastrar novas empresas.
-- O primeiro administrador da empresa receberá um convite por e-mail.
-- O convite terá token de uso único e validade limitada.
-- A senha do usuário nunca será enviada por e-mail.
-- Um convite poderá ser reenviado ou cancelado.
-- Após criar a senha, o convite perderá a validade.
+- No MVP, somente o Superadministrador pode cadastrar novas empresas, e faz isso já com o primeiro administrador em uma única operação atômica (`POST /api/admin/empresas`) — o primeiro administrador não é convidado, é criado diretamente por quem tem autoridade para criar a empresa. Ver seção "Superadministrador e administração inicial".
+- Os demais usuários de uma empresa (GESTOR, USUARIO ou outro ADMINISTRADOR) são adicionados exclusivamente por convite, criado por um ADMINISTRADOR da própria empresa. Ver seção "Convites".
+- O convite tem token de uso único e validade limitada.
+- A senha do usuário nunca é enviada por e-mail; é definida pelo próprio convidado ao aceitar.
+- Um convite pendente pode ser revogado; convidar novamente o mesmo e-mail revoga automaticamente o convite pendente anterior e cria um novo.
+- Após aceito, o convite perde a validade (status UTILIZADO), de uso único.
 
 ## Perfis e permissões
 
@@ -195,7 +195,7 @@ O MVP será dividido em duas etapas:
 - Selecionar uma empresa exige vínculo ATIVO e empresa ATIVA; qualquer outra condição (sem vínculo, vínculo inativo, empresa inativa ou inexistente) responde com a mesma mensagem genérica 403 ("Acesso negado"), sem revelar qual delas se aplica.
 - `POST /api/empresas` e `POST /api/usuarios` agora exigem papel Superadministrador (ver seção seguinte); deixaram de estar bloqueados para todo mundo, já que existe um papel legítimo para chamá-los.
 - `POST /api/usuarios-empresas` exige empresa ativa selecionada e perfil ADMINISTRADOR nessa empresa; o `empresaId` do corpo da requisição é validado contra o contexto da sessão e a operação sempre usa a empresa do contexto, nunca o valor bruto do cliente.
-- Unidades, permissões granulares, módulos, planos, assinaturas e convites permanecem fora do escopo desta fase.
+- Unidades, permissões granulares, módulos, planos e assinaturas permanecem fora do escopo desta fase. Convites estão implementados (ver seção "Convites").
 
 ## Superadministrador e administração inicial
 
@@ -212,7 +212,26 @@ O MVP será dividido em duas etapas:
 - Corrida entre instâncias no primeiro bootstrap: se múltiplas instâncias iniciarem simultaneamente antes de existir qualquer Superadministrador, há uma janela entre a checagem de e-mail e a gravação em que mais de uma instância pode tentar criar o mesmo Superadministrador. A restrição `UNIQUE` em `usuario.email` impede duplicidade de dados, mas a instância que perder a corrida falha de forma transitória na inicialização (erro de violação de unicidade não tratado no `ApplicationRunner`). Por isso, o primeiro deploy (antes de existir um Superadministrador) deve usar uma única réplica ou uma estratégia de subida gradual; após a criação do primeiro Superadministrador, o bootstrap fica permanentemente inativo (idempotência) e essa janela deixa de existir.
 - `POST /api/admin/empresas` (empresa + primeiro administrador em uma única operação transacional) não é redundante com os endpoints já existentes: `POST /api/usuarios-empresas` (vincular um usuário a uma empresa) exige um contexto de empresa ativa já selecionado, que por sua vez exige um vínculo ATIVO pré-existente — impossível para uma empresa recém-criada, que ainda não tem nenhum vínculo. Sem um endpoint dedicado, não haveria caminho via API para uma empresa nova sair do zero sem intervenção manual no banco.
 - `GET /api/admin/me` e `GET /api/admin/empresas` são endpoints administrativos mínimos (identidade do Superadministrador logado e listagem simples de empresas), propositalmente sem CRUD completo, edição ou exclusão de empresa — fora do escopo desta fase.
-- Seguem fora do escopo: convites, recuperação de senha, permissões granulares, unidades, módulos, planos, assinatura, cobrança, suspensão por inadimplência, auditoria persistida, telas Thymeleaf, JWT/OAuth2, exclusão e edição completa de empresa.
+- Seguem fora do escopo: recuperação de senha, permissões granulares, unidades, módulos, planos, assinatura, cobrança, suspensão por inadimplência, auditoria persistida, telas Thymeleaf, JWT/OAuth2, exclusão e edição completa de empresa.
+
+## Convites
+
+- Convite é uma entidade própria (`Convite`, tabela `convite`), não reaproveita `StatusCadastro`: usa um enum dedicado `StatusConvite` (`PENDENTE`, `UTILIZADO`, `EXPIRADO`, `REVOGADO`) porque o ciclo de vida de um convite (pendente → utilizado/expirado/revogado) é conceitualmente diferente de ativo/inativo.
+- Token: gerado com `SecureRandom` (256 bits, nunca um UUID simples), codificado em Base64 URL-safe sem padding. Apenas o hash SHA-256 (`token_hash`, coluna `UNIQUE`) é persistido; o token bruto nunca é gravado em nenhuma tabela. SHA-256 foi escolhido em vez de BCrypt para o hash do token porque o token já nasce com alta entropia (256 bits) — BCrypt é necessário para senhas de usuário (entropia baixa, precisa de custo computacional alto contra força bruta), não para um token já aleatório, onde um hash rápido e determinístico é suficiente e permite localizar o convite por igualdade indexada no banco.
+- Expiração: configurável via `CRIATI_CONVITE_EXPIRACAO_HORAS` (padrão 72 horas, qualquer perfil pode sobrescrever por variável de ambiente). Tratada dinamicamente (`expiraEm < agora`): nenhum job de fundo marca convites como expirados; a checagem acontece a cada leitura (validação pública, aceitação, listagem para exibição). Isso simplifica a operação sem exigir agendador nem tarefa periódica.
+- Uso único: aceitar marca o convite como `UTILIZADO` (com `utilizadoEm`) na mesma transação que cria o usuário e o vínculo; qualquer tentativa posterior com o mesmo token encontra um convite que não está mais `PENDENTE` e é tratada como inválida.
+- Política de duplicidade: convidar novamente o mesmo e-mail na mesma empresa revoga automaticamente o convite `PENDENTE` existente antes de criar o novo (equivalente a "reenviar convite"). Alternativas descartadas: rejeitar com 409 (adiciona fricção sem benefício de segurança) e reaproveitar o token antigo (exigiria re-expor um token já entregue, pior do que gerar um novo).
+- Usuário já existente (Caso B): fora do escopo desta fase, por decisão explícita. Aceitar um convite cujo e-mail já possui `Usuario` é rejeitado (reaproveita `EmailJaCadastradoException`, HTTP 409) em vez de permitir redefinir a senha da conta existente — permitir isso sem uma confirmação de identidade adicional abriria uma brecha de takeover de conta (qualquer pessoa com acesso ao convite poderia assumir uma conta alheia). Apenas o Caso A (e-mail sem `Usuario` prévio) está implementado.
+- Ausência de e-mail real: não há integração de e-mail nesta fase. A entrega é abstraída por `ConviteNotificador`, com uma implementação temporária (`ConviteNotificadorTemporario`) que apenas registra em log que um convite foi criado (id do convite e da empresa), nunca o token. Uma implementação real (e-mail) poderá substituir essa classe sem alterar `ConviteService`.
+- Exposição do token bruto: nunca em log. Na resposta de criação (`POST /api/contexto/convites`), o token bruto só é incluído quando `criati.convite.expor-token-bruto=true` — verdadeiro por padrão em `local` e `test` (não há outro mecanismo de entrega nestes ambientes), falso em qualquer outro perfil (`homolog`, `prod`), preparando o terreno para quando existir entrega por e-mail real.
+- Endpoints públicos: apenas `GET /api/convites/{token}` (validação) e `POST /api/convites/{token}/aceitar` (aceitação). `GET` sempre responde `200` com `{"valido": false}` para qualquer motivo de invalidez (inexistente, expirado, utilizado, revogado ou empresa inativa) — nunca `404`/`410` — para não distinguir o motivo e não permitir enumeração. A aceitação inválida responde `404` genérico ("Convite invalido ou expirado"), pela mesma razão.
+- CSRF: `POST /api/convites/{token}/aceitar` é isento de CSRF, registrado explicitamente em `SecurityConfig`, pelo mesmo motivo já documentado para `/api/auth/login` — o cliente ainda não tem sessão/cookie desta aplicação antes da chamada. CSRF continua habilitado globalmente para todas as demais rotas, incluindo as demais operações de convite (criação, listagem, revogação).
+- Aceitar convite nunca autentica automaticamente: nenhuma sessão é criada; o convidado faz login normalmente depois pelo fluxo já existente.
+- Rate limiting: não implementado (exigiria dependência nova, não autorizada nesta tarefa). Risco registrado: os endpoints públicos (`GET /api/convites/{token}` e `POST /api/convites/{token}/aceitar`) não têm limitação de tentativas; um atacante poderia tentar adivinhar tokens por força bruta (mitigado pela alta entropia do token, 256 bits) ou golpear a rota de aceitação. Prioridade futura, junto com CAPTCHA e limitação por IP/conta já previstos em `docs/SEGURANCA.MD`.
+- Convites revogados: um convite revogado nunca pode ser aceito (mesma checagem de "efetivamente válido" usada para expiração/uso). Apenas convites `PENDENTE` podem ser revogados; revogar um convite `UTILIZADO`, `EXPIRADO` ou já `REVOGADO` é rejeitado com `400`.
+- Política de senha: reaproveita o mínimo já documentado em `docs/SEGURANCA.MD` ("mínimo de 15 caracteres enquanto não houver MFA"), centralizada em `SenhaValidador` (`br.app.criati.shared.validacao`) para reaproveitamento futuro em redefinição de senha. Sem exigência de classes de caractere obrigatórias (maiúscula/número/símbolo) — política de comprimento e frase-senha, não de complexidade forçada. Máximo de 72 caracteres (limite prático de entrada para BCrypt).
+- Endpoint global do Superadministrador (`POST /api/admin/empresas/{empresaId}/convites`) considerado e **não implementado**: redundante para o fluxo atual — o Superadministrador já cria a empresa com seu primeiro administrador via `POST /api/admin/empresas`; esse administrador então convida os demais usuários pelo fluxo empresarial. Um endpoint global duplicaria a mesma capacidade sem necessidade concreta imediata, ampliando a superfície de rotas globais sem justificativa de uso.
+- Futuras integrações de e-mail: quando implementadas, devem substituir apenas `ConviteNotificador`/`ConviteNotificadorTemporario`; nenhuma outra classe deste fluxo precisa mudar.
 
 ## Regra de alteração
 

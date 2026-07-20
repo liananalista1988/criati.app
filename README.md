@@ -190,6 +190,14 @@ CRIATI_BOOTSTRAP_PASSWORD
 
 Só têm efeito se ainda não existir nenhum Superadministrador cadastrado; não há senha padrão. Ver [Decisões](docs/DECISOES.MD).
 
+Variável opcional para expiração de convites (qualquer perfil):
+
+```text
+CRIATI_CONVITE_EXPIRACAO_HORAS
+```
+
+Padrão de 72 horas se não informada.
+
 Nunca incluir valores reais em arquivos versionados.
 
 ## Execução local
@@ -258,6 +266,20 @@ GET  /api/admin/me
 ```
 
 `POST /api/admin/empresas` cria a empresa e seu primeiro administrador (com o vínculo `ADMINISTRADOR`) em uma única operação transacional — é o caminho para dar os primeiros passos em uma empresa nova, já que `POST /api/usuarios-empresas` exige uma empresa ativa selecionada, que por sua vez exige um vínculo já existente.
+
+## Convites
+
+Os demais usuários de uma empresa (além do primeiro administrador) entram por convite, criado por um `ADMINISTRADOR` da própria empresa:
+
+```text
+POST   /api/contexto/convites            (ADMINISTRADOR, empresa ativa)
+GET    /api/contexto/convites            (ADMINISTRADOR, empresa ativa)
+DELETE /api/contexto/convites/{id}       (ADMINISTRADOR, empresa ativa)
+GET    /api/convites/{token}             (público)
+POST   /api/convites/{token}/aceitar     (público)
+```
+
+O convidado define sua própria senha ao aceitar; nenhuma senha é enviada por e-mail nem criada pelo administrador. Não há integração de e-mail real nesta fase — o token do convite só é retornado na resposta de criação em `local`/`test` (`criati.convite.expor-token-bruto`). Detalhes completos (token, expiração, política de duplicidade, tratamento de e-mail já cadastrado) em [Decisões](docs/DECISOES.MD).
 
 ## Migrations
 

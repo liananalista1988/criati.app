@@ -93,6 +93,18 @@ Somente rotas necessárias poderão ser públicas:
 
 Liberar uma rota pública exigirá justificativa.
 
+### Implementação atual (fase de fundação)
+
+Rotas públicas REST existentes, todas justificadas individualmente:
+
+```text
+POST /api/auth/login
+GET  /api/convites/{token}
+POST /api/convites/{token}/aceitar
+```
+
+`GET /api/convites/{token}` e `POST /api/convites/{token}/aceitar` existem porque o convidado ainda não tem conta nem sessão nesta aplicação antes de aceitar o convite. Nenhuma outra rota é pública.
+
 ## Senhas
 
 Senhas nunca serão:
@@ -247,6 +259,10 @@ enviar arquivo
 ```
 
 Não desativar CSRF globalmente para resolver erros de formulário.
+
+### Implementação atual (fase de fundação)
+
+CSRF permanece habilitado globalmente. As únicas exceções registradas são `POST /api/auth/login` e `POST /api/convites/{token}/aceitar`, ambas pelo mesmo motivo: o cliente ainda não possui sessão/cookie desta aplicação antes dessa chamada. Nenhuma outra rota deverá ser adicionada a essa lista sem uma decisão explícita registrada em `docs/DECISOES.md`.
 
 Referência: [OWASP — CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
 
@@ -436,6 +452,14 @@ data de expiração
 
 A aceitação deverá verificar novamente todos esses elementos.
 
+### Implementação atual (fase de fundação)
+
+- Token: `SecureRandom` de 256 bits, Base64 URL-safe; apenas o hash SHA-256 é persistido (`token_hash`, único), nunca o token bruto.
+- Validade padrão: 72 horas (configurável por `CRIATI_CONVITE_EXPIRACAO_HORAS`; o valor de 24 horas mencionado acima era apenas um exemplo inicial, substituído por um padrão configurável).
+- Uso único, cancelável (revogação) e reaproveitamento de token utilizado/revogado/expirado sempre rejeitado.
+- Vinculado a e-mail, empresa e perfil; unidades autorizadas ainda não existem nesta fase (fora do escopo, ver `docs/MODELO_MULTIEMPRESA.MD`); o responsável pelo convite é registrado (`criado_por_usuario_id`).
+- A aceitação revalida tudo no momento do uso: convite `PENDENTE`, não expirado, empresa `ATIVA`, e-mail sem `Usuario` prévio (ver `docs/DECISOES.md`, seção "Convites", para o tratamento de e-mail já cadastrado).
+- Nenhum rate limiting implementado ainda; risco registrado em `docs/DECISOES.md`.
 ## Recuperação de senha
 
 A recuperação deverá:

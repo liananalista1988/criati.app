@@ -52,6 +52,8 @@ public class SecurityConfig {
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/convites/*").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/convites/*/aceitar").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/empresas")
 								.hasAuthority(UsuarioPrincipal.ROLE_SUPERADMIN)
 						.requestMatchers(HttpMethod.POST, "/api/usuarios")
@@ -64,9 +66,12 @@ public class SecurityConfig {
 						.accessDeniedHandler(accessDeniedHandler))
 				.csrf(csrf -> csrf
 						.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-						// login precisa ser alcancavel sem token CSRF previamente emitido;
-						// a sessao e recriada no login, o que mitiga fixacao.
-						.ignoringRequestMatchers("/api/auth/login"))
+						// login e aceitacao de convite precisam ser alcancaveis sem token
+						// CSRF previamente emitido: em ambos os casos o cliente ainda nao
+						// tem sessao/cookie desta aplicacao antes da chamada. O login
+						// recria a sessao apos autenticar (mitiga fixacao); aceitar convite
+						// nao autentica automaticamente, entao nao ha sessao a fixar.
+						.ignoringRequestMatchers("/api/auth/login", "/api/convites/*/aceitar"))
 					// a API nao usa redirecionamento pos-login (login e um endpoint JSON
 					// proprio), entao o RequestCache padrao so criaria sessao anonima
 					// desnecessaria a cada 401 sem nenhum uso real.

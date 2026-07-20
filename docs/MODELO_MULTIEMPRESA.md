@@ -114,6 +114,8 @@ Regras:
 - o histórico será preservado;
 - perfis e unidades autorizadas serão associados ao vínculo.
 
+Implementação atual (fase de fundação): `usuario_empresa` usa apenas `ATIVO`/`INATIVO` (`StatusCadastro`); não existe estado `CONVIDADO` no vínculo. O convite é uma entidade própria (`Convite`, tabela `convite`), separada de `usuario_empresa` — o vínculo só passa a existir depois que o convite é aceito. `BLOQUEADO` permanece fora do escopo. Ver `docs/DECISOES.md`, seção "Convites".
+
 ## Acesso às unidades
 
 O vínculo poderá possuir acesso:

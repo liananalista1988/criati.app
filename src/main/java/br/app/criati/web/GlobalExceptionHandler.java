@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.CnpjJaCadastradoException;
+import br.app.criati.exception.ConviteInvalidoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
@@ -71,7 +72,8 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler({
 			UsuarioNaoEncontradoException.class,
-			EmpresaNaoEncontradaException.class
+			EmpresaNaoEncontradaException.class,
+			ConviteInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,
