@@ -185,7 +185,7 @@ O MVP será dividido em duas etapas:
 - O acesso é negado por padrão; somente o endpoint de login é público.
 - O login troca o ID da sessão após autenticação bem-sucedida (`ChangeSessionIdAuthenticationStrategy`), prevenindo session fixation; o e-mail é normalizado (trim + minúsculas) tanto no cadastro quanto no login.
 - CSRF permanece habilitado globalmente. A única exceção é `POST /api/auth/login`, porque o cliente ainda não possui um token CSRF antes do primeiro login; logout e as demais operações que alteram estado continuam exigindo o token. Nenhuma outra rota deverá ser adicionada à lista de exceções sem uma decisão arquitetural explícita registrada aqui.
-- Superadministrador da Criati fica fora desta fase e será tratado em decisão futura; contexto de empresa ativa e autorização inicial por perfil (ADMINISTRADOR/GESTOR/USUARIO) já estão implementados (ver seção "Contexto multiempresa e autorização inicial").
+- Superadministrador da Criati (papel global, distinto dos perfis por empresa) está implementado; ver seção "Superadministrador e administração inicial". Contexto de empresa ativa e autorização inicial por perfil (ADMINISTRADOR/GESTOR/USUARIO) já estavam implementados (ver seção "Contexto multiempresa e autorização inicial").
 
 ## Contexto multiempresa e autorização inicial
 
@@ -193,9 +193,23 @@ O MVP será dividido em duas etapas:
 - Toda leitura do contexto revalida o vínculo (`UsuarioEmpresa`) e a empresa no banco a cada uso; um vínculo ou empresa desativados após a seleção invalidam o contexto no próximo uso, sem exigir novo login.
 - O perfil do usuário na empresa vem exclusivamente do vínculo (`UsuarioEmpresa.perfil`), nunca de dado enviado pelo cliente.
 - Selecionar uma empresa exige vínculo ATIVO e empresa ATIVA; qualquer outra condição (sem vínculo, vínculo inativo, empresa inativa ou inexistente) responde com a mesma mensagem genérica 403 ("Acesso negado"), sem revelar qual delas se aplica.
-- `POST /api/empresas` e `POST /api/usuarios` ficam bloqueados para qualquer usuário autenticado nesta fase: ainda não existe Superadministrador da Criati nem fluxo de convite, então não há papel legítimo para chamar esses endpoints. Isso significa que hoje não existe caminho via API para cadastrar a primeira empresa ou usuário — lacuna de bootstrap conhecida, a ser resolvida quando o Superadministrador for implementado.
+- `POST /api/empresas` e `POST /api/usuarios` agora exigem papel Superadministrador (ver seção seguinte); deixaram de estar bloqueados para todo mundo, já que existe um papel legítimo para chamá-los.
 - `POST /api/usuarios-empresas` exige empresa ativa selecionada e perfil ADMINISTRADOR nessa empresa; o `empresaId` do corpo da requisição é validado contra o contexto da sessão e a operação sempre usa a empresa do contexto, nunca o valor bruto do cliente.
-- Unidades, permissões granulares, módulos, planos, assinaturas, convites e Superadministrador permanecem fora do escopo desta fase.
+- Unidades, permissões granulares, módulos, planos, assinaturas e convites permanecem fora do escopo desta fase.
+
+## Superadministrador e administração inicial
+
+- Superadministrador é um papel global da plataforma, representado por um atributo booleano (`Usuario.superAdministrador`) na própria entidade `Usuario`, não por um vínculo em `UsuarioEmpresa`. Um Superadministrador não pertence a nenhuma empresa; ele é ortogonal ao modelo multiempresa (ver `docs/MODELO_MULTIEMPRESA.MD`). Alternativa descartada: uma "empresa especial" ou um perfil adicional dentro de `UsuarioEmpresa` — rejeitada porque misturaria um papel de plataforma com o modelo de vínculo empresa-usuário, que é sempre escopado a uma empresa concreta.
+- Autorização: rotas globais (`POST /api/empresas`, `POST /api/usuarios`, `/api/admin/**`) exigem a autoridade `ROLE_SUPERADMIN`, concedida somente quando `Usuario.superAdministrador = true`, aplicada declarativamente em `SecurityConfig` (`hasAuthority(...)`), e não por checagem ad-hoc no controller.
+- Bootstrap do primeiro Superadministrador: implementado como um `ApplicationRunner` (`SuperAdministradorBootstrapService`/`SuperAdministradorBootstrapRunner`), executado uma única vez na inicialização da aplicação, lendo nome, e-mail e senha de variáveis de ambiente (`CRIATI_BOOTSTRAP_NOME`, `CRIATI_BOOTSTRAP_EMAIL`, `CRIATI_BOOTSTRAP_PASSWORD`). Alternativas avaliadas e rejeitadas:
+  - Endpoint público de bootstrap: rejeitado explicitamente — exporia criação de conta com privilégio máximo sem autenticação prévia, superfície de ataque inaceitável.
+  - `CommandLineRunner`: equivalente em efeito a `ApplicationRunner`, mas `ApplicationRunner` recebe `ApplicationArguments` já tipados e é a opção recomendada pelo próprio Spring Boot para lógica de inicialização; não há vantagem prática do `CommandLineRunner` aqui.
+  - Script SQL manual: rejeitado por exigir hashing de senha fora do processo da aplicação (fora do `PasswordEncoder` central) e por não ser idempotente nem auditável do mesmo jeito que código versionado.
+- O bootstrap é idempotente e autodesabilitante: se já existir qualquer Superadministrador (`existsBySuperAdministradorTrue()`), a rotina não faz nada, mesmo que as variáveis de ambiente continuem configuradas. Isso evita a criação de múltiplos Superadministradores por reinício acidental e limita a janela de uso das credenciais de bootstrap.
+- Não existe senha padrão: se nome, e-mail ou senha estiverem ausentes ou vazios, a rotina não cria nada e apenas registra um log informativo (sem citar valores). Nenhuma credencial (senha ou hash) é impressa em log em nenhum caminho.
+- `POST /api/admin/empresas` (empresa + primeiro administrador em uma única operação transacional) não é redundante com os endpoints já existentes: `POST /api/usuarios-empresas` (vincular um usuário a uma empresa) exige um contexto de empresa ativa já selecionado, que por sua vez exige um vínculo ATIVO pré-existente — impossível para uma empresa recém-criada, que ainda não tem nenhum vínculo. Sem um endpoint dedicado, não haveria caminho via API para uma empresa nova sair do zero sem intervenção manual no banco.
+- `GET /api/admin/me` e `GET /api/admin/empresas` são endpoints administrativos mínimos (identidade do Superadministrador logado e listagem simples de empresas), propositalmente sem CRUD completo, edição ou exclusão de empresa — fora do escopo desta fase.
+- Seguem fora do escopo: convites, recuperação de senha, permissões granulares, unidades, módulos, planos, assinatura, cobrança, suspensão por inadimplência, auditoria persistida, telas Thymeleaf, JWT/OAuth2, exclusão e edição completa de empresa.
 
 ## Regra de alteração
 

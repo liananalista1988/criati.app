@@ -12,4 +12,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 	boolean existsByEmailIgnoreCase(String email);
 
 	Optional<Usuario> findByEmailIgnoreCase(String email);
+
+	boolean existsBySuperAdministradorTrue();
 }

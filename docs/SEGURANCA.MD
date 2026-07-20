@@ -369,7 +369,7 @@ Referência: [OWASP — Authorization](https://cheatsheetseries.owasp.org/cheats
 
 - Contexto (`usuario_id`, `empresa_id`, `usuario_empresa_id`, perfil) implementado via sessão HTTP e revalidado a cada uso; unidades autorizadas, permissões granulares e módulos ativos ainda não existem.
 - `POST /api/usuarios-empresas` já verifica perfil ADMINISTRADOR na empresa ativa e rejeita `empresaId` divergente do contexto.
-- `POST /api/empresas` e `POST /api/usuarios` estão bloqueados por padrão (negação total) até existir Superadministrador/convite.
+- `POST /api/empresas`, `POST /api/usuarios` e todas as rotas `/api/admin/**` exigem a autoridade global `ROLE_SUPERADMIN` (ver seção "Superadministrador"); qualquer outro usuário autenticado recebe 403 genérico e um anônimo recebe 401.
 - Toda negação por contexto/perfil ausente ou inválido responde 403 genérico ("Acesso negado"), sem distinguir o motivo — cobre os casos "vínculo inexistente", "vínculo inativo", "empresa inativa" e "empresa inexistente" com a mesma resposta.
 
 ## Superadministrador
@@ -385,6 +385,12 @@ Regras:
 - proteger alteração de módulos e assinaturas;
 - considerar reautenticação para operações de alto impacto;
 - preparar MFA para contas administrativas em uma fase posterior prioritária.
+
+### Implementação atual (fase de fundação)
+
+- Papel representado por `Usuario.superAdministrador` (booleano), concedendo a autoridade `ROLE_SUPERADMIN`; não é um vínculo `UsuarioEmpresa` e não pertence a nenhuma empresa.
+- O primeiro Superadministrador é criado somente por um bootstrap de inicialização (`SuperAdministradorBootstrapService`), lido de variáveis de ambiente (`CRIATI_BOOTSTRAP_NOME`, `CRIATI_BOOTSTRAP_EMAIL`, `CRIATI_BOOTSTRAP_PASSWORD`); não existe endpoint público para essa criação, não existe senha padrão, e a rotina se autodesabilita quando já existe um Superadministrador cadastrado.
+- Reautenticação para operações críticas, MFA e auditoria persistida de ações administrativas seguem como prioridades futuras (fora desta fase).
 
 ## Suporte temporário
 

@@ -403,6 +403,8 @@ O acesso operacional futuro será feito pelo modo de suporte:
 - encerrado automaticamente;
 - sem utilizar a senha do cliente.
 
+Implementação atual (fase de fundação): o papel é representado por `Usuario.superAdministrador` (booleano na tabela `usuario`, tabela global) — **não** é uma linha em `usuario_empresa` e não está vinculado a nenhuma empresa. Um Superadministrador não aparece em nenhuma consulta de vínculo multiempresa (`ContextoEmpresaService`, seleção de empresa, etc.); ele acessa exclusivamente rotas globais (`/api/admin/**`, `POST /api/empresas`, `POST /api/usuarios`), nunca o contexto de empresa ativa. O modo de suporte (acesso operacional aos dados de um cliente) permanece não implementado, conforme o restante desta seção.
+
 ## Desativação
 
 Registros empresariais importantes não serão excluídos pelas operações comuns.

@@ -153,6 +153,16 @@ class VincularUsuarioEmpresaServiceTests {
 		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
 	}
 
+	@Test
+	void deveLancarNullPointerExceptionQuandoContextoChamadorForNulo() {
+		assertThatThrownBy(() -> service.executar(
+				UUID.randomUUID(), UUID.randomUUID(), PerfilUsuario.USUARIO, null))
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("contextoChamador e obrigatorio");
+
+		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
+	}
+
 	private ContextoEmpresaAtual contextoAdministrador(UUID empresaId) {
 		return new ContextoEmpresaAtual(UUID.randomUUID(), empresaId, UUID.randomUUID(), PerfilUsuario.ADMINISTRADOR);
 	}

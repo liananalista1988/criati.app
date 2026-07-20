@@ -1,0 +1,2 @@
+ALTER TABLE usuario
+    ADD COLUMN super_administrador BOOLEAN NOT NULL DEFAULT FALSE;

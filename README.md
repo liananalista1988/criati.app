@@ -180,6 +180,16 @@ DB_PASSWORD
 
 No perfil `local`, `DB_URL` e `DB_USERNAME` têm valores padrão seguros para desenvolvimento (`jdbc:postgresql://localhost:5432/criati_db` e `criati_app`); `DB_PASSWORD` nunca tem valor padrão. Nos perfis `homolog` e `prod`, todas as variáveis são obrigatórias, sem valor padrão.
 
+Variáveis opcionais para o bootstrap do primeiro Superadministrador (qualquer perfil):
+
+```text
+CRIATI_BOOTSTRAP_NOME
+CRIATI_BOOTSTRAP_EMAIL
+CRIATI_BOOTSTRAP_PASSWORD
+```
+
+Só têm efeito se ainda não existir nenhum Superadministrador cadastrado; não há senha padrão. Ver [Decisões](docs/DECISOES.MD).
+
 Nunca incluir valores reais em arquivos versionados.
 
 ## Execução local
@@ -232,6 +242,22 @@ http://localhost:8080
 Enquanto a autenticação própria não for implementada, o Spring Security poderá apresentar a tela de login padrão e uma senha temporária no terminal.
 
 Essa autenticação será substituída na fase apropriada.
+
+## Superadministrador e endpoints administrativos
+
+Superadministrador é um papel global da plataforma (não é um perfil de empresa). O primeiro é criado apenas pelo bootstrap descrito em "Variáveis de ambiente" — não existe endpoint público para essa criação.
+
+Endpoints que exigem Superadministrador:
+
+```text
+POST /api/empresas
+POST /api/usuarios
+POST /api/admin/empresas
+GET  /api/admin/empresas
+GET  /api/admin/me
+```
+
+`POST /api/admin/empresas` cria a empresa e seu primeiro administrador (com o vínculo `ADMINISTRADOR`) em uma única operação transacional — é o caminho para dar os primeiros passos em uma empresa nova, já que `POST /api/usuarios-empresas` exige uma empresa ativa selecionada, que por sua vez exige um vínculo já existente.
 
 ## Migrations
 

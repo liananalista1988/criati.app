@@ -1,5 +1,6 @@
 package br.app.criati.acesso.service;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class VincularUsuarioEmpresaService {
 			UUID empresaId,
 			PerfilUsuario perfil,
 			ContextoEmpresaAtual contextoChamador) {
+		Objects.requireNonNull(contextoChamador, "contextoChamador e obrigatorio");
 		if (usuarioId == null) {
 			throw new DadosInvalidosException("Usuario e obrigatorio");
 		}
@@ -62,9 +64,12 @@ public class VincularUsuarioEmpresaService {
 			throw new AcessoNegadoException();
 		}
 
+		UUID empresaAtivaId = Objects.requireNonNull(
+				contextoChamador.empresaId(), "empresaId do contexto e obrigatorio");
+
 		Usuario usuario = usuarioRepository.findById(usuarioId)
 				.orElseThrow(UsuarioNaoEncontradoException::new);
-		Empresa empresa = empresaRepository.findById(contextoChamador.empresaId())
+		Empresa empresa = empresaRepository.findById(empresaAtivaId)
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 
 		if (usuarioEmpresaRepository.existsByUsuarioIdAndEmpresaId(usuarioId, empresaId)) {

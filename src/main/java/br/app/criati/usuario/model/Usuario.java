@@ -55,10 +55,21 @@ public class Usuario {
 	@Column(name = "atualizado_em", nullable = false)
 	private OffsetDateTime atualizadoEm;
 
+	@Column(name = "super_administrador", nullable = false)
+	private boolean superAdministrador;
+
 	public Usuario(String nome, String email, String senha, StatusCadastro status) {
 		this.nome = Objects.requireNonNull(nome, "nome nao pode ser nulo");
 		this.email = Objects.requireNonNull(email, "email nao pode ser nulo");
 		this.senha = Objects.requireNonNull(senha, "senha nao pode ser nula");
 		this.status = Objects.requireNonNull(status, "status nao pode ser nulo");
+	}
+
+	// Superadministrador e global e nunca decorre do cadastro comum (construtor
+	// acima); esta e a unica via de criacao, usada apenas pelo bootstrap.
+	public static Usuario criarSuperAdministrador(String nome, String email, String senhaCodificada) {
+		Usuario usuario = new Usuario(nome, email, senhaCodificada, StatusCadastro.ATIVO);
+		usuario.superAdministrador = true;
+		return usuario;
 	}
 }
