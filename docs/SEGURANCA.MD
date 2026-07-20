@@ -103,7 +103,19 @@ GET  /api/convites/{token}
 POST /api/convites/{token}/aceitar
 ```
 
-`GET /api/convites/{token}` e `POST /api/convites/{token}/aceitar` existem porque o convidado ainda não tem conta nem sessão nesta aplicação antes de aceitar o convite. Nenhuma outra rota é pública.
+`GET /api/convites/{token}` e `POST /api/convites/{token}/aceitar` existem porque o convidado ainda não tem conta nem sessão nesta aplicação antes de aceitar o convite. Nenhuma outra rota de API é pública.
+
+Rotas de página (Thymeleaf) e recursos estáticos públicos, adicionadas na fase de interface web:
+
+```text
+GET /login
+GET /css/**
+GET /js/**
+GET /img/**
+GET /error
+```
+
+`/login` é a tela de autenticação; um usuário já autenticado que acessá-la é redirecionado para `/app/dashboard` pelo próprio controller, não pelo `SecurityConfig`. `/css/**`, `/js/**` e `/img/**` são recursos estáticos necessários para renderizar qualquer página, inclusive a de login, antes de existir sessão. `/error` é a página padrão de erro do Spring Boot. Nenhuma rota sob `/app/**` é pública — todas exigem autenticação (`anyRequest().authenticated()`), e um anônimo que tentar acessá-las é redirecionado para `/login` (ver seção "Sessões" e "CSRF" para o detalhe do `AuthenticationEntryPoint` diferenciado por rota).
 
 ## Senhas
 
@@ -264,6 +276,8 @@ Não desativar CSRF globalmente para resolver erros de formulário.
 
 CSRF permanece habilitado globalmente. As únicas exceções registradas são `POST /api/auth/login` e `POST /api/convites/{token}/aceitar`, ambas pelo mesmo motivo: o cliente ainda não possui sessão/cookie desta aplicação antes dessa chamada. Nenhuma outra rota deverá ser adicionada a essa lista sem uma decisão explícita registrada em `docs/DECISOES.md`.
 
+No navegador, o token é exposto via meta tags (`<meta name="_csrf">` / `<meta name="_csrf_header">`), renderizadas a partir do atributo de requisição `_csrf` do Thymeleaf em toda página autenticada. `criati-api.js` lê o nome do header a partir da própria meta tag (nunca hardcoded) e o anexa automaticamente em toda requisição `POST`/`PUT`/`PATCH`/`DELETE` feita via `fetch`. Requisições `GET` não enviam o header, como já previsto nesta seção.
+
 Referência: [OWASP — CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
 
 ## XSS e conteúdo HTML
@@ -279,6 +293,10 @@ Regras:
 - limitar rich text;
 - sanitizar HTML quando sua utilização for realmente necessária;
 - evitar JavaScript inline quando possível.
+
+### Implementação atual (fase de fundação)
+
+O JavaScript da interface (`criati-contexto.js`, `criati-ui.js`) usa exclusivamente `textContent` para inserir dados vindos da API (nome do usuário, nome da empresa, mensagens de toast); nenhum `innerHTML` recebe conteúdo não confiável. Os únicos usos de `innerHTML` limpam containers (`container.innerHTML = ""`) antes de montar elementos via `document.createElement`, nunca concatenam string com dado de usuário.
 
 Uma Content Security Policy deverá ser planejada para produção.
 

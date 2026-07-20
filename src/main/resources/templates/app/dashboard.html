@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<meta name="color-scheme" content="dark" />
+	<title>Dashboard · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1 id="criati-saudacao">Ola!</h1>
+					<p id="criati-empresa-descricao">Carregando informacoes da sua conta...</p>
+				</div>
+
+				<div id="criati-selecao-empresa" class="criati-alert criati-alert-info" hidden></div>
+
+				<div id="criati-dashboard-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar os dados da sua conta.</p>
+					<button type="button" id="criati-dashboard-retry" class="criati-btn criati-btn-ghost">
+						Tentar novamente
+					</button>
+				</div>
+
+				<div id="criati-dashboard-vazio" class="criati-empty-state" hidden>
+					<p>Voce ainda nao esta vinculado a nenhuma empresa.</p>
+				</div>
+
+				<div id="criati-dashboard-conteudo">
+					<section class="criati-cards" aria-label="Resumo da conta">
+						<article class="criati-card">
+							<p class="criati-card-label">Empresa ativa</p>
+							<p class="criati-card-value criati-skeleton" id="criati-card-empresa">&nbsp;</p>
+							<p class="criati-card-sub" id="criati-card-empresa-sub"></p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Seu perfil</p>
+							<p class="criati-card-value criati-skeleton" id="criati-card-perfil">&nbsp;</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Status do acesso</p>
+							<p class="criati-card-value criati-skeleton" id="criati-card-status">&nbsp;</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Empresas disponiveis</p>
+							<p class="criati-card-value criati-skeleton" id="criati-card-empresas">&nbsp;</p>
+						</article>
+					</section>
+
+					<div class="criati-shortcuts">
+						<a href="#" class="criati-shortcut" aria-disabled="true" data-em-breve="true">
+							Usuarios
+							<span class="criati-nav-badge">Em breve</span>
+						</a>
+						<a href="#" class="criati-shortcut" aria-disabled="true" data-em-breve="true">
+							Convites
+							<span class="criati-nav-badge">Em breve</span>
+						</a>
+					</div>
+
+					<div class="criati-next-steps">
+						<h2>Proximos passos</h2>
+						<ul>
+							<li>Revise os dados da sua empresa ativa no topo da tela.</li>
+							<li>Convide sua equipe assim que o modulo de Convites chegar na interface.</li>
+							<li>Gerencie integrantes em breve pelo modulo de Usuarios.</li>
+						</ul>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+
+			document.querySelectorAll("[data-em-breve]").forEach(function (link) {
+				link.addEventListener("click", function (evento) {
+					evento.preventDefault();
+					CriatiUI.showToast("info", "Este modulo chega em breve.");
+				});
+			});
+
+			var retryButton = document.getElementById("criati-dashboard-retry");
+			if (retryButton) {
+				retryButton.addEventListener("click", function () {
+					CriatiContexto.iniciar();
+				});
+			}
+
+			CriatiContexto.iniciar();
+		});
+	</script>
+</body>
+</html>

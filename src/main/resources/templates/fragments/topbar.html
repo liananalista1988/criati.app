@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<header th:fragment="topbar" class="criati-topbar">
+		<button
+			type="button"
+			class="criati-icon-btn criati-menu-toggle"
+			aria-label="Abrir menu"
+			aria-expanded="false"
+			aria-controls="criati-sidebar">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<path d="M3 6h18M3 12h18M3 18h18" />
+			</svg>
+		</button>
+
+		<div id="criati-topbar-empresa" class="criati-topbar-empresa" aria-live="polite">
+			<div class="criati-skeleton" style="width: 140px; height: 32px;"></div>
+		</div>
+
+		<div class="criati-topbar-spacer"></div>
+
+		<div class="criati-user-menu">
+			<button
+				type="button"
+				class="criati-user-trigger"
+				id="criati-user-trigger"
+				aria-haspopup="true"
+				aria-expanded="false">
+				<span class="criati-user-avatar" id="criati-user-avatar" aria-hidden="true">-</span>
+				<span class="criati-user-name" id="criati-user-name">Carregando...</span>
+			</button>
+			<div class="criati-user-dropdown" role="menu" hidden>
+				<button type="button" class="criati-btn criati-btn-ghost criati-logout-btn" role="menuitem">
+					Sair
+				</button>
+			</div>
+		</div>
+	</header>
+</body>
+</html>

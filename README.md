@@ -247,9 +247,19 @@ Quando a aplicação iniciar:
 http://localhost:8080
 ```
 
-Enquanto a autenticação própria não for implementada, o Spring Security poderá apresentar a tela de login padrão e uma senha temporária no terminal.
+A tela de login própria (`/login`) já está disponível — não há mais tela de login padrão do Spring Security nem senha temporária no terminal.
 
-Essa autenticação será substituída na fase apropriada.
+## Interface web
+
+A primeira interface funcional da Criati (Thymeleaf + CSS/JS puro, sem framework frontend) está disponível a partir desta fase:
+
+```text
+GET /login          publica; autenticado e redirecionado para /app/dashboard
+GET /app            autenticada; redireciona para /app/dashboard
+GET /app/dashboard  autenticada; layout com sidebar, topbar e dashboard inicial
+```
+
+A interface consome exclusivamente a API já existente (`/api/auth/*`, `/api/contexto/*`); ela não decide autorização, não guarda senha nem token sensível e não confia em dado local para segurança — o backend continua sendo a única fonte de verdade. Módulos de Usuários e Convites aparecem no menu como "Em breve": a navegação e a gestão completas desses módulos ficam para uma fase seguinte. Detalhes de arquitetura frontend, CSRF no navegador e estados de interface em [Decisões](docs/DECISOES.md), seção "Interface web".
 
 ## Superadministrador e endpoints administrativos
 

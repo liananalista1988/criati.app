@@ -1,0 +1,78 @@
+/* Criati - tela de login */
+
+.criati-login-page {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background:
+		radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.22), transparent 45%),
+		radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.22), transparent 45%),
+		var(--criati-bg);
+}
+
+.criati-login-card {
+	width: 100%;
+	max-width: 400px;
+	background: var(--criati-surface);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	box-shadow: var(--criati-shadow);
+	padding: 36px 32px;
+}
+
+.criati-login-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.criati-login-logo {
+	width: 40px;
+	height: 40px;
+	border-radius: var(--criati-radius-sm);
+	background: var(--criati-gradient);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 700;
+	font-size: 1.1rem;
+	flex-shrink: 0;
+}
+
+.criati-login-brand h1 {
+	font-size: 1.4rem;
+	font-weight: 700;
+}
+
+.criati-login-slogan {
+	color: var(--criati-text-muted);
+	font-size: 0.9rem;
+	margin: 4px 0 28px;
+}
+
+.criati-login-form {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.criati-login-submit {
+	width: 100%;
+	margin-top: 6px;
+	padding: 12px;
+}
+
+.criati-login-footer {
+	margin-top: 24px;
+	text-align: center;
+	font-size: 0.78rem;
+	color: var(--criati-text-muted);
+}
+
+.criati-login-status[hidden] {
+	display: none;
+}

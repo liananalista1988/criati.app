@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<meta name="color-scheme" content="dark" />
+	<title>Entrar · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-login.css}" />
+</head>
+<body class="criati-login-page">
+	<main class="criati-login-card">
+		<div class="criati-login-brand">
+			<div class="criati-login-logo" aria-hidden="true">C</div>
+			<h1>Criati</h1>
+		</div>
+		<p class="criati-login-slogan">Transformando processos em resultados</p>
+
+		<p
+			id="criati-login-status"
+			class="criati-alert criati-alert-info criati-login-status"
+			role="status"
+			hidden></p>
+
+		<form id="criati-login-form" class="criati-login-form" novalidate>
+			<p
+				id="criati-login-erro"
+				class="criati-alert criati-alert-erro criati-login-status"
+				role="alert"
+				hidden></p>
+
+			<div class="criati-field">
+				<label for="email">E-mail</label>
+				<input
+					id="email"
+					name="email"
+					type="email"
+					class="criati-input"
+					autocomplete="username"
+					required
+					aria-required="true" />
+			</div>
+
+			<div class="criati-field">
+				<label for="senha">Senha</label>
+				<div class="criati-input-group">
+					<input
+						id="senha"
+						name="senha"
+						type="password"
+						class="criati-input"
+						autocomplete="current-password"
+						required
+						aria-required="true" />
+					<button
+						type="button"
+						id="criati-toggle-senha"
+						class="criati-icon-btn"
+						aria-label="Mostrar senha"
+						aria-pressed="false">
+						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+							<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+							<circle cx="12" cy="12" r="3" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<button type="submit" id="criati-login-submit" class="criati-btn criati-btn-primary criati-login-submit">
+				Entrar
+			</button>
+		</form>
+
+		<p class="criati-login-footer">Criati.app</p>
+	</main>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initTogglePassword(document.getElementById("criati-toggle-senha"), document.getElementById("senha"));
+		});
+	</script>
+</body>
+</html>

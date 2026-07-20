@@ -1,5 +1,7 @@
 package br.app.criati.security;
 
+import java.util.LinkedHashMap;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,12 +11,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -47,10 +54,23 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(
 			HttpSecurity http,
 			SecurityContextRepository securityContextRepository,
-			JsonAuthenticationEntryPoint authenticationEntryPoint,
+			JsonAuthenticationEntryPoint jsonAuthenticationEntryPoint,
 			JsonAccessDeniedHandler accessDeniedHandler) throws Exception {
+		// A API (/api/**) sempre responde 401 em JSON (JsonAuthenticationEntryPoint).
+		// Paginas Thymeleaf (ex.: /app/**) precisam de um 401 "navegavel": redirecionar
+		// para /login, em vez de devolver um corpo JSON no navegador. As duas rotas
+		// continuam usando o SecurityContextRepository/SessionAuthenticationStrategy
+		// existentes; nada muda no fluxo de autenticacao ja coberto pelos testes atuais.
+		LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPointsPorRota = new LinkedHashMap<>();
+		entryPointsPorRota.put(PathPatternRequestMatcher.withDefaults().matcher("/api/**"), jsonAuthenticationEntryPoint);
+		DelegatingAuthenticationEntryPoint authenticationEntryPoint =
+				new DelegatingAuthenticationEntryPoint(entryPointsPorRota);
+		authenticationEntryPoint.setDefaultEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"));
+
 		http
 				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(HttpMethod.GET, "/login", "/css/**", "/js/**", "/img/**", "/error")
+								.permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/convites/*").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/convites/*/aceitar").permitAll()
@@ -74,7 +94,8 @@ public class SecurityConfig {
 						.ignoringRequestMatchers("/api/auth/login", "/api/convites/*/aceitar"))
 					// a API nao usa redirecionamento pos-login (login e um endpoint JSON
 					// proprio), entao o RequestCache padrao so criaria sessao anonima
-					// desnecessaria a cada 401 sem nenhum uso real.
+					// desnecessaria a cada 401 sem nenhum uso real. Paginas tambem nao
+					// precisam de replay pos-login nesta fase.
 					.requestCache(cache -> cache.disable());
 		return http.build();
 	}
