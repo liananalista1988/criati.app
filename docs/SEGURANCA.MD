@@ -365,6 +365,13 @@ Ocultar um botão não substitui a autorização no backend.
 
 Referência: [OWASP — Authorization](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html).
 
+### Implementação atual (fase de fundação)
+
+- Contexto (`usuario_id`, `empresa_id`, `usuario_empresa_id`, perfil) implementado via sessão HTTP e revalidado a cada uso; unidades autorizadas, permissões granulares e módulos ativos ainda não existem.
+- `POST /api/usuarios-empresas` já verifica perfil ADMINISTRADOR na empresa ativa e rejeita `empresaId` divergente do contexto.
+- `POST /api/empresas` e `POST /api/usuarios` estão bloqueados por padrão (negação total) até existir Superadministrador/convite.
+- Toda negação por contexto/perfil ausente ou inválido responde 403 genérico ("Acesso negado"), sem distinguir o motivo — cobre os casos "vínculo inexistente", "vínculo inativo", "empresa inativa" e "empresa inexistente" com a mesma resposta.
+
 ## Superadministrador
 
 O Superadministrador da Criati será separado dos perfis empresariais.

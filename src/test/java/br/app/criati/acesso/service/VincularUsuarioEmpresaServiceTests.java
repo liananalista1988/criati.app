@@ -22,12 +22,14 @@ import br.app.criati.acesso.model.UsuarioEmpresa;
 import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
+import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
+import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.usuario.model.Usuario;
 import br.app.criati.usuario.repository.UsuarioRepository;
 
@@ -55,12 +57,13 @@ class VincularUsuarioEmpresaServiceTests {
 		UUID empresaId = UUID.randomUUID();
 		Usuario usuario = criarUsuario();
 		Empresa empresa = criarEmpresa();
+		ContextoEmpresaAtual contexto = contextoAdministrador(empresaId);
 		when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
 		when(empresaRepository.findById(empresaId)).thenReturn(Optional.of(empresa));
 		when(usuarioEmpresaRepository.save(any(UsuarioEmpresa.class)))
 				.thenAnswer(invocacao -> invocacao.getArgument(0));
 
-		UsuarioEmpresa resultado = service.executar(usuarioId, empresaId, PerfilUsuario.GESTOR);
+		UsuarioEmpresa resultado = service.executar(usuarioId, empresaId, PerfilUsuario.GESTOR, contexto);
 
 		verify(usuarioEmpresaRepository).save(vinculoCaptor.capture());
 		UsuarioEmpresa vinculoSalvo = vinculoCaptor.getValue();
@@ -79,7 +82,8 @@ class VincularUsuarioEmpresaServiceTests {
 		when(empresaRepository.findById(empresaId)).thenReturn(Optional.of(criarEmpresa()));
 		when(usuarioEmpresaRepository.existsByUsuarioIdAndEmpresaId(usuarioId, empresaId)).thenReturn(true);
 
-		assertThatThrownBy(() -> service.executar(usuarioId, empresaId, PerfilUsuario.USUARIO))
+		assertThatThrownBy(() -> service.executar(
+				usuarioId, empresaId, PerfilUsuario.USUARIO, contextoAdministrador(empresaId)))
 				.isInstanceOf(UsuarioEmpresaJaVinculadoException.class);
 
 		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
@@ -91,7 +95,8 @@ class VincularUsuarioEmpresaServiceTests {
 		UUID empresaId = UUID.randomUUID();
 		when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> service.executar(usuarioId, empresaId, PerfilUsuario.USUARIO))
+		assertThatThrownBy(() -> service.executar(
+				usuarioId, empresaId, PerfilUsuario.USUARIO, contextoAdministrador(empresaId)))
 				.isInstanceOf(UsuarioNaoEncontradoException.class);
 
 		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
@@ -104,7 +109,8 @@ class VincularUsuarioEmpresaServiceTests {
 		when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(criarUsuario()));
 		when(empresaRepository.findById(empresaId)).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> service.executar(usuarioId, empresaId, PerfilUsuario.USUARIO))
+		assertThatThrownBy(() -> service.executar(
+				usuarioId, empresaId, PerfilUsuario.USUARIO, contextoAdministrador(empresaId)))
 				.isInstanceOf(EmpresaNaoEncontradaException.class);
 
 		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
@@ -112,11 +118,43 @@ class VincularUsuarioEmpresaServiceTests {
 
 	@Test
 	void deveRejeitarPerfilNulo() {
-		assertThatThrownBy(() -> service.executar(UUID.randomUUID(), UUID.randomUUID(), null))
+		UUID empresaId = UUID.randomUUID();
+
+		assertThatThrownBy(() -> service.executar(
+				UUID.randomUUID(), empresaId, null, contextoAdministrador(empresaId)))
 				.isInstanceOf(DadosInvalidosException.class)
 				.hasMessage("Perfil e obrigatorio");
 
 		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
+	}
+
+	@Test
+	void deveRejeitarQuandoEmpresaDaOperacaoNaoEhAEmpresaAtivaDoContexto() {
+		UUID empresaAtiva = UUID.randomUUID();
+		UUID outraEmpresa = UUID.randomUUID();
+
+		assertThatThrownBy(() -> service.executar(
+				UUID.randomUUID(), outraEmpresa, PerfilUsuario.USUARIO, contextoAdministrador(empresaAtiva)))
+				.isInstanceOf(AcessoNegadoException.class);
+
+		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
+	}
+
+	@Test
+	void deveRejeitarQuandoChamadorNaoEhAdministradorDaEmpresaAtiva() {
+		UUID empresaId = UUID.randomUUID();
+		ContextoEmpresaAtual contextoGestor = new ContextoEmpresaAtual(
+				UUID.randomUUID(), empresaId, UUID.randomUUID(), PerfilUsuario.GESTOR);
+
+		assertThatThrownBy(() -> service.executar(
+				UUID.randomUUID(), empresaId, PerfilUsuario.USUARIO, contextoGestor))
+				.isInstanceOf(AcessoNegadoException.class);
+
+		verify(usuarioEmpresaRepository, never()).save(any(UsuarioEmpresa.class));
+	}
+
+	private ContextoEmpresaAtual contextoAdministrador(UUID empresaId) {
+		return new ContextoEmpresaAtual(UUID.randomUUID(), empresaId, UUID.randomUUID(), PerfilUsuario.ADMINISTRADOR);
 	}
 
 	private Usuario criarUsuario() {

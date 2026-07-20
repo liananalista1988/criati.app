@@ -185,7 +185,17 @@ O MVP será dividido em duas etapas:
 - O acesso é negado por padrão; somente o endpoint de login é público.
 - O login troca o ID da sessão após autenticação bem-sucedida (`ChangeSessionIdAuthenticationStrategy`), prevenindo session fixation; o e-mail é normalizado (trim + minúsculas) tanto no cadastro quanto no login.
 - CSRF permanece habilitado globalmente. A única exceção é `POST /api/auth/login`, porque o cliente ainda não possui um token CSRF antes do primeiro login; logout e as demais operações que alteram estado continuam exigindo o token. Nenhuma outra rota deverá ser adicionada à lista de exceções sem uma decisão arquitetural explícita registrada aqui.
-- Contexto de empresa ativa, autorização por perfil (ADMINISTRADOR/GESTOR/USUARIO) e Superadministrador ficam fora desta fase e serão tratados em decisão futura.
+- Superadministrador da Criati fica fora desta fase e será tratado em decisão futura; contexto de empresa ativa e autorização inicial por perfil (ADMINISTRADOR/GESTOR/USUARIO) já estão implementados (ver seção "Contexto multiempresa e autorização inicial").
+
+## Contexto multiempresa e autorização inicial
+
+- A empresa ativa é armazenada na sessão HTTP somente como identificadores (`CONTEXTO_EMPRESA_ID`, `CONTEXTO_USUARIO_EMPRESA_ID`); nenhuma entidade JPA é guardada na sessão.
+- Toda leitura do contexto revalida o vínculo (`UsuarioEmpresa`) e a empresa no banco a cada uso; um vínculo ou empresa desativados após a seleção invalidam o contexto no próximo uso, sem exigir novo login.
+- O perfil do usuário na empresa vem exclusivamente do vínculo (`UsuarioEmpresa.perfil`), nunca de dado enviado pelo cliente.
+- Selecionar uma empresa exige vínculo ATIVO e empresa ATIVA; qualquer outra condição (sem vínculo, vínculo inativo, empresa inativa ou inexistente) responde com a mesma mensagem genérica 403 ("Acesso negado"), sem revelar qual delas se aplica.
+- `POST /api/empresas` e `POST /api/usuarios` ficam bloqueados para qualquer usuário autenticado nesta fase: ainda não existe Superadministrador da Criati nem fluxo de convite, então não há papel legítimo para chamar esses endpoints. Isso significa que hoje não existe caminho via API para cadastrar a primeira empresa ou usuário — lacuna de bootstrap conhecida, a ser resolvida quando o Superadministrador for implementado.
+- `POST /api/usuarios-empresas` exige empresa ativa selecionada e perfil ADMINISTRADOR nessa empresa; o `empresaId` do corpo da requisição é validado contra o contexto da sessão e a operação sempre usa a empresa do contexto, nunca o valor bruto do cliente.
+- Unidades, permissões granulares, módulos, planos, assinaturas, convites e Superadministrador permanecem fora do escopo desta fase.
 
 ## Regra de alteração
 

@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.CnpjJaCadastradoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
@@ -27,6 +28,13 @@ public class GlobalExceptionHandler {
 			AuthenticationException exception,
 			HttpServletRequest request) {
 		return criarResposta(HttpStatus.UNAUTHORIZED, "E-mail ou senha invalidos", request, Map.of());
+	}
+
+	@ExceptionHandler(AcessoNegadoException.class)
+	public ResponseEntity<ApiErrorResponse> tratarAcessoNegado(
+			AcessoNegadoException exception,
+			HttpServletRequest request) {
+		return criarResposta(HttpStatus.FORBIDDEN, "Acesso negado", request, Map.of());
 	}
 
 	@ExceptionHandler(DadosInvalidosException.class)

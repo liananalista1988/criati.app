@@ -9,12 +9,14 @@ import br.app.criati.acesso.model.UsuarioEmpresa;
 import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
+import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
+import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.usuario.model.Usuario;
 import br.app.criati.usuario.repository.UsuarioRepository;
 
@@ -35,7 +37,11 @@ public class VincularUsuarioEmpresaService {
 	}
 
 	@Transactional
-	public UsuarioEmpresa executar(UUID usuarioId, UUID empresaId, PerfilUsuario perfil) {
+	public UsuarioEmpresa executar(
+			UUID usuarioId,
+			UUID empresaId,
+			PerfilUsuario perfil,
+			ContextoEmpresaAtual contextoChamador) {
 		if (usuarioId == null) {
 			throw new DadosInvalidosException("Usuario e obrigatorio");
 		}
@@ -46,9 +52,19 @@ public class VincularUsuarioEmpresaService {
 			throw new DadosInvalidosException("Perfil e obrigatorio");
 		}
 
+		// A empresa da operacao precisa ser exatamente a empresa ativa do
+		// chamador: nunca confiar no empresaId enviado pelo cliente para decidir
+		// em qual empresa o vinculo sera criado.
+		if (!empresaId.equals(contextoChamador.empresaId())) {
+			throw new AcessoNegadoException();
+		}
+		if (contextoChamador.perfil() != PerfilUsuario.ADMINISTRADOR) {
+			throw new AcessoNegadoException();
+		}
+
 		Usuario usuario = usuarioRepository.findById(usuarioId)
 				.orElseThrow(UsuarioNaoEncontradoException::new);
-		Empresa empresa = empresaRepository.findById(empresaId)
+		Empresa empresa = empresaRepository.findById(contextoChamador.empresaId())
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 
 		if (usuarioEmpresaRepository.existsByUsuarioIdAndEmpresaId(usuarioId, empresaId)) {

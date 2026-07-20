@@ -255,6 +255,14 @@ Após a autenticação:
 6. o contexto da empresa será criado;
 7. módulos, unidades e permissões serão carregados.
 
+Implementação atual (fase de fundação):
+
+- `GET /api/contexto/empresas` lista os vínculos ATIVOS do usuário autenticado;
+- `POST /api/contexto/empresa-ativa` seleciona a empresa ativa, validando vínculo ATIVO e empresa ATIVA (nega com 403 genérico caso contrário);
+- `GET /api/contexto/empresa-ativa` consulta o contexto atual, revalidando vínculo e empresa a cada chamada;
+- `DELETE /api/contexto/empresa-ativa` limpa o contexto sem encerrar a autenticação;
+- seleção automática quando há apenas uma empresa, unidades e módulos ainda não foram implementados nesta fase.
+
 ## Troca de empresa
 
 Um usuário vinculado a várias empresas poderá trocar o contexto sem realizar um novo login.
@@ -283,6 +291,8 @@ modulos_ativos
 ```
 
 Esse contexto será criado pelo backend após validação.
+
+Implementação atual: o contexto vive na sessão HTTP (`CONTEXTO_EMPRESA_ID`, `CONTEXTO_USUARIO_EMPRESA_ID`, nenhuma entidade JPA armazenada) e é revalidado no banco a cada uso via `ContextoEmpresaService`; contém `usuario_id`, `empresa_id`, `usuario_empresa_id` e `perfil`. Unidades autorizadas, permissões granulares e módulos ativos ainda não existem e ficam para fases futuras.
 
 ## Isolamento dos dados
 

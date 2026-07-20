@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import br.app.criati.acesso.model.UsuarioEmpresa;
+import br.app.criati.shared.enums.StatusCadastro;
 
 public interface UsuarioEmpresaRepository extends JpaRepository<UsuarioEmpresa, UUID> {
 
@@ -17,4 +18,6 @@ public interface UsuarioEmpresaRepository extends JpaRepository<UsuarioEmpresa, 
 	List<UsuarioEmpresa> findAllByUsuarioId(UUID usuarioId);
 
 	List<UsuarioEmpresa> findAllByEmpresaId(UUID empresaId);
+
+	List<UsuarioEmpresa> findAllByUsuarioIdAndStatus(UUID usuarioId, StatusCadastro status);
 }
