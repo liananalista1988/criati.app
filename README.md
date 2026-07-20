@@ -281,6 +281,21 @@ POST   /api/convites/{token}/aceitar     (público)
 
 O convidado define sua própria senha ao aceitar; nenhuma senha é enviada por e-mail nem criada pelo administrador. Não há integração de e-mail real nesta fase — o token do convite só é retornado na resposta de criação em `local`/`test` (`criati.convite.expor-token-bruto`). Detalhes completos (token, expiração, política de duplicidade, tratamento de e-mail já cadastrado) em [Decisões](docs/DECISOES.MD).
 
+## Gestão de acessos por empresa
+
+Um `ADMINISTRADOR` gerencia os integrantes da empresa ativa (o vínculo `UsuarioEmpresa`, nunca o `Usuario` global):
+
+```text
+GET    /api/contexto/usuarios                  (ADMINISTRADOR, empresa ativa; filtros: status, perfil, busca)
+GET    /api/contexto/usuarios/{id}             (ADMINISTRADOR, empresa ativa)
+PATCH  /api/contexto/usuarios/{id}/perfil      (ADMINISTRADOR, empresa ativa)
+POST   /api/contexto/usuarios/{id}/suspender   (ADMINISTRADOR, empresa ativa)
+POST   /api/contexto/usuarios/{id}/reativar    (ADMINISTRADOR, empresa ativa)
+DELETE /api/contexto/usuarios/{id}             (ADMINISTRADOR, empresa ativa)
+```
+
+Suspensão e remoção são lógicas (o vínculo vira `INATIVO`; nunca há `DELETE` físico), preservam o `Usuario` global e os vínculos com outras empresas, e são bloqueadas quando afetariam o próprio vínculo do chamador ou o último `ADMINISTRADOR` ativo da empresa. Detalhes completos em [Decisões](docs/DECISOES.MD), seção "Gestão de acessos por empresa".
+
 ## Migrations
 
 O Flyway será responsável pela estrutura do banco.

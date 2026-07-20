@@ -75,4 +75,23 @@ public class UsuarioEmpresa {
 		this.perfil = Objects.requireNonNull(perfil, "perfil nao pode ser nulo");
 		this.status = Objects.requireNonNull(status, "status nao pode ser nulo");
 	}
+
+	public void alterarPerfil(PerfilUsuario novoPerfil) {
+		this.perfil = Objects.requireNonNull(novoPerfil, "perfil nao pode ser nulo");
+	}
+
+	// Suspensao e remocao logica convergem para o mesmo status INATIVO: o
+	// modelo atual (StatusCadastro) nao distingue os dois motivos, decisao
+	// documentada em docs/DECISOES.md para evitar migration nesta fase.
+	public void suspender() {
+		this.status = StatusCadastro.INATIVO;
+	}
+
+	public void reativar() {
+		this.status = StatusCadastro.ATIVO;
+	}
+
+	public void removerLogicamente() {
+		this.status = StatusCadastro.INATIVO;
+	}
 }

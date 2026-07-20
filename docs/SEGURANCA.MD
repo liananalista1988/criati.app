@@ -387,6 +387,7 @@ Referência: [OWASP — Authorization](https://cheatsheetseries.owasp.org/cheats
 - `POST /api/usuarios-empresas` já verifica perfil ADMINISTRADOR na empresa ativa e rejeita `empresaId` divergente do contexto.
 - `POST /api/empresas`, `POST /api/usuarios` e todas as rotas `/api/admin/**` exigem a autoridade global `ROLE_SUPERADMIN` (ver seção "Superadministrador"); qualquer outro usuário autenticado recebe 403 genérico e um anônimo recebe 401.
 - Toda negação por contexto/perfil ausente ou inválido responde 403 genérico ("Acesso negado"), sem distinguir o motivo — cobre os casos "vínculo inexistente", "vínculo inativo", "empresa inativa" e "empresa inexistente" com a mesma resposta.
+- `GET/PATCH/POST/DELETE /api/contexto/usuarios/**` (gestão de integrantes da empresa ativa) seguem o mesmo padrão: exigem ADMINISTRADOR na empresa ativa, buscam sempre por `id` + `empresaId` do contexto (nunca por `id` isolado) e respondem 403 genérico tanto para vínculo inexistente quanto para vínculo de outra empresa. Ver `docs/DECISOES.md`, seção "Gestão de acessos por empresa".
 
 ## Superadministrador
 

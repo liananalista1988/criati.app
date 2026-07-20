@@ -116,6 +116,8 @@ Regras:
 
 Implementação atual (fase de fundação): `usuario_empresa` usa apenas `ATIVO`/`INATIVO` (`StatusCadastro`); não existe estado `CONVIDADO` no vínculo. O convite é uma entidade própria (`Convite`, tabela `convite`), separada de `usuario_empresa` — o vínculo só passa a existir depois que o convite é aceito. `BLOQUEADO` permanece fora do escopo. Ver `docs/DECISOES.md`, seção "Convites".
 
+A gestão do vínculo pelo Administrador da empresa (`/api/contexto/usuarios`) está implementada: listar integrantes, consultar, alterar perfil, suspender, reativar e remover logicamente (sempre resultando em `INATIVO`, nunca em `DELETE` físico). Essas operações atuam somente sobre `UsuarioEmpresa`; o `Usuario` global e os vínculos com outras empresas nunca são afetados. Ver `docs/DECISOES.md`, seção "Gestão de acessos por empresa".
+
 ## Acesso às unidades
 
 O vínculo poderá possuir acesso:

@@ -12,13 +12,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import br.app.criati.exception.AcessoNegadoException;
+import br.app.criati.exception.AutoAlteracaoNaoPermitidaException;
 import br.app.criati.exception.CnpjJaCadastradoException;
 import br.app.criati.exception.ConviteInvalidoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
+import br.app.criati.exception.UltimoAdministradorAtivoException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
+import br.app.criati.exception.VinculoStatusInvalidoException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
@@ -62,7 +65,10 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler({
 			CnpjJaCadastradoException.class,
 			EmailJaCadastradoException.class,
-			UsuarioEmpresaJaVinculadoException.class
+			UsuarioEmpresaJaVinculadoException.class,
+			UltimoAdministradorAtivoException.class,
+			AutoAlteracaoNaoPermitidaException.class,
+			VinculoStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
