@@ -15,12 +15,23 @@ import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.AplicacaoInativaException;
 import br.app.criati.exception.AplicacaoNaoEncontradaException;
 import br.app.criati.exception.AutoAlteracaoNaoPermitidaException;
+import br.app.criati.exception.CategoriaFinanceiraComLancamentosException;
+import br.app.criati.exception.CategoriaFinanceiraInativaException;
+import br.app.criati.exception.CategoriaFinanceiraNaoEncontradaException;
+import br.app.criati.exception.CategoriaFinanceiraNomeDuplicadaException;
 import br.app.criati.exception.CnpjJaCadastradoException;
+import br.app.criati.exception.ContaFinanceiraComLancamentosException;
+import br.app.criati.exception.ContaFinanceiraInativaException;
+import br.app.criati.exception.ContaFinanceiraNaoEncontradaException;
+import br.app.criati.exception.ContaFinanceiraNomeDuplicadoException;
 import br.app.criati.exception.ConviteInvalidoException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
 import br.app.criati.exception.EmpresaInativaException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
+import br.app.criati.exception.FinanceiroStatusInvalidoException;
+import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
+import br.app.criati.exception.LancamentoStatusInvalidoException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
@@ -73,7 +84,15 @@ public class GlobalExceptionHandler {
 			AutoAlteracaoNaoPermitidaException.class,
 			VinculoStatusInvalidoException.class,
 			EmpresaInativaException.class,
-			AplicacaoInativaException.class
+			AplicacaoInativaException.class,
+			ContaFinanceiraInativaException.class,
+			CategoriaFinanceiraInativaException.class,
+			ContaFinanceiraComLancamentosException.class,
+			CategoriaFinanceiraComLancamentosException.class,
+			LancamentoStatusInvalidoException.class,
+			FinanceiroStatusInvalidoException.class,
+			ContaFinanceiraNomeDuplicadoException.class,
+			CategoriaFinanceiraNomeDuplicadaException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -85,7 +104,10 @@ public class GlobalExceptionHandler {
 			UsuarioNaoEncontradoException.class,
 			EmpresaNaoEncontradaException.class,
 			ConviteInvalidoException.class,
-			AplicacaoNaoEncontradaException.class
+			AplicacaoNaoEncontradaException.class,
+			ContaFinanceiraNaoEncontradaException.class,
+			CategoriaFinanceiraNaoEncontradaException.class,
+			LancamentoFinanceiroNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

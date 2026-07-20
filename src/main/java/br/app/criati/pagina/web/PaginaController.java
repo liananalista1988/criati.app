@@ -62,6 +62,30 @@ public class PaginaController {
 		return "app/financeiro";
 	}
 
+	@GetMapping("/app/financeiro/contas")
+	public String financeiroContas(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		return "app/financeiro-contas";
+	}
+
+	@GetMapping("/app/financeiro/categorias")
+	public String financeiroCategorias(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		return "app/financeiro-categorias";
+	}
+
+	@GetMapping("/app/financeiro/lancamentos")
+	public String financeiroLancamentos(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		return "app/financeiro-lancamentos";
+	}
+
 	@GetMapping("/app/clinica")
 	public String clinica(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.CLINICA.name())) {

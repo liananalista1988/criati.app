@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<meta name="color-scheme" content="dark" />
+	<title>Lancamentos · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Lancamentos</h1>
+					<p>Receitas e despesas da sua empresa.</p>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field">
+						<label for="financeiro-filtro-data-inicial">De</label>
+						<input class="criati-input" type="date" id="financeiro-filtro-data-inicial" />
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-filtro-data-final">Ate</label>
+						<input class="criati-input" type="date" id="financeiro-filtro-data-final" />
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-filtro-tipo">Tipo</label>
+						<select class="criati-select" id="financeiro-filtro-tipo">
+							<option value="">Todos</option>
+							<option value="RECEITA">Receita</option>
+							<option value="DESPESA">Despesa</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-filtro-status">Status</label>
+						<select class="criati-select" id="financeiro-filtro-status">
+							<option value="">Todos</option>
+							<option value="PENDENTE">Pendente</option>
+							<option value="PAGO">Pago</option>
+							<option value="CANCELADO">Cancelado</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-filtro-conta">Conta</label>
+						<select class="criati-select" id="financeiro-filtro-conta"></select>
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-filtro-categoria">Categoria</label>
+						<select class="criati-select" id="financeiro-filtro-categoria"></select>
+					</div>
+					<div class="criati-field" style="flex: 1; min-width: 200px;">
+						<label for="financeiro-filtro-busca">Buscar</label>
+						<input class="criati-input" type="text" id="financeiro-filtro-busca" placeholder="Descricao..." />
+					</div>
+				</div>
+
+				<div class="criati-toolbar">
+					<div style="flex: 1"></div>
+					<button type="button" id="financeiro-lancamentos-nova-receita" class="criati-btn criati-btn-ghost">
+						Nova receita
+					</button>
+					<button type="button" id="financeiro-lancamentos-nova-despesa" class="criati-btn criati-btn-primary">
+						Nova despesa
+					</button>
+				</div>
+
+				<p id="financeiro-lancamentos-carregando">Carregando lancamentos...</p>
+				<div id="financeiro-lancamentos-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar os lancamentos agora.</p>
+				</div>
+				<div id="financeiro-lancamentos-vazio" class="criati-empty-state" hidden>
+					<p>Nenhum lancamento encontrado para os filtros selecionados.</p>
+				</div>
+
+				<div class="criati-table-wrap" id="financeiro-lancamentos-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th>Competencia</th>
+								<th>Descricao</th>
+								<th>Categoria</th>
+								<th>Conta</th>
+								<th>Tipo</th>
+								<th>Valor</th>
+								<th>Status</th>
+								<th>Pagamento</th>
+								<th>Acoes</th>
+							</tr>
+						</thead>
+						<tbody id="financeiro-lancamentos-tbody"></tbody>
+					</table>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="financeiro-lancamento-modal" hidden>
+		<div class="criati-modal">
+			<h2 id="financeiro-lancamento-modal-titulo">Novo lancamento</h2>
+			<form class="criati-modal-form" id="financeiro-lancamento-form">
+				<input type="hidden" id="financeiro-lancamento-tipo" />
+				<div class="criati-field">
+					<label for="financeiro-lancamento-conta">Conta</label>
+					<select class="criati-select" id="financeiro-lancamento-conta" required></select>
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-lancamento-categoria">Categoria</label>
+					<select class="criati-select" id="financeiro-lancamento-categoria" required></select>
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-lancamento-descricao">Descricao</label>
+					<input class="criati-input" id="financeiro-lancamento-descricao" required maxlength="200" />
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-lancamento-valor">Valor (R$)</label>
+					<input class="criati-input" id="financeiro-lancamento-valor" type="number" step="0.01" min="0.01" required />
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-lancamento-data-competencia">Data de competencia</label>
+					<input class="criati-input" id="financeiro-lancamento-data-competencia" type="date" required />
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-lancamento-observacao">Observacao (opcional)</label>
+					<input class="criati-input" id="financeiro-lancamento-observacao" maxlength="500" />
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-lancamento-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="financeiro-lancamento-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="financeiro-pagar-modal" hidden>
+		<div class="criati-modal">
+			<h2>Confirmar pagamento</h2>
+			<form class="criati-modal-form" id="financeiro-pagar-form">
+				<div class="criati-field">
+					<label for="financeiro-pagar-data">Data de pagamento</label>
+					<input class="criati-input" id="financeiro-pagar-data" type="date" required />
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-pagar-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="financeiro-pagar-confirmar">Confirmar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-lancamentos.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroLancamentos.iniciar();
+		});
+	</script>
+</body>
+</html>

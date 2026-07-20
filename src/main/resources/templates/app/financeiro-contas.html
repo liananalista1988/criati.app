@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<meta name="color-scheme" content="dark" />
+	<title>Contas · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Contas financeiras</h1>
+					<p>Gerencie as contas da sua empresa.</p>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field">
+						<label for="financeiro-contas-filtro-status">Status</label>
+						<select id="financeiro-contas-filtro-status" class="criati-select">
+							<option value="">Todas</option>
+							<option value="ATIVO">Ativas</option>
+							<option value="INATIVO">Inativas</option>
+						</select>
+					</div>
+					<div style="flex: 1"></div>
+					<button type="button" id="financeiro-contas-nova" class="criati-btn criati-btn-primary">Nova conta</button>
+				</div>
+
+				<p id="financeiro-contas-carregando">Carregando contas...</p>
+				<div id="financeiro-contas-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar as contas agora.</p>
+				</div>
+				<div id="financeiro-contas-vazio" class="criati-empty-state" hidden>
+					<p>Nenhuma conta cadastrada ainda.</p>
+				</div>
+
+				<div class="criati-table-wrap" id="financeiro-contas-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th>Nome</th>
+								<th>Tipo</th>
+								<th>Saldo inicial</th>
+								<th>Saldo atual</th>
+								<th>Status</th>
+								<th>Acoes</th>
+							</tr>
+						</thead>
+						<tbody id="financeiro-contas-tbody"></tbody>
+					</table>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="financeiro-conta-modal" hidden>
+		<div class="criati-modal">
+			<h2 id="financeiro-conta-modal-titulo">Nova conta</h2>
+			<form class="criati-modal-form" id="financeiro-conta-form">
+				<div class="criati-field">
+					<label for="financeiro-conta-nome">Nome</label>
+					<input class="criati-input" id="financeiro-conta-nome" name="nome" required maxlength="150" />
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-conta-tipo">Tipo</label>
+					<select class="criati-select" id="financeiro-conta-tipo" name="tipo" required>
+						<option value="CAIXA">Caixa</option>
+						<option value="CONTA_CORRENTE">Conta corrente</option>
+						<option value="POUPANCA">Poupanca</option>
+						<option value="INVESTIMENTO">Investimento</option>
+						<option value="OUTRA">Outra</option>
+					</select>
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-conta-saldo">Saldo inicial (R$)</label>
+					<input class="criati-input" id="financeiro-conta-saldo" name="saldoInicial" type="number" step="0.01" required />
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-conta-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="financeiro-conta-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-contas.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroContas.iniciar();
+		});
+	</script>
+</body>
+</html>

@@ -441,6 +441,10 @@ Deverão existir testes que comprovem:
 8. empresa suspensa respeita as regras definidas;
 9. consultas não retornam registros de outros clientes.
 
+## Financeiro: primeiro módulo operacional real
+
+O Gerenciador Financeiro (`ContaFinanceira`, `CategoriaFinanceira`, `LancamentoFinanceiro`) é o primeiro exemplo concreto de dados operacionais isolados por empresa (a categoria "tabelas empresariais" descrita acima). Toda consulta financeira filtra obrigatoriamente por `empresa_id` do contexto ativo da sessão; um identificador de conta, categoria ou lançamento pertencente a outra empresa responde como inexistente (`404` genérico), nunca revelando que o registro existe em outra empresa. Nenhuma regra do módulo depende do nome ou do CNPJ da empresa. Detalhes completos em `docs/FINANCEIRO.md`.
+
 ## Princípio principal
 
 Nenhum dado empresarial poderá ser consultado, alterado, exportado ou excluído sem que o backend conheça e valide a empresa atual.

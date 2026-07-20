@@ -330,6 +330,19 @@ Páginas: `GET /app/aplicacoes` (lista as aplicações da empresa ativa), `GET /
 
 `FINANCEIRO` (Gerenciador Financeiro) é um produto real, disponível no catálogo para qualquer empresa. `CLINICA` (Gestão de Clínica) é demonstrativo; a única empresa de exemplo é a "Clínica Vida Demo", criada de forma idempotente apenas quando `CRIATI_DADOS_DEMO_HABILITADOS=true` (padrão `false`, nunca em produção) — sem usuário, sem senha e sem Superadministrador adicional. Aplicação (o que a empresa contratou) e perfil (`ADMINISTRADOR`/`GESTOR`/`USUARIO`, o que o usuário pode fazer) são conceitos independentes; nenhuma regra depende do nome ou do CNPJ da empresa. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Catálogo de aplicações e Clínica Vida Demo".
 
+## Gerenciador Financeiro
+
+MVP funcional do módulo `FINANCEIRO` (contas, categorias, lançamentos, dashboard):
+
+```text
+GET/POST   /api/contexto/financeiro/contas[/{id}]
+GET/POST   /api/contexto/financeiro/categorias[/{id}]
+GET/POST   /api/contexto/financeiro/lancamentos[/{id}]
+GET        /api/contexto/financeiro/dashboard?competencia=AAAA-MM
+```
+
+Páginas: `/app/financeiro` (dashboard), `/app/financeiro/contas`, `/app/financeiro/categorias`, `/app/financeiro/lancamentos` — todas autenticadas, exigindo empresa ativa e `FINANCEIRO` habilitado. Saldo nunca é persistido (sempre calculado por consulta); valores monetários usam `BigDecimal` em toda a pilha; nenhuma exclusão física (inativação/cancelamento lógicos). Detalhes completos (modelo, regras de status, permissões por perfil, isolamento multiempresa, limitações do MVP) em [Financeiro](docs/FINANCEIRO.md).
+
 ## Migrations
 
 O Flyway será responsável pela estrutura do banco.
@@ -362,6 +375,7 @@ br.app.criati
 ├── usuario
 ├── acesso
 ├── aplicacao
+├── financeiro
 ├── perfil
 ├── permissao
 ├── modulo
@@ -386,6 +400,7 @@ Antes de trabalhar no projeto, leia:
 - [Escopo do MVP](docs/ESCOPO_MVP.md)
 - [Banco de Dados](docs/BANCO_DE_DADOS.md)
 - [Segurança](docs/SEGURANCA.md)
+- [Financeiro](docs/FINANCEIRO.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Regras para agentes](AGENTS.md)
 

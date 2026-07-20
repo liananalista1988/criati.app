@@ -1,0 +1,174 @@
+/* Criati - componentes reutilizaveis do modulo Financeiro: tabela, badges de
+   status, modal de formulario e barras CSS simples (sem biblioteca externa). */
+
+.criati-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: flex-end;
+	margin-bottom: 20px;
+}
+
+.criati-toolbar .criati-field {
+	min-width: 160px;
+}
+
+.criati-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	margin-bottom: 24px;
+}
+
+.criati-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+.criati-table th,
+.criati-table td {
+	padding: 12px 14px;
+	text-align: left;
+	white-space: nowrap;
+	border-bottom: 1px solid var(--criati-border);
+}
+
+.criati-table th {
+	color: var(--criati-text-muted);
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	background: var(--criati-surface-alt);
+}
+
+.criati-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.criati-table tbody tr:hover {
+	background: var(--criati-surface-hover);
+}
+
+.criati-table-acoes {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.criati-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.criati-badge-pendente,
+.criati-badge-ativo {
+	background: rgba(234, 179, 8, 0.15);
+	color: #fde68a;
+}
+
+.criati-badge-pago,
+.criati-badge-receita {
+	background: rgba(34, 197, 94, 0.15);
+	color: #bbf7d0;
+}
+
+.criati-badge-cancelado,
+.criati-badge-inativo {
+	background: rgba(148, 163, 184, 0.18);
+	color: var(--criati-text-muted);
+}
+
+.criati-badge-despesa {
+	background: rgba(239, 68, 68, 0.15);
+	color: #fecaca;
+}
+
+.criati-valor-positivo {
+	color: #4ade80;
+}
+
+.criati-valor-negativo {
+	color: #f87171;
+}
+
+.criati-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(2, 6, 14, 0.65);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 40px 16px;
+	overflow-y: auto;
+	z-index: 500;
+}
+
+.criati-modal-overlay[hidden] {
+	display: none;
+}
+
+.criati-modal {
+	background: var(--criati-surface);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	box-shadow: var(--criati-shadow);
+	width: 100%;
+	max-width: 480px;
+	padding: 24px;
+}
+
+.criati-modal h2 {
+	font-size: 1.1rem;
+	margin-bottom: 18px;
+}
+
+.criati-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.criati-modal-acoes {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 6px;
+}
+
+.criati-resumo-categorias {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 24px;
+}
+
+.criati-resumo-categoria-linha {
+	display: grid;
+	grid-template-columns: 140px 1fr 90px;
+	align-items: center;
+	gap: 10px;
+	font-size: 0.85rem;
+}
+
+.criati-resumo-categoria-barra-fundo {
+	background: var(--criati-surface-alt);
+	border-radius: 999px;
+	height: 8px;
+	overflow: hidden;
+}
+
+.criati-resumo-categoria-barra {
+	height: 100%;
+	border-radius: 999px;
+	background: var(--criati-gradient);
+}
+
+.criati-resumo-categoria-barra.is-despesa {
+	background: linear-gradient(135deg, #f87171, #ef4444);
+}

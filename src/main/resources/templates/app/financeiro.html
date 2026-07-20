@@ -8,6 +8,7 @@
 	<title>Gerenciador Financeiro · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
 </head>
 <body>
@@ -19,13 +20,93 @@
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 			<main class="criati-content">
-				<div class="criati-page-header">
-					<h1>Gerenciador Financeiro</h1>
-					<p>Controle financeiro, receitas, despesas, contas e resultados.</p>
+				<div class="criati-page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
+					<div>
+						<h1>Gerenciador Financeiro</h1>
+						<p>Controle financeiro, receitas, despesas, contas e resultados.</p>
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-dashboard-competencia">Competencia</label>
+						<input class="criati-input" type="month" id="financeiro-dashboard-competencia" />
+					</div>
 				</div>
 
-				<div class="criati-empty-state">
-					<p>Os cadastros internos do modulo Financeiro ainda nao foram implementados.</p>
+				<p id="financeiro-dashboard-carregando">Carregando dashboard...</p>
+				<div id="financeiro-dashboard-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar o dashboard financeiro agora.</p>
+				</div>
+
+				<div id="financeiro-dashboard-conteudo" hidden>
+					<section class="criati-cards" aria-label="Resumo financeiro">
+						<article class="criati-card">
+							<p class="criati-card-label">Saldo atual</p>
+							<p class="criati-card-value" id="financeiro-card-saldo-atual">R$ 0,00</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Receitas pagas</p>
+							<p class="criati-card-value" id="financeiro-card-receitas">R$ 0,00</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Despesas pagas</p>
+							<p class="criati-card-value" id="financeiro-card-despesas">R$ 0,00</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Resultado do mes</p>
+							<p class="criati-card-value" id="financeiro-card-resultado">R$ 0,00</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">A receber</p>
+							<p class="criati-card-value" id="financeiro-card-a-receber">R$ 0,00</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">A pagar</p>
+							<p class="criati-card-value" id="financeiro-card-a-pagar">R$ 0,00</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Contas ativas</p>
+							<p class="criati-card-value" id="financeiro-card-contas-ativas">0</p>
+						</article>
+						<article class="criati-card">
+							<p class="criati-card-label">Lancamentos no periodo</p>
+							<p class="criati-card-value" id="financeiro-card-lancamentos-periodo">0</p>
+						</article>
+					</section>
+
+					<div class="criati-shortcuts">
+						<a href="/app/financeiro/lancamentos" class="criati-shortcut">Nova receita</a>
+						<a href="/app/financeiro/lancamentos" class="criati-shortcut">Nova despesa</a>
+						<a href="/app/financeiro/contas" class="criati-shortcut">Nova conta</a>
+						<a href="/app/financeiro/categorias" class="criati-shortcut">Categorias</a>
+					</div>
+
+					<div class="criati-next-steps">
+						<h2>Resumo por categoria (mes selecionado)</h2>
+						<div id="financeiro-resumo-categorias" class="criati-resumo-categorias"></div>
+						<p id="financeiro-resumo-categorias-vazio" class="criati-card-sub" hidden>
+							Nenhum lancamento pago nesta competencia ainda.
+						</p>
+					</div>
+
+					<div class="criati-next-steps" style="margin-top: 24px;">
+						<h2>Ultimos lancamentos</h2>
+						<div class="criati-table-wrap" style="border: none;">
+							<table class="criati-table">
+								<thead>
+									<tr>
+										<th>Competencia</th>
+										<th>Descricao</th>
+										<th>Categoria</th>
+										<th>Valor</th>
+										<th>Status</th>
+									</tr>
+								</thead>
+								<tbody id="financeiro-ultimos-lancamentos-tbody"></tbody>
+							</table>
+						</div>
+						<p id="financeiro-ultimos-lancamentos-vazio" class="criati-card-sub" hidden>
+							Nenhum lancamento cadastrado ainda.
+						</p>
+					</div>
 				</div>
 			</main>
 		</div>
@@ -38,6 +119,9 @@
 	<script th:src="@{/js/criati-auth.js}"></script>
 	<script th:src="@{/js/criati-contexto.js}"></script>
 	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-dashboard.js}"></script>
 	<script th:inline="javascript">
 		document.addEventListener("DOMContentLoaded", function () {
 			CriatiUI.initSidebarToggle();
@@ -45,6 +129,7 @@
 			CriatiAuth.initLogout();
 			CriatiContexto.iniciar();
 			CriatiAplicacoes.carregarSidebar();
+			FinanceiroDashboard.iniciar();
 		});
 	</script>
 </body>
