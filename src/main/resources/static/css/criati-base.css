@@ -12,6 +12,7 @@
 	--criati-success: #22c55e;
 	--criati-warning: #eab308;
 	--criati-danger: #ef4444;
+	--criati-info: #3b82f6;
 	--criati-text: #f5f7fa;
 	--criati-text-muted: #9aa5b8;
 	--criati-radius: 12px;
@@ -20,7 +21,47 @@
 	--criati-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.45);
 	--sidebar-width-expanded: 248px;
 	--sidebar-width-collapsed: 76px;
+	--criati-input-bg: var(--criati-surface-alt);
+	--criati-overlay: rgba(2, 6, 14, 0.65);
+	--criati-sidebar-bg: var(--criati-surface);
+	--criati-topbar-bg: var(--criati-surface);
+	--criati-success-bg: rgba(34, 197, 94, 0.15);
+	--criati-success-fg: #bbf7d0;
+	--criati-warning-bg: rgba(234, 179, 8, 0.15);
+	--criati-warning-fg: #fde68a;
+	--criati-danger-bg: rgba(239, 68, 68, 0.15);
+	--criati-danger-fg: #fecaca;
+	--criati-info-bg: rgba(59, 130, 246, 0.12);
+	--criati-info-fg: #bfdbfe;
 	color-scheme: dark;
+}
+
+/* Tema claro: mesma identidade (azul/roxo como cores de acao), fundo geral
+   cinza muito claro, cards brancos, texto grafite, sombras mais discretas.
+   Sobrescreve somente o que muda entre os temas; --criati-accent/--criati-accent-2
+   e os tokens de forma (radius, largura da sidebar) permanecem os mesmos. */
+:root[data-theme="light"] {
+	--criati-bg: #eef1f6;
+	--criati-surface: #ffffff;
+	--criati-surface-alt: #eef1f7;
+	--criati-surface-hover: #e3e8f1;
+	--criati-border: rgba(15, 23, 42, 0.12);
+	--criati-text: #1e2530;
+	--criati-text-muted: #5b6472;
+	--criati-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+	--criati-input-bg: #ffffff;
+	--criati-overlay: rgba(15, 23, 42, 0.5);
+	--criati-sidebar-bg: #eef1f7;
+	--criati-topbar-bg: #eef1f7;
+	--criati-success-bg: rgba(22, 163, 74, 0.12);
+	--criati-success-fg: #15803d;
+	--criati-warning-bg: rgba(202, 138, 4, 0.14);
+	--criati-warning-fg: #92400e;
+	--criati-danger-bg: rgba(220, 38, 38, 0.12);
+	--criati-danger-fg: #b91c1c;
+	--criati-info-bg: rgba(37, 99, 235, 0.1);
+	--criati-info-fg: #1d4ed8;
+	color-scheme: light;
 }
 
 *,
@@ -137,7 +178,7 @@ button {
 }
 
 .criati-input {
-	background: var(--criati-surface-alt);
+	background: var(--criati-input-bg);
 	border: 1px solid var(--criati-border);
 	border-radius: var(--criati-radius-sm);
 	color: var(--criati-text);
@@ -193,27 +234,27 @@ button {
 }
 
 .criati-alert-erro {
-	background: rgba(239, 68, 68, 0.12);
+	background: var(--criati-danger-bg);
 	border-color: rgba(239, 68, 68, 0.4);
-	color: #fecaca;
+	color: var(--criati-danger-fg);
 }
 
 .criati-alert-aviso {
-	background: rgba(234, 179, 8, 0.12);
+	background: var(--criati-warning-bg);
 	border-color: rgba(234, 179, 8, 0.4);
-	color: #fde68a;
+	color: var(--criati-warning-fg);
 }
 
 .criati-alert-sucesso {
-	background: rgba(34, 197, 94, 0.12);
+	background: var(--criati-success-bg);
 	border-color: rgba(34, 197, 94, 0.4);
-	color: #bbf7d0;
+	color: var(--criati-success-fg);
 }
 
 .criati-alert-info {
-	background: rgba(59, 130, 246, 0.12);
+	background: var(--criati-info-bg);
 	border-color: rgba(59, 130, 246, 0.4);
-	color: #bfdbfe;
+	color: var(--criati-info-fg);
 }
 
 .criati-spinner {
@@ -295,4 +336,101 @@ button {
 
 .criati-toast-info {
 	border-left-color: var(--criati-accent);
+}
+
+/* Controle de tema (Automatico/Claro/Escuro): botao + popover, reutilizado
+   igual na topbar (autenticado) e flutuante nas paginas publicas. */
+
+.criati-tema-controle {
+	position: relative;
+}
+
+.criati-tema-toggle svg {
+	display: none;
+}
+
+.criati-tema-controle[data-tema-atual="auto"] .criati-tema-toggle .criati-icone-tema-auto,
+.criati-tema-controle[data-tema-atual="light"] .criati-tema-toggle .criati-icone-tema-light,
+.criati-tema-controle[data-tema-atual="dark"] .criati-tema-toggle .criati-icone-tema-dark {
+	display: block;
+}
+
+.criati-tema-menu {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 8px);
+	background: var(--criati-surface-alt);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-sm);
+	box-shadow: var(--criati-shadow);
+	min-width: 170px;
+	padding: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	z-index: 100;
+	opacity: 1;
+	transform: translateY(0);
+	transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.criati-tema-menu[hidden] {
+	display: none;
+}
+
+.criati-tema-opcao {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	background: transparent;
+	border: none;
+	border-radius: var(--criati-radius-sm);
+	padding: 8px 10px;
+	color: var(--criati-text);
+	font-size: 0.88rem;
+	text-align: left;
+	cursor: pointer;
+}
+
+.criati-tema-opcao svg {
+	flex-shrink: 0;
+	color: var(--criati-text-muted);
+}
+
+.criati-tema-opcao:hover {
+	background: var(--criati-surface-hover);
+}
+
+.criati-tema-opcao[aria-checked="true"] {
+	color: var(--criati-accent);
+	font-weight: 600;
+}
+
+.criati-tema-opcao[aria-checked="true"] svg {
+	color: var(--criati-accent);
+}
+
+.criati-tema-controle-flutuante {
+	position: fixed;
+	top: 16px;
+	right: 16px;
+	z-index: 200;
+}
+
+@media (max-width: 480px) {
+	.criati-tema-controle-flutuante {
+		top: 10px;
+		right: 10px;
+	}
+
+	.criati-tema-menu {
+		min-width: 150px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.criati-tema-menu {
+		transition: none;
+	}
 }

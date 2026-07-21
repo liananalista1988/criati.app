@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<!-- Controle de tema (Automatico/Claro/Escuro): reutilizado igual em paginas
+	     publicas e autenticadas via criati-tema.js. Em paginas publicas, o
+	     chamador envolve este fragmento com .criati-tema-controle-flutuante
+	     para posiciona-lo no canto superior direito. -->
+	<div th:fragment="temaControle" class="criati-tema-controle" id="criati-tema-controle" data-tema-atual="auto">
+		<button
+			type="button"
+			class="criati-icon-btn criati-tema-toggle"
+			aria-haspopup="true"
+			aria-expanded="false"
+			aria-controls="criati-tema-menu"
+			aria-label="Tema">
+			<svg class="criati-icone-tema-auto" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<rect x="2" y="4" width="20" height="13" rx="2" />
+				<path d="M8 21h8M12 17v4" />
+			</svg>
+			<svg class="criati-icone-tema-light" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<circle cx="12" cy="12" r="4" />
+				<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+			</svg>
+			<svg class="criati-icone-tema-dark" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+			</svg>
+		</button>
+		<div class="criati-tema-menu" id="criati-tema-menu" role="menu" aria-label="Escolher tema" hidden>
+			<button type="button" class="criati-tema-opcao" role="menuitemradio" data-tema="auto" aria-checked="true">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<rect x="2" y="4" width="20" height="13" rx="2" />
+					<path d="M8 21h8M12 17v4" />
+				</svg>
+				Automatico
+			</button>
+			<button type="button" class="criati-tema-opcao" role="menuitemradio" data-tema="light" aria-checked="false">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<circle cx="12" cy="12" r="4" />
+					<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+				</svg>
+				Claro
+			</button>
+			<button type="button" class="criati-tema-opcao" role="menuitemradio" data-tema="dark" aria-checked="false">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+				</svg>
+				Escuro
+			</button>
+		</div>
+	</div>
+</body>
+</html>

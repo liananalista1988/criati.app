@@ -271,6 +271,8 @@ A interface consome exclusivamente a API já existente (`/api/auth/*`, `/api/con
 
 A sidebar é recolhível por um botão hambúrguer (visível no desktop e no mobile): no desktop alterna entre expandida e compacta (só ícones, com tooltip acessível); no mobile continua abrindo/fechando o menu off-canvas já existente, sem nenhum modo compacto. A preferência de sidebar recolhida é puramente visual, guardada em `localStorage` (`criati.sidebar.recolhida`) — nunca dado de sessão, token ou permissão. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Sidebar recolhível com menu hambúrguer".
 
+A interface tem três opções de aparência — Automático (padrão, segue o sistema operacional), Claro e Escuro —, trocáveis a qualquer momento por um controle na topbar (autenticado) ou no canto superior direito de `/login` e `/convites/{token}` (público). A preferência é só visual, guardada em `localStorage` (`criati.tema`, valores `auto`/`light`/`dark`) e aplicada por um script mínimo antes da primeira pintura para não haver "clarão" de tema errado ao carregar. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Temas claro, escuro e automático".
+
 ## Superadministrador e endpoints administrativos
 
 Superadministrador é um papel global da plataforma (não é um perfil de empresa). O primeiro é criado apenas pelo bootstrap descrito em "Variáveis de ambiente" — não existe endpoint público para essa criação.

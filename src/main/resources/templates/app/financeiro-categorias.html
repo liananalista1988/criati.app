@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
 	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
-	<meta name="color-scheme" content="dark" />
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
 	<title>Categorias · Financeiro · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
@@ -86,6 +86,7 @@
 	<div th:replace="~{fragments/feedback :: toasts}"></div>
 
 	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
 	<script th:src="@{/js/criati-ui.js}"></script>
 	<script th:src="@{/js/criati-auth.js}"></script>
 	<script th:src="@{/js/criati-contexto.js}"></script>

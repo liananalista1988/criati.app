@@ -154,14 +154,14 @@
 }
 
 .criati-badge-pendente {
-	background: rgba(234, 179, 8, 0.15);
-	color: #fde68a;
+	background: var(--criati-warning-bg);
+	color: var(--criati-warning-fg);
 }
 
 .criati-badge-ativo,
 .criati-badge-utilizado {
-	background: rgba(34, 197, 94, 0.15);
-	color: #bbf7d0;
+	background: var(--criati-success-bg);
+	color: var(--criati-success-fg);
 }
 
 .criati-badge-inativo,
@@ -171,8 +171,8 @@
 }
 
 .criati-badge-revogado {
-	background: rgba(239, 68, 68, 0.15);
-	color: #fecaca;
+	background: var(--criati-danger-bg);
+	color: var(--criati-danger-fg);
 }
 
 .criati-badge-perfil {
@@ -192,7 +192,7 @@
 .criati-modal-overlay {
 	position: fixed;
 	inset: 0;
-	background: rgba(2, 6, 14, 0.65);
+	background: var(--criati-overlay);
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;

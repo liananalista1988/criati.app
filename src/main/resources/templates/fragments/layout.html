@@ -6,6 +6,34 @@
 		<meta name="_csrf_header" th:content="${_csrf.headerName}" />
 	</th:block>
 
+	<!-- Aplica o tema (auto/light/dark) antes da primeira pintura, para evitar
+	     "clarao" de um tema errado ao carregar. Nao depende de sessao nem de
+	     backend; le somente a chave criati.tema (auto por padrao) e, no modo
+	     automatico, consulta prefers-color-scheme. Reutilizado em todas as
+	     paginas, publicas e autenticadas. -->
+	<th:block th:fragment="themePreload">
+		<script th:inline="none">
+			(function () {
+				var VALORES_VALIDOS = ["auto", "light", "dark"];
+				var preferencia = "auto";
+				try {
+					var salvo = window.localStorage.getItem("criati.tema");
+					if (VALORES_VALIDOS.indexOf(salvo) !== -1) {
+						preferencia = salvo;
+					}
+				} catch (erro) {
+					// localStorage indisponivel: mantem o padrao "auto".
+				}
+				var escuro = preferencia === "auto"
+					? window.matchMedia("(prefers-color-scheme: dark)").matches
+					: preferencia === "dark";
+				var raiz = document.documentElement;
+				raiz.setAttribute("data-theme", escuro ? "dark" : "light");
+				raiz.style.colorScheme = escuro ? "dark" : "light";
+			})();
+		</script>
+	</th:block>
+
 	<!-- Aplica a preferencia visual de sidebar recolhida (somente desktop, so
 	     largura/estado, nunca dado sensivel) antes da primeira pintura, para
 	     evitar o "flash" de sidebar expandida seguida de recolhimento. -->
