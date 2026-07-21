@@ -1,6 +1,7 @@
 package br.app.criati.pagina.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,6 +18,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.app.criati.acesso.model.UsuarioEmpresa;
+import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
+import br.app.criati.empresa.model.Empresa;
+import br.app.criati.empresa.repository.EmpresaRepository;
+import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.usuario.model.Usuario;
 import br.app.criati.usuario.repository.UsuarioRepository;
@@ -44,6 +50,79 @@ class PaginaSidebarRecolhivelTests {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private EmpresaRepository empresaRepository;
+
+	@Autowired
+	private UsuarioEmpresaRepository usuarioEmpresaRepository;
+
+	@Test
+	void iconeDoBotaoHamburguerTemTamanhoExplicitoENaoRendeUmSvgSemDimensoes() throws Exception {
+		// Regressao: o svg do botao (fragments/topbar.html) ja teve um bug em que
+		// nao tinha width/height nem em atributo nem em CSS, entao o navegador
+		// aplicava o tamanho padrao (~300x150) em vez de um icone pequeno -
+		// so ficou visivel quando o botao passou a aparecer tambem no desktop.
+		String corpo = obterCorpoAutenticadoComEmpresaAtiva("/app/dashboard", "sidebar.icone@criati.test");
+
+		assertThat(corpo).contains("criati-menu-toggle");
+		int indiceBotao = corpo.indexOf("criati-menu-toggle");
+		String trechoBotao = corpo.substring(indiceBotao, Math.min(corpo.length(), indiceBotao + 600));
+
+		assertThat(trechoBotao)
+				.contains("<svg")
+				.containsPattern("width=\"\\d+\"")
+				.containsPattern("height=\"\\d+\"");
+	}
+
+	@Test
+	void dashboardComEmpresaAtivaMostraCardsRealPreenchidosEnaoOEstadoVazio() throws Exception {
+		String corpo = obterCorpoAutenticadoComEmpresaAtiva("/app/dashboard", "sidebar.preenchido@criati.test");
+
+		assertThat(corpo)
+				.contains("criati-sidebar")
+				.contains("criati-menu-toggle")
+				.contains("criati-dashboard-conteudo");
+	}
+
+	private String obterCorpoAutenticadoComEmpresaAtiva(String caminho, String email) throws Exception {
+		Usuario usuario = criarUsuarioAtivo(email);
+		Empresa empresa = empresaRepository.saveAndFlush(
+				new Empresa("Empresa Sidebar Ltda", "Empresa Sidebar", cnpjUnico(), StatusCadastro.ATIVO));
+		UsuarioEmpresa vinculo = new UsuarioEmpresa(usuario, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		usuarioEmpresaRepository.saveAndFlush(vinculo);
+
+		MockHttpSession sessao = autenticar(email);
+		mockMvc.perform(post("/api/contexto/empresa-ativa")
+				.session(sessao)
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{ \"empresaId\": \"" + empresa.getId() + "\" }"))
+				.andExpect(status().isOk());
+
+		MvcResult resultado = mockMvc.perform(get(caminho).session(sessao))
+				.andExpect(status().isOk())
+				.andReturn();
+		return resultado.getResponse().getContentAsString();
+	}
+
+	private String cnpjUnico() {
+		return String.valueOf(Math.abs(System.nanoTime())).substring(0, 14);
+	}
+
+	private MockHttpSession autenticar(String email) throws Exception {
+		MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "email": "%s",
+						  "senha": "%s"
+						}
+						""".formatted(email, SENHA)))
+				.andExpect(status().isOk())
+				.andReturn();
+		return (MockHttpSession) loginResult.getRequest().getSession(false);
+	}
 
 	@Test
 	void dashboardContemBotaoHamburguerComAtributosDeAcessibilidade() throws Exception {
