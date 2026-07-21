@@ -15,9 +15,16 @@
 		var statusBox = document.getElementById("criati-login-status");
 		var enviando = false;
 
-		var params = new URLSearchParams(window.location.search);
-		if (params.get("motivo") === "sessao" && statusBox) {
-			statusBox.textContent = "Sua sessao expirou. Faca login novamente.";
+		// Somente motivos conhecidos exibem mensagem: um valor arbitrario em
+		// ?motivo= (nunca confiavel, vem da URL) e simplesmente ignorado, nunca
+		// vira texto na tela.
+		var MOTIVO_MENSAGEM = {
+			sessao: "Sua sessao expirou. Faca login novamente.",
+			"convite-aceito": "Conta criada com sucesso. Faca login para continuar."
+		};
+		var motivo = new URLSearchParams(window.location.search).get("motivo");
+		if (motivo && MOTIVO_MENSAGEM[motivo] && statusBox) {
+			statusBox.textContent = MOTIVO_MENSAGEM[motivo];
 			statusBox.hidden = false;
 		}
 

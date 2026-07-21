@@ -109,13 +109,14 @@ Rotas de página (Thymeleaf) e recursos estáticos públicos, adicionadas na fas
 
 ```text
 GET /login
+GET /convites/{token}
 GET /css/**
 GET /js/**
 GET /img/**
 GET /error
 ```
 
-`/login` é a tela de autenticação; um usuário já autenticado que acessá-la é redirecionado para `/app/dashboard` pelo próprio controller, não pelo `SecurityConfig`. `/css/**`, `/js/**` e `/img/**` são recursos estáticos necessários para renderizar qualquer página, inclusive a de login, antes de existir sessão. `/error` é a página padrão de erro do Spring Boot. Nenhuma rota sob `/app/**` é pública — todas exigem autenticação (`anyRequest().authenticated()`), e um anônimo que tentar acessá-las é redirecionado para `/login` (ver seção "Sessões" e "CSRF" para o detalhe do `AuthenticationEntryPoint` diferenciado por rota).
+`/login` é a tela de autenticação; um usuário já autenticado que acessá-la é redirecionado para `/app/dashboard` pelo próprio controller, não pelo `SecurityConfig`. `/convites/{token}` é a página pública de aceite de convite: o controller (`PaginaController`) não lê o `token` (nem como `@PathVariable`, nem em log) — apenas renderiza a view; toda a validação e a aceitação acontecem no navegador, contra as rotas de API pública já existentes (`GET/POST /api/convites/{token}[/aceitar]`). `/css/**`, `/js/**` e `/img/**` são recursos estáticos necessários para renderizar qualquer página, inclusive as públicas, antes de existir sessão. `/error` é a página padrão de erro do Spring Boot. Nenhuma outra rota sob `/app/**` é pública — todas exigem autenticação (`anyRequest().authenticated()`), e um anônimo que tentar acessá-las é redirecionado para `/login` (ver seção "Sessões" e "CSRF" para o detalhe do `AuthenticationEntryPoint` diferenciado por rota). Aceitar um convite pela página pública nunca autentica automaticamente (nenhuma sessão é criada, mesma decisão já registrada para a rota de API abaixo); o botão de sucesso leva a `/login?motivo=convite-aceito`, que a tela de login reconhece a partir de um mapa fixo de motivos conhecidos — qualquer valor de `?motivo=` fora desse mapa é ignorado, nunca refletido no HTML.
 
 ## Senhas
 
@@ -482,6 +483,8 @@ A aceitação deverá verificar novamente todos esses elementos.
 - Vinculado a e-mail, empresa e perfil; unidades autorizadas ainda não existem nesta fase (fora do escopo, ver `docs/MODELO_MULTIEMPRESA.MD`); o responsável pelo convite é registrado (`criado_por_usuario_id`).
 - A aceitação revalida tudo no momento do uso: convite `PENDENTE`, não expirado, empresa `ATIVA`, e-mail sem `Usuario` prévio (ver `docs/DECISOES.md`, seção "Convites", para o tratamento de e-mail já cadastrado).
 - Nenhum rate limiting implementado ainda; risco registrado em `docs/DECISOES.md`.
+- Página pública de aceite (`GET /convites/{token}`): consome exclusivamente as rotas de API acima, valida o token duas vezes (uma vez para exibir a tela, outra — obrigatória — no backend ao submeter), nunca autentica automaticamente e nunca persiste o token no navegador (`localStorage`/`sessionStorage`/console). Um `409` (e-mail já cadastrado) nunca mostra a mensagem literal do backend na tela pública, apenas um texto genérico, para não confirmar a um anônimo que um e-mail específico já existe na plataforma. Detalhes completos em `docs/DECISOES.md`, seção "Página pública de aceite de convite".
+
 ## Recuperação de senha
 
 A recuperação deverá:

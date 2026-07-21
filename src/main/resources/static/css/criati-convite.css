@@ -1,0 +1,139 @@
+/* Criati - pagina publica de aceite de convite (/convites/{token}).
+   Reaproveita os tokens visuais de criati-base.css e o layout centralizado
+   ja usado por criati-login.css; sem sidebar, sem topbar, sem navegacao
+   autenticada. */
+
+.criati-convite-page {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background:
+		radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.22), transparent 45%),
+		radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.22), transparent 45%),
+		var(--criati-bg);
+}
+
+.criati-convite-card {
+	width: 100%;
+	max-width: 440px;
+	background: var(--criati-surface);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	box-shadow: var(--criati-shadow);
+	padding: 36px 32px;
+}
+
+.criati-convite-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+.criati-convite-logo {
+	width: 40px;
+	height: 40px;
+	border-radius: var(--criati-radius-sm);
+	background: var(--criati-gradient);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 700;
+	font-size: 1.1rem;
+	flex-shrink: 0;
+}
+
+.criati-convite-brand h1 {
+	font-size: 1.3rem;
+	font-weight: 700;
+}
+
+.criati-convite-card h2 {
+	font-size: 1.05rem;
+	margin-bottom: 6px;
+}
+
+.criati-convite-card > p.criati-convite-subtitulo {
+	color: var(--criati-text-muted);
+	font-size: 0.9rem;
+	margin-bottom: 20px;
+}
+
+.criati-convite-estado {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.criati-convite-estado[hidden] {
+	display: none;
+}
+
+.criati-convite-info {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	background: var(--criati-surface-alt);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-sm);
+	padding: 14px 16px;
+	margin-bottom: 20px;
+}
+
+.criati-convite-info-linha {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	font-size: 0.88rem;
+}
+
+.criati-convite-info-linha span:first-child {
+	color: var(--criati-text-muted);
+}
+
+.criati-convite-form {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.criati-convite-ajuda {
+	font-size: 0.78rem;
+	color: var(--criati-text-muted);
+	margin-top: -10px;
+}
+
+.criati-convite-acoes {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+.criati-convite-sucesso-icone {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	background: rgba(34, 197, 94, 0.15);
+	color: #4ade80;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0 auto 8px;
+}
+
+.criati-convite-footer {
+	margin-top: 24px;
+	text-align: center;
+	font-size: 0.78rem;
+	color: var(--criati-text-muted);
+}
+
+@media (max-width: 480px) {
+	.criati-convite-card {
+		padding: 28px 20px;
+	}
+}

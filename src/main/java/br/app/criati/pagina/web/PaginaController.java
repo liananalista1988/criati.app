@@ -42,6 +42,16 @@ public class PaginaController {
 		return "redirect:/app/dashboard";
 	}
 
+	// Rota publica (permitAll declarado em SecurityConfig). O token nunca e
+	// lido aqui - nem como @PathVariable, nem em log: a validacao completa
+	// (GET /api/convites/{token}) e a aceitacao (POST .../aceitar) acontecem
+	// inteiramente no navegador, contra a API publica ja existente. O
+	// controller so decide qual view renderizar.
+	@GetMapping("/convites/{token}")
+	public String aceitarConvite() {
+		return "convite/aceitar";
+	}
+
 	@GetMapping("/app/dashboard")
 	public String dashboard() {
 		return "app/dashboard";

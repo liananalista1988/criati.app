@@ -295,9 +295,12 @@ GET    /api/contexto/convites            (ADMINISTRADOR, empresa ativa)
 DELETE /api/contexto/convites/{id}       (ADMINISTRADOR, empresa ativa)
 GET    /api/convites/{token}             (público)
 POST   /api/convites/{token}/aceitar     (público)
+GET    /convites/{token}                 (público; página de aceite)
 ```
 
 O convidado define sua própria senha ao aceitar; nenhuma senha é enviada por e-mail nem criada pelo administrador. Não há integração de e-mail real nesta fase — o token do convite só é retornado na resposta de criação em `local`/`test` (`criati.convite.expor-token-bruto`). Detalhes completos (token, expiração, política de duplicidade, tratamento de e-mail já cadastrado) em [Decisões](docs/DECISOES.MD).
+
+`GET /convites/{token}` é a página pública onde o convidado informa nome e define a senha. Fluxo: a página valida o convite (`GET /api/convites/{token}`), mostra empresa/e-mail mascarado/perfil/expiração quando válido, envia o aceite (`POST /api/convites/{token}/aceitar`) e, em caso de sucesso, mostra confirmação com um botão para `/login?motivo=convite-aceito` — **sem autenticar automaticamente** (nenhuma sessão é criada). O token nunca é gravado em `localStorage`/`sessionStorage` nem logado; a página nunca mostra a mensagem literal de "e-mail já cadastrado" (409), apenas um texto genérico. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Página pública de aceite de convite".
 
 ## Gestão de acessos por empresa
 

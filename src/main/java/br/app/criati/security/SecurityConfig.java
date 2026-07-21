@@ -71,6 +71,11 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.GET, "/login", "/css/**", "/js/**", "/img/**", "/error")
 								.permitAll()
+						// Pagina publica de aceite de convite: so renderiza a view (nenhum
+						// dado do convite e lido no controller); a validacao acontece
+						// inteiramente no navegador, chamando a API publica ja liberada
+						// abaixo (GET /api/convites/{token}, POST .../aceitar).
+						.requestMatchers(HttpMethod.GET, "/convites/*").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/convites/*").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/convites/*/aceitar").permitAll()
