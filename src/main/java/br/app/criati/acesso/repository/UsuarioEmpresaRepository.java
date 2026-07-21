@@ -25,4 +25,8 @@ public interface UsuarioEmpresaRepository extends JpaRepository<UsuarioEmpresa, 
 	Optional<UsuarioEmpresa> findByIdAndEmpresaId(UUID id, UUID empresaId);
 
 	long countByEmpresaIdAndPerfilAndStatus(UUID empresaId, PerfilUsuario perfil, StatusCadastro status);
+
+	long countByEmpresaIdAndStatus(UUID empresaId, StatusCadastro status);
+
+	long countByStatus(StatusCadastro status);
 }

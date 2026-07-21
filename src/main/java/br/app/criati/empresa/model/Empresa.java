@@ -8,6 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import br.app.criati.exception.EmpresaStatusInvalidoException;
 import br.app.criati.shared.enums.StatusCadastro;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,5 +61,22 @@ public class Empresa {
 		this.nomeFantasia = nomeFantasia;
 		this.cnpj = Objects.requireNonNull(cnpj, "cnpj nao pode ser nulo");
 		this.status = Objects.requireNonNull(status, "status nao pode ser nulo");
+	}
+
+	// Inativar so bloqueia acesso (contexto/sessao passam a rejeitar a
+	// empresa); nunca exclui dados, usuarios, vinculos, aplicacoes ou
+	// lancamentos - mesmo padrao ja usado por UsuarioEmpresa/EmpresaAplicacao.
+	public void ativar() {
+		if (this.status == StatusCadastro.ATIVO) {
+			throw new EmpresaStatusInvalidoException("Empresa ja esta ativa");
+		}
+		this.status = StatusCadastro.ATIVO;
+	}
+
+	public void inativar() {
+		if (this.status == StatusCadastro.INATIVO) {
+			throw new EmpresaStatusInvalidoException("Empresa ja esta inativa");
+		}
+		this.status = StatusCadastro.INATIVO;
 	}
 }

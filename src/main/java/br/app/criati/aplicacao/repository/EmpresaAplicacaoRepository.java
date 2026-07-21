@@ -18,4 +18,6 @@ public interface EmpresaAplicacaoRepository extends JpaRepository<EmpresaAplicac
 	List<EmpresaAplicacao> findAllByEmpresaIdAndStatus(UUID empresaId, StatusCadastro status);
 
 	boolean existsByEmpresaIdAndAplicacaoIdAndStatus(UUID empresaId, UUID aplicacaoId, StatusCadastro status);
+
+	long countByAplicacaoCodigoAndStatus(String codigo, StatusCadastro status);
 }

@@ -113,6 +113,22 @@
 	border-top: 1px solid var(--criati-border);
 }
 
+/* Secao "Administracao da plataforma" (somente Superadministrador) */
+
+.criati-nav-secao {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--criati-border);
+}
+
+.criati-nav-secao-titulo {
+	padding: 0 12px 6px;
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--criati-text-muted);
+}
+
 /* Sidebar recolhida (somente desktop; ver criati-responsive.css para o
    comportamento off-canvas do mobile, que nunca usa este modo compacto) */
 
@@ -129,6 +145,7 @@
 	html.criati-sidebar-collapsed .criati-sidebar-brand span,
 	html.criati-sidebar-collapsed .criati-nav-label,
 	html.criati-sidebar-collapsed .criati-nav-badge,
+	html.criati-sidebar-collapsed .criati-nav-secao-titulo,
 	html.criati-sidebar-collapsed .criati-sidebar-footer {
 		display: none;
 	}

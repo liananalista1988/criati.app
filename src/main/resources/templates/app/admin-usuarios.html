@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<title>Usuarios globais · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-acessos.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('admin-usuarios')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-acessos-header">
+					<div>
+						<h1>Usuarios globais</h1>
+						<p>Todos os usuarios cadastrados na plataforma, independente de empresa.</p>
+						<p class="criati-acessos-contador" id="criati-admin-usuarios-contador"></p>
+					</div>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field criati-field-busca">
+						<label for="criati-admin-usuarios-busca">Buscar</label>
+						<input class="criati-input" type="text" id="criati-admin-usuarios-busca" placeholder="Nome ou e-mail..." />
+					</div>
+					<div class="criati-field">
+						<label for="criati-admin-usuarios-filtro-status">Status global</label>
+						<select class="criati-select" id="criati-admin-usuarios-filtro-status">
+							<option value="">Todos</option>
+							<option value="ATIVO">Ativos</option>
+							<option value="INATIVO">Inativos</option>
+						</select>
+					</div>
+				</div>
+
+				<p id="criati-admin-usuarios-carregando">Carregando usuarios...</p>
+				<div id="criati-admin-usuarios-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar os usuarios agora.</p>
+				</div>
+				<div id="criati-admin-usuarios-vazio" class="criati-empty-state" hidden>
+					<p>Nenhum usuario encontrado para os filtros selecionados.</p>
+				</div>
+
+				<div class="criati-table-wrap" id="criati-admin-usuarios-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th scope="col">Nome</th>
+								<th scope="col">E-mail</th>
+								<th scope="col">Status global</th>
+								<th scope="col">Criado em</th>
+								<th scope="col">Empresas</th>
+								<th scope="col">Vinculos ativos</th>
+								<th scope="col">Acoes</th>
+							</tr>
+						</thead>
+						<tbody id="criati-admin-usuarios-tbody"></tbody>
+					</table>
+				</div>
+
+				<div class="criati-acessos-cards" id="criati-admin-usuarios-cards"></div>
+			</main>
+		</div>
+	</div>
+
+	<!-- Detalhe do usuario -->
+	<div class="criati-modal-overlay" id="criati-admin-usuario-detalhe-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-admin-usuario-detalhe-titulo">
+			<h2 id="criati-admin-usuario-detalhe-titulo">Detalhes do usuario</h2>
+			<div id="criati-admin-usuario-detalhe-corpo"></div>
+			<h3>Empresas vinculadas</h3>
+			<div id="criati-admin-usuario-detalhe-vinculos"></div>
+			<h3>Convites pendentes</h3>
+			<div id="criati-admin-usuario-detalhe-convites"></div>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-ghost" id="criati-admin-usuario-detalhe-fechar">Fechar</button>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-admin-usuarios.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiAdminUsuarios.iniciar();
+		});
+	</script>
+</body>
+</html>

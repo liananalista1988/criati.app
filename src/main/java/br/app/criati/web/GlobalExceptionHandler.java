@@ -29,6 +29,7 @@ import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.EmailJaCadastradoException;
 import br.app.criati.exception.EmpresaInativaException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
+import br.app.criati.exception.EmpresaStatusInvalidoException;
 import br.app.criati.exception.FinanceiroStatusInvalidoException;
 import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.LancamentoStatusInvalidoException;
@@ -84,6 +85,7 @@ public class GlobalExceptionHandler {
 			AutoAlteracaoNaoPermitidaException.class,
 			VinculoStatusInvalidoException.class,
 			EmpresaInativaException.class,
+			EmpresaStatusInvalidoException.class,
 			AplicacaoInativaException.class,
 			ContaFinanceiraInativaException.class,
 			CategoriaFinanceiraInativaException.class,

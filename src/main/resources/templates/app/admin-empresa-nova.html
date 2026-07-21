@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<title>Nova empresa · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-acessos.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('admin-empresas')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Nova empresa</h1>
+					<p><a href="/app/admin/empresas">&larr; Voltar para empresas</a></p>
+				</div>
+
+				<form class="criati-modal-form" id="criati-onboarding-form" style="max-width: 640px;">
+					<section class="criati-next-steps" aria-labelledby="criati-onboarding-secao-empresa">
+						<h2 id="criati-onboarding-secao-empresa">1. Dados da empresa</h2>
+						<div class="criati-field">
+							<label for="criati-onboarding-nome">Nome</label>
+							<input class="criati-input" type="text" id="criati-onboarding-nome" required maxlength="150" />
+						</div>
+						<div class="criati-field">
+							<label for="criati-onboarding-nome-fantasia">Nome fantasia (opcional)</label>
+							<input class="criati-input" type="text" id="criati-onboarding-nome-fantasia" maxlength="150" />
+						</div>
+						<div class="criati-field">
+							<label for="criati-onboarding-cnpj">CNPJ</label>
+							<input class="criati-input" type="text" id="criati-onboarding-cnpj" required maxlength="18" />
+						</div>
+					</section>
+
+					<section class="criati-next-steps" aria-labelledby="criati-onboarding-secao-aplicacoes">
+						<h2 id="criati-onboarding-secao-aplicacoes">2. Aplicacoes iniciais</h2>
+						<div class="criati-field">
+							<label>
+								<input type="checkbox" id="criati-onboarding-app-financeiro" checked /> Financeiro
+							</label>
+						</div>
+						<div class="criati-field">
+							<label>
+								<input type="checkbox" id="criati-onboarding-app-clinica" /> Clinica (demonstrativa)
+							</label>
+						</div>
+					</section>
+
+					<section class="criati-next-steps" aria-labelledby="criati-onboarding-secao-administrador">
+						<h2 id="criati-onboarding-secao-administrador">3. Administrador inicial</h2>
+
+						<div class="criati-field">
+							<label>
+								<input type="radio" name="criati-onboarding-modo-admin" value="existente" checked />
+								Usuario existente
+							</label>
+							<label>
+								<input type="radio" name="criati-onboarding-modo-admin" value="convite" />
+								Novo usuario (por convite)
+							</label>
+						</div>
+
+						<div id="criati-onboarding-admin-existente">
+							<div class="criati-field criati-field-busca">
+								<label for="criati-onboarding-admin-busca">Buscar usuario por nome ou e-mail</label>
+								<input class="criati-input" type="text" id="criati-onboarding-admin-busca" placeholder="Digite para buscar..." />
+							</div>
+							<div id="criati-onboarding-admin-resultados" class="criati-acessos-cards"></div>
+							<p class="criati-texto-ajuda" id="criati-onboarding-admin-selecionado" hidden></p>
+						</div>
+
+						<div id="criati-onboarding-admin-convite" hidden>
+							<div class="criati-field">
+								<label for="criati-onboarding-admin-nome">Nome</label>
+								<input class="criati-input" type="text" id="criati-onboarding-admin-nome" maxlength="150" />
+							</div>
+							<div class="criati-field">
+								<label for="criati-onboarding-admin-email">E-mail</label>
+								<input class="criati-input" type="email" id="criati-onboarding-admin-email" maxlength="180" />
+							</div>
+							<p class="criati-texto-ajuda">A pessoa convidada definira a propria senha ao aceitar o convite.</p>
+						</div>
+					</section>
+
+					<div id="criati-onboarding-erro" class="criati-error-state" hidden>
+						<p id="criati-onboarding-erro-mensagem">Nao foi possivel concluir o onboarding.</p>
+					</div>
+
+					<div class="criati-modal-acoes">
+						<a href="/app/admin/empresas" class="criati-btn criati-btn-ghost">Cancelar</a>
+						<button type="submit" class="criati-btn criati-btn-primary" id="criati-onboarding-confirmar">
+							Criar empresa
+						</button>
+					</div>
+				</form>
+			</main>
+		</div>
+	</div>
+
+	<!-- Sucesso -->
+	<div class="criati-modal-overlay" id="criati-onboarding-sucesso-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-onboarding-sucesso-titulo">
+			<h2 id="criati-onboarding-sucesso-titulo">Empresa criada</h2>
+			<p id="criati-onboarding-sucesso-mensagem"></p>
+			<div id="criati-onboarding-sucesso-link" class="criati-link-copiar" hidden>
+				<input class="criati-input" type="text" id="criati-onboarding-sucesso-link-input" readonly aria-label="Link do convite" />
+				<button type="button" class="criati-btn criati-btn-ghost" id="criati-onboarding-sucesso-copiar">Copiar link</button>
+			</div>
+			<p class="criati-texto-ajuda" id="criati-onboarding-sucesso-aviso" hidden>
+				Disponivel apenas neste ambiente local/test.
+			</p>
+			<div class="criati-modal-acoes">
+				<a class="criati-btn criati-btn-primary" id="criati-onboarding-sucesso-ver-empresa" href="#">Ver empresa</a>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-admin-empresa-nova.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiAdminEmpresaNova.iniciar();
+		});
+	</script>
+</body>
+</html>

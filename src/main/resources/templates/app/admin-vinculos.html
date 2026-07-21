@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<title>Vinculos · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-acessos.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('admin-vinculos')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-acessos-header">
+					<div>
+						<h1>Vinculos</h1>
+						<p>Usuario &rarr; Empresa &rarr; Perfil &rarr; Status, em toda a plataforma.</p>
+						<p class="criati-acessos-contador" id="criati-admin-vinculos-contador"></p>
+					</div>
+					<button type="button" id="criati-admin-vinculo-novo" class="criati-btn criati-btn-primary">
+						Novo vinculo
+					</button>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field criati-field-busca">
+						<label for="criati-admin-vinculos-busca">Buscar</label>
+						<input class="criati-input" type="text" id="criati-admin-vinculos-busca"
+							placeholder="Usuario ou empresa..." />
+					</div>
+					<div class="criati-field">
+						<label for="criati-admin-vinculos-filtro-empresa">Empresa</label>
+						<select class="criati-select" id="criati-admin-vinculos-filtro-empresa">
+							<option value="">Todas</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="criati-admin-vinculos-filtro-perfil">Perfil</label>
+						<select class="criati-select" id="criati-admin-vinculos-filtro-perfil">
+							<option value="">Todos</option>
+							<option value="ADMINISTRADOR">Administrador</option>
+							<option value="GESTOR">Gestor</option>
+							<option value="USUARIO">Usuario</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="criati-admin-vinculos-filtro-status">Status</label>
+						<select class="criati-select" id="criati-admin-vinculos-filtro-status">
+							<option value="">Todos</option>
+							<option value="ATIVO">Ativos</option>
+							<option value="INATIVO">Inativos</option>
+						</select>
+					</div>
+				</div>
+
+				<p id="criati-admin-vinculos-carregando">Carregando vinculos...</p>
+				<div id="criati-admin-vinculos-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar os vinculos agora.</p>
+				</div>
+				<div id="criati-admin-vinculos-vazio" class="criati-empty-state" hidden>
+					<p>Nenhum vinculo encontrado para os filtros selecionados.</p>
+				</div>
+
+				<div class="criati-table-wrap" id="criati-admin-vinculos-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th scope="col">Usuario</th>
+								<th scope="col">E-mail</th>
+								<th scope="col">Empresa</th>
+								<th scope="col">Perfil</th>
+								<th scope="col">Status</th>
+								<th scope="col">Vinculo desde</th>
+								<th scope="col">Acoes</th>
+							</tr>
+						</thead>
+						<tbody id="criati-admin-vinculos-tbody"></tbody>
+					</table>
+				</div>
+
+				<div class="criati-acessos-cards" id="criati-admin-vinculos-cards"></div>
+			</main>
+		</div>
+	</div>
+
+	<!-- Novo vinculo -->
+	<div class="criati-modal-overlay" id="criati-vinculo-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-vinculo-modal-titulo">
+			<h2 id="criati-vinculo-modal-titulo">Novo vinculo</h2>
+			<form class="criati-modal-form" id="criati-vinculo-form">
+				<div class="criati-field">
+					<label for="criati-vinculo-empresa">Empresa</label>
+					<select class="criati-select" id="criati-vinculo-empresa" required>
+						<option value="">Selecione...</option>
+					</select>
+				</div>
+				<div class="criati-field criati-field-busca">
+					<label for="criati-vinculo-usuario-busca">Buscar usuario por nome ou e-mail</label>
+					<input class="criati-input" type="text" id="criati-vinculo-usuario-busca" placeholder="Digite para buscar..." />
+				</div>
+				<div id="criati-vinculo-usuario-resultados" class="criati-acessos-cards"></div>
+				<p class="criati-texto-ajuda" id="criati-vinculo-usuario-selecionado" hidden></p>
+				<div class="criati-field">
+					<label for="criati-vinculo-perfil">Perfil</label>
+					<select class="criati-select" id="criati-vinculo-perfil" required>
+						<option value="ADMINISTRADOR">Administrador</option>
+						<option value="GESTOR">Gestor</option>
+						<option value="USUARIO" selected>Usuario</option>
+					</select>
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="criati-vinculo-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="criati-vinculo-salvar">Criar vinculo</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Alterar perfil -->
+	<div class="criati-modal-overlay" id="criati-vinculo-perfil-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-vinculo-perfil-modal-titulo">
+			<h2 id="criati-vinculo-perfil-modal-titulo">Alterar perfil</h2>
+			<form class="criati-modal-form" id="criati-vinculo-perfil-form">
+				<div class="criati-field">
+					<label for="criati-vinculo-perfil-select">Novo perfil</label>
+					<select class="criati-select" id="criati-vinculo-perfil-select" required>
+						<option value="ADMINISTRADOR">Administrador</option>
+						<option value="GESTOR">Gestor</option>
+						<option value="USUARIO">Usuario</option>
+					</select>
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="criati-vinculo-perfil-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="criati-vinculo-perfil-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Confirmacao (suspender/reativar/remover) -->
+	<div class="criati-modal-overlay" id="criati-confirmar-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-confirmar-titulo">
+			<h2 id="criati-confirmar-titulo">Confirmar</h2>
+			<p id="criati-confirmar-mensagem"></p>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-ghost" id="criati-confirmar-cancelar">Cancelar</button>
+				<button type="button" class="criati-btn criati-btn-primary" id="criati-confirmar-confirmar">Confirmar</button>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-admin-vinculos.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiAdminVinculos.iniciar();
+		});
+	</script>
+</body>
+</html>

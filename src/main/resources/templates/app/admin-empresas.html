@@ -6,38 +6,93 @@
 	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
 	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
-	<title>Administracao de Empresas · Criati</title>
+	<title>Empresas · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-acessos.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar(null)}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('admin-empresas')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 			<main class="criati-content">
-				<div class="criati-page-header">
-					<h1>Administracao de Empresas</h1>
-					<p>Habilite ou desabilite aplicacoes do catalogo para cada empresa.</p>
+				<div class="criati-acessos-header">
+					<div>
+						<h1>Empresas</h1>
+						<p>Onboarding e administracao das empresas da plataforma.</p>
+						<p class="criati-acessos-contador" id="criati-admin-empresas-contador"></p>
+					</div>
+					<a href="/app/admin/empresas/nova" class="criati-btn criati-btn-primary">Nova empresa</a>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field criati-field-busca">
+						<label for="criati-admin-empresas-busca">Buscar</label>
+						<input class="criati-input" type="text" id="criati-admin-empresas-busca" placeholder="Nome da empresa..." />
+					</div>
+					<div class="criati-field">
+						<label for="criati-admin-empresas-filtro-status">Status</label>
+						<select class="criati-select" id="criati-admin-empresas-filtro-status">
+							<option value="">Todos</option>
+							<option value="ATIVO">Ativas</option>
+							<option value="INATIVO">Inativas</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="criati-admin-empresas-filtro-aplicacao">Aplicacao habilitada</label>
+						<select class="criati-select" id="criati-admin-empresas-filtro-aplicacao">
+							<option value="">Todas</option>
+							<option value="FINANCEIRO">Financeiro</option>
+							<option value="CLINICA">Clinica</option>
+						</select>
+					</div>
 				</div>
 
 				<p id="criati-admin-empresas-carregando">Carregando empresas...</p>
-
 				<div id="criati-admin-empresas-erro" class="criati-error-state" hidden>
 					<p>Nao foi possivel carregar as empresas agora.</p>
 				</div>
-
-				<section aria-label="Empresas" id="criati-admin-empresas-lista"></section>
-
-				<div id="criati-admin-empresa-detalhe" class="criati-next-steps" hidden>
-					<h2 id="criati-admin-empresa-detalhe-titulo">Aplicacoes</h2>
-					<div id="criati-admin-empresa-detalhe-lista"></div>
+				<div id="criati-admin-empresas-vazio" class="criati-empty-state" hidden>
+					<p>Nenhuma empresa encontrada para os filtros selecionados.</p>
 				</div>
+
+				<div class="criati-table-wrap" id="criati-admin-empresas-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th scope="col">Nome</th>
+								<th scope="col">CNPJ</th>
+								<th scope="col">Status</th>
+								<th scope="col">Criada em</th>
+								<th scope="col">Usuarios ativos</th>
+								<th scope="col">Administradores</th>
+								<th scope="col">Aplicacoes</th>
+								<th scope="col">Acoes</th>
+							</tr>
+						</thead>
+						<tbody id="criati-admin-empresas-tbody"></tbody>
+					</table>
+				</div>
+
+				<div class="criati-acessos-cards" id="criati-admin-empresas-cards"></div>
 			</main>
+		</div>
+	</div>
+
+	<!-- Confirmacao (ativar/inativar) -->
+	<div class="criati-modal-overlay" id="criati-confirmar-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-confirmar-titulo">
+			<h2 id="criati-confirmar-titulo">Confirmar</h2>
+			<p id="criati-confirmar-mensagem"></p>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-ghost" id="criati-confirmar-cancelar">Cancelar</button>
+				<button type="button" class="criati-btn criati-btn-primary" id="criati-confirmar-confirmar">Confirmar</button>
+			</div>
 		</div>
 	</div>
 
@@ -47,13 +102,13 @@
 	<script th:src="@{/js/criati-tema.js}"></script>
 	<script th:src="@{/js/criati-ui.js}"></script>
 	<script th:src="@{/js/criati-auth.js}"></script>
-	<script th:src="@{/js/criati-admin-aplicacoes.js}"></script>
+	<script th:src="@{/js/criati-admin-empresas.js}"></script>
 	<script th:inline="javascript">
 		document.addEventListener("DOMContentLoaded", function () {
 			CriatiUI.initSidebarToggle();
 			CriatiUI.initUserMenu();
 			CriatiAuth.initLogout();
-			CriatiAdminAplicacoes.carregarEmpresas();
+			CriatiAdminEmpresas.iniciar();
 		});
 	</script>
 </body>

@@ -283,11 +283,43 @@ Endpoints que exigem Superadministrador:
 POST /api/empresas
 POST /api/usuarios
 POST /api/admin/empresas
+POST /api/admin/empresas/com-administrador-existente
+POST /api/admin/empresas/com-administrador-convidado
 GET  /api/admin/empresas
+GET  /api/admin/empresas/{id}
+POST /api/admin/empresas/{id}/ativar
+POST /api/admin/empresas/{id}/inativar
+GET  /api/admin/empresas/{id}/convites
+POST /api/admin/empresas/{id}/convites
+DELETE /api/admin/empresas/{id}/convites/{conviteId}
+GET  /api/admin/usuarios
+GET  /api/admin/usuarios/{id}
+GET  /api/admin/vinculos
+POST /api/admin/vinculos
+PATCH /api/admin/vinculos/{id}/perfil
+POST /api/admin/vinculos/{id}/suspender
+POST /api/admin/vinculos/{id}/reativar
+DELETE /api/admin/vinculos/{id}
+GET  /api/admin/dashboard
 GET  /api/admin/me
 ```
 
-`POST /api/admin/empresas` cria a empresa e seu primeiro administrador (com o vínculo `ADMINISTRADOR`) em uma única operação transacional — é o caminho para dar os primeiros passos em uma empresa nova, já que `POST /api/usuarios-empresas` exige uma empresa ativa selecionada, que por sua vez exige um vínculo já existente.
+`POST /api/admin/empresas` cria a empresa e seu primeiro administrador (com o vínculo `ADMINISTRADOR`) em uma única operação transacional, com a senha informada na própria chamada — mantido para compatibilidade, mas não é mais usado pela tela de onboarding. `POST /api/admin/empresas/com-administrador-existente` (vincula um usuário global já existente, sem tocar em senha) e `POST /api/admin/empresas/com-administrador-convidado` (gera convite de `ADMINISTRADOR`, senha definida pelo próprio convidado) são os dois caminhos usados pelo painel administrativo (`/app/admin/empresas/nova`). Ambos aceitam `aplicacoesIniciais` (lista de códigos do catálogo a habilitar já na criação).
+
+## Painel administrativo global
+
+Área exclusiva do Superadministrador, separada do contexto empresarial (nunca troca a empresa ativa da sessão, nunca aceita `empresaId` arbitrário):
+
+```text
+GET /app/admin                    (visão geral: números reais da plataforma)
+GET /app/admin/empresas           (listagem: busca, filtros, ativar/inativar)
+GET /app/admin/empresas/nova      (onboarding: empresa + aplicações + administrador)
+GET /app/admin/empresas/{id}      (detalhe: dados gerais, aplicações, usuários/vínculos, convites, situação operacional)
+GET /app/admin/usuarios           (usuários globais: somente consulta)
+GET /app/admin/vinculos           (vínculos usuário↔empresa: criar, alterar perfil, suspender, reativar, remover)
+```
+
+Todas exigem `ROLE_SUPERADMIN` (`SecurityConfig`, prefixo `/app/admin/**`); a sidebar mostra a seção "Administração da plataforma" somente para quem tem essa authority (o link some para os demais usuários, mas a autorização real está sempre no backend). Sem ativação/inativação de usuário global nesta fase (somente consulta) e sem paginação real nas listagens (volume inicial pequeno, filtros aplicados em memória/cliente). Detalhes completos, limitações e decisões em [docs/PAINEL_ADMINISTRATIVO.md](docs/PAINEL_ADMINISTRATIVO.md) e em [Decisões](docs/DECISOES.md), seção "Painel administrativo completo do Superadministrador".
 
 ## Convites
 

@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 import br.app.criati.aplicacao.service.AplicacaoService;
 import br.app.criati.exception.AcessoNegadoException;
@@ -106,11 +107,37 @@ public class PaginaController {
 		return "app/clinica";
 	}
 
+	// Autorizacao real (ROLE_SUPERADMIN) e declarada no SecurityConfig para todo
+	// o prefixo /app/admin/** ("/app/admin/**".hasAuthority(ROLE_SUPERADMIN)),
+	// nao checada aqui - mesmo padrao ja usado por /api/admin/**.
+	@GetMapping("/app/admin")
+	public String adminDashboard() {
+		return "app/admin-dashboard";
+	}
+
 	@GetMapping("/app/admin/empresas")
 	public String adminEmpresas() {
-		// Autorizacao real (ROLE_SUPERADMIN) e declarada no SecurityConfig, nao
-		// checada aqui - mesmo padrao ja usado por /api/admin/**.
 		return "app/admin-empresas";
+	}
+
+	@GetMapping("/app/admin/empresas/nova")
+	public String adminEmpresaNova() {
+		return "app/admin-empresa-nova";
+	}
+
+	@GetMapping("/app/admin/empresas/{empresaId}")
+	public String adminEmpresaDetalhe() {
+		return "app/admin-empresa-detalhe";
+	}
+
+	@GetMapping("/app/admin/usuarios")
+	public String adminUsuarios() {
+		return "app/admin-usuarios";
+	}
+
+	@GetMapping("/app/admin/vinculos")
+	public String adminVinculos() {
+		return "app/admin-vinculos";
 	}
 
 	// ADMINISTRADOR/GESTOR/USUARIO sao perfis por empresa (UsuarioEmpresa), nao
@@ -146,6 +173,16 @@ public class PaginaController {
 				.map(ContextoEmpresaAtual::empresaId)
 				.map(empresaId -> aplicacaoService.possuiAplicacaoAtiva(empresaId, codigoAplicacao))
 				.orElse(false);
+	}
+
+	// Disponivel em todo template renderizado por este controller (inclusive
+	// paginas publicas, onde o principal e nulo): usado pelo fragmento da
+	// sidebar para mostrar a secao "Administracao da plataforma" somente para
+	// quem tem ROLE_SUPERADMIN - nunca concede acesso, apenas exibe o link
+	// (a autorizacao real continua inteiramente no SecurityConfig).
+	@ModelAttribute("superAdministrador")
+	public boolean superAdministrador(@AuthenticationPrincipal UsuarioPrincipal principal) {
+		return principal != null && principal.getUsuario().isSuperAdministrador();
 	}
 
 	private boolean usuarioAutenticado() {

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<title>Detalhe da empresa · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-acessos.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('admin-empresas')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1 id="criati-empresa-detalhe-nome">Carregando...</h1>
+					<p><a href="/app/admin/empresas">&larr; Voltar para empresas</a></p>
+				</div>
+
+				<p id="criati-empresa-detalhe-carregando">Carregando dados da empresa...</p>
+				<div id="criati-empresa-detalhe-erro" class="criati-error-state" hidden>
+					<p>Nao foi possivel carregar esta empresa agora.</p>
+				</div>
+
+				<div id="criati-empresa-detalhe-conteudo" hidden>
+					<!-- Dados gerais -->
+					<section class="criati-next-steps" aria-labelledby="criati-secao-dados-gerais">
+						<h2 id="criati-secao-dados-gerais">Dados gerais</h2>
+						<div id="criati-empresa-detalhe-corpo"></div>
+						<div class="criati-acesso-card-acoes" id="criati-empresa-detalhe-acoes"></div>
+					</section>
+
+					<!-- Aplicacoes -->
+					<section class="criati-next-steps" aria-labelledby="criati-secao-aplicacoes">
+						<h2 id="criati-secao-aplicacoes">Aplicacoes</h2>
+						<div id="criati-empresa-aplicacoes-lista"></div>
+					</section>
+
+					<!-- Usuarios e vinculos -->
+					<section class="criati-next-steps" aria-labelledby="criati-secao-usuarios">
+						<h2 id="criati-secao-usuarios">Usuarios e vinculos</h2>
+						<div id="criati-empresa-usuarios-resumo"></div>
+						<p><a id="criati-empresa-ver-vinculos" href="#">Ver todos os vinculos desta empresa &rarr;</a></p>
+					</section>
+
+					<!-- Convites -->
+					<section class="criati-next-steps" aria-labelledby="criati-secao-convites">
+						<div class="criati-acessos-header">
+							<h2 id="criati-secao-convites">Convites</h2>
+							<button type="button" id="criati-empresa-convite-novo" class="criati-btn criati-btn-primary">
+								Novo convite
+							</button>
+						</div>
+						<div id="criati-empresa-convites-vazio" class="criati-empty-state" hidden>
+							<p>Nenhum convite para esta empresa ainda.</p>
+						</div>
+						<div class="criati-table-wrap" id="criati-empresa-convites-wrap" hidden>
+							<table class="criati-table">
+								<thead>
+									<tr>
+										<th scope="col">E-mail</th>
+										<th scope="col">Perfil</th>
+										<th scope="col">Status</th>
+										<th scope="col">Criado em</th>
+										<th scope="col">Expira em</th>
+										<th scope="col">Acoes</th>
+									</tr>
+								</thead>
+								<tbody id="criati-empresa-convites-tbody"></tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<!-- Novo convite -->
+	<div class="criati-modal-overlay" id="criati-convite-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-convite-modal-titulo">
+			<h2 id="criati-convite-modal-titulo">Novo convite</h2>
+			<form class="criati-modal-form" id="criati-convite-form">
+				<div class="criati-field">
+					<label for="criati-convite-email">E-mail</label>
+					<input class="criati-input" type="email" id="criati-convite-email" required maxlength="180" />
+				</div>
+				<div class="criati-field">
+					<label for="criati-convite-perfil">Perfil</label>
+					<select class="criati-select" id="criati-convite-perfil" required>
+						<option value="ADMINISTRADOR">Administrador</option>
+						<option value="GESTOR">Gestor</option>
+						<option value="USUARIO">Usuario</option>
+					</select>
+				</div>
+				<p class="criati-texto-ajuda">A pessoa convidada definira a propria senha ao aceitar o convite.</p>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="criati-convite-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="criati-convite-salvar">Enviar convite</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Sucesso da criacao (com ou sem link local) -->
+	<div class="criati-modal-overlay" id="criati-convite-sucesso-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-convite-sucesso-titulo">
+			<h2 id="criati-convite-sucesso-titulo">Convite criado</h2>
+			<p id="criati-convite-sucesso-mensagem"></p>
+			<div id="criati-convite-sucesso-link" class="criati-link-copiar" hidden>
+				<input class="criati-input" type="text" id="criati-convite-sucesso-link-input" readonly aria-label="Link do convite" />
+				<button type="button" class="criati-btn criati-btn-ghost" id="criati-convite-sucesso-copiar">Copiar link</button>
+			</div>
+			<p class="criati-texto-ajuda" id="criati-convite-sucesso-aviso" hidden>
+				Disponivel apenas neste ambiente local/test.
+			</p>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-primary" id="criati-convite-sucesso-fechar">Fechar</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Confirmacao generica -->
+	<div class="criati-modal-overlay" id="criati-confirmar-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-confirmar-titulo">
+			<h2 id="criati-confirmar-titulo">Confirmar</h2>
+			<p id="criati-confirmar-mensagem"></p>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-ghost" id="criati-confirmar-cancelar">Cancelar</button>
+				<button type="button" class="criati-btn criati-btn-primary" id="criati-confirmar-confirmar">Confirmar</button>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-admin-empresa-detalhe.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiAdminEmpresaDetalhe.iniciar();
+		});
+	</script>
+</body>
+</html>

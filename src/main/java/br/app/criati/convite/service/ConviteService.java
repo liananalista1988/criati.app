@@ -59,19 +59,35 @@ public class ConviteService {
 	@Transactional
 	public ConviteCriado criar(String email, PerfilUsuario perfil, ContextoEmpresaAtual contextoChamador) {
 		Objects.requireNonNull(contextoChamador, "contextoChamador e obrigatorio");
+		if (contextoChamador.perfil() != PerfilUsuario.ADMINISTRADOR) {
+			throw new AcessoNegadoException();
+		}
+		return criarInterno(contextoChamador.empresaId(), email, perfil, contextoChamador.usuarioId());
+	}
+
+	// Variante para o painel global do Superadministrador: nao existe
+	// contexto de empresa ativa (Superadministrador nao possui vinculo), entao
+	// a empresa e informada diretamente pelo id (nunca por dado do cliente
+	// sem validacao - buscarEmpresa/UsuarioNaoEncontrado ja garantem que
+	// ambos existem). Usada apenas pelo onboarding/gestao de convites do
+	// painel administrativo, sempre atras de ROLE_SUPERADMIN.
+	@Transactional
+	public ConviteCriado criarComoSuperAdministrador(
+			UUID empresaId, String email, PerfilUsuario perfil, UUID criadoPorUsuarioId) {
+		return criarInterno(empresaId, email, perfil, criadoPorUsuarioId);
+	}
+
+	private ConviteCriado criarInterno(UUID empresaId, String email, PerfilUsuario perfil, UUID criadoPorUsuarioId) {
 		if (email == null || email.isBlank()) {
 			throw new DadosInvalidosException("E-mail e obrigatorio");
 		}
 		if (perfil == null) {
 			throw new DadosInvalidosException("Perfil e obrigatorio");
 		}
-		if (contextoChamador.perfil() != PerfilUsuario.ADMINISTRADOR) {
-			throw new AcessoNegadoException();
-		}
 
-		Empresa empresa = empresaRepository.findById(contextoChamador.empresaId())
+		Empresa empresa = empresaRepository.findById(empresaId)
 				.orElseThrow(EmpresaNaoEncontradaException::new);
-		Usuario criadoPor = usuarioRepository.findById(contextoChamador.usuarioId())
+		Usuario criadoPor = usuarioRepository.findById(criadoPorUsuarioId)
 				.orElseThrow(UsuarioNaoEncontradoException::new);
 		String emailNormalizado = email.trim().toLowerCase(Locale.ROOT);
 
@@ -102,6 +118,16 @@ public class ConviteService {
 		return conviteRepository.findAllByEmpresaId(contextoChamador.empresaId());
 	}
 
+	// Variante para o painel global: lista os convites de qualquer empresa,
+	// identificada pelo id (sem exigir contexto/sessao de empresa ativa).
+	@Transactional(readOnly = true)
+	public List<Convite> listarPorEmpresaComoSuperAdministrador(UUID empresaId) {
+		if (!empresaRepository.existsById(empresaId)) {
+			throw new EmpresaNaoEncontradaException();
+		}
+		return conviteRepository.findAllByEmpresaId(empresaId);
+	}
+
 	@Transactional
 	public void revogar(UUID conviteId, ContextoEmpresaAtual contextoChamador) {
 		Objects.requireNonNull(contextoChamador, "contextoChamador e obrigatorio");
@@ -112,11 +138,23 @@ public class ConviteService {
 		Convite convite = conviteRepository
 				.findByIdAndEmpresaId(conviteId, contextoChamador.empresaId())
 				.orElseThrow(AcessoNegadoException::new);
+		revogarConvite(convite);
+	}
 
+	// Variante para o painel global: identifica o convite por empresa+id
+	// diretamente (sem contexto de sessao), sempre atras de ROLE_SUPERADMIN.
+	@Transactional
+	public void revogarComoSuperAdministrador(UUID empresaId, UUID conviteId) {
+		Convite convite = conviteRepository
+				.findByIdAndEmpresaId(conviteId, empresaId)
+				.orElseThrow(() -> new DadosInvalidosException("Convite nao encontrado para esta empresa"));
+		revogarConvite(convite);
+	}
+
+	private void revogarConvite(Convite convite) {
 		if (convite.getStatus() != StatusConvite.PENDENTE) {
 			throw new DadosInvalidosException("Convite nao pode ser revogado");
 		}
-
 		convite.revogar();
 		conviteRepository.save(convite);
 	}
