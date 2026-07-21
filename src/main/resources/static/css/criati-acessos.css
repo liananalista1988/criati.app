@@ -1,0 +1,275 @@
+/* Criati - telas de Usuarios e Convites: toolbar de filtros, tabela desktop,
+   cards mobile, badges de status/perfil e modais (formulario e confirmacao). */
+
+.criati-acessos-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+.criati-acessos-contador {
+	color: var(--criati-text-muted);
+	font-size: 0.85rem;
+	margin-top: 4px;
+}
+
+.criati-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: flex-end;
+	margin-bottom: 20px;
+}
+
+.criati-toolbar .criati-field {
+	min-width: 160px;
+}
+
+.criati-toolbar .criati-field-busca {
+	flex: 1;
+	min-width: 220px;
+}
+
+/* Tabela (desktop) */
+
+.criati-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	margin-bottom: 24px;
+}
+
+.criati-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+.criati-table th,
+.criati-table td {
+	padding: 12px 14px;
+	text-align: left;
+	white-space: nowrap;
+	border-bottom: 1px solid var(--criati-border);
+}
+
+.criati-table th {
+	color: var(--criati-text-muted);
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	background: var(--criati-surface-alt);
+}
+
+.criati-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.criati-table tbody tr:hover {
+	background: var(--criati-surface-hover);
+}
+
+.criati-table-acoes {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+/* Cards (mobile) */
+
+.criati-acessos-cards {
+	display: none;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.criati-acesso-card {
+	background: var(--criati-surface);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.criati-acesso-card-titulo {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 700;
+	font-size: 1rem;
+}
+
+.criati-acesso-card-linha {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+	font-size: 0.85rem;
+	color: var(--criati-text-muted);
+}
+
+.criati-acesso-card-linha span:last-child {
+	color: var(--criati-text);
+	text-align: right;
+}
+
+.criati-acesso-card-acoes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 6px;
+}
+
+@media (max-width: 768px) {
+	.criati-table-wrap {
+		display: none;
+	}
+
+	.criati-acessos-cards {
+		display: flex;
+	}
+}
+
+/* Badges */
+
+.criati-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.criati-badge-voce {
+	background: var(--criati-surface-alt);
+	color: var(--criati-accent);
+	border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.criati-badge-pendente {
+	background: rgba(234, 179, 8, 0.15);
+	color: #fde68a;
+}
+
+.criati-badge-ativo,
+.criati-badge-utilizado {
+	background: rgba(34, 197, 94, 0.15);
+	color: #bbf7d0;
+}
+
+.criati-badge-inativo,
+.criati-badge-expirado {
+	background: rgba(148, 163, 184, 0.18);
+	color: var(--criati-text-muted);
+}
+
+.criati-badge-revogado {
+	background: rgba(239, 68, 68, 0.15);
+	color: #fecaca;
+}
+
+.criati-badge-perfil {
+	background: var(--criati-surface-alt);
+	color: var(--criati-text);
+	border: 1px solid var(--criati-border);
+}
+
+/* Botao sem permissao/estado indisponivel: continua legivel, so perde enfase */
+
+.criati-btn[disabled] {
+	cursor: not-allowed;
+}
+
+/* Modais (formulario e confirmacao) */
+
+.criati-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(2, 6, 14, 0.65);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 40px 16px;
+	overflow-y: auto;
+	z-index: 500;
+}
+
+.criati-modal-overlay[hidden] {
+	display: none;
+}
+
+.criati-modal {
+	background: var(--criati-surface);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	box-shadow: var(--criati-shadow);
+	width: 100%;
+	max-width: 480px;
+	padding: 24px;
+}
+
+.criati-modal h2 {
+	font-size: 1.1rem;
+	margin-bottom: 12px;
+}
+
+.criati-modal p {
+	color: var(--criati-text-muted);
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.criati-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin-top: 12px;
+}
+
+.criati-modal-acoes {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 18px;
+}
+
+.criati-modal-detalhe-linha {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--criati-border);
+	font-size: 0.9rem;
+}
+
+.criati-modal-detalhe-linha:last-of-type {
+	border-bottom: none;
+}
+
+.criati-modal-detalhe-linha span:first-child {
+	color: var(--criati-text-muted);
+}
+
+.criati-link-copiar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.criati-link-copiar input {
+	flex: 1;
+}
+
+.criati-texto-ajuda {
+	font-size: 0.78rem;
+	color: var(--criati-text-muted);
+	margin-top: 4px;
+}

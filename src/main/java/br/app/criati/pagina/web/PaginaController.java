@@ -8,8 +8,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import br.app.criati.aplicacao.service.AplicacaoService;
+import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.security.UsuarioPrincipal;
 import br.app.criati.shared.enums.CodigoAplicacao;
+import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.tenant.ContextoEmpresaService;
 import jakarta.servlet.http.HttpSession;
@@ -99,6 +101,33 @@ public class PaginaController {
 		// Autorizacao real (ROLE_SUPERADMIN) e declarada no SecurityConfig, nao
 		// checada aqui - mesmo padrao ja usado por /api/admin/**.
 		return "app/admin-empresas";
+	}
+
+	// ADMINISTRADOR/GESTOR/USUARIO sao perfis por empresa (UsuarioEmpresa), nao
+	// authorities do Spring Security - por isso a checagem acontece aqui, nao
+	// via hasAuthority(...) no SecurityConfig (que so conhece ROLE_SUPERADMIN).
+	// AcessoNegadoException e tratada pelo GlobalExceptionHandler (403 JSON),
+	// mesmo padrao ja usado pela API para nao revelar o motivo especifico
+	// (sem contexto vs. perfil insuficiente) - inclui Superadministrador sem
+	// vinculo empresarial, que ja falha em exigirContextoAtivo.
+	@GetMapping("/app/usuarios")
+	public String usuarios(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		exigirAdministradorNaEmpresaAtiva(session, principal);
+		return "app/usuarios";
+	}
+
+	@GetMapping("/app/convites")
+	public String convites(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		exigirAdministradorNaEmpresaAtiva(session, principal);
+		return "app/convites";
+	}
+
+	private void exigirAdministradorNaEmpresaAtiva(HttpSession session, UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (contexto.perfil() != PerfilUsuario.ADMINISTRADOR) {
+			throw new AcessoNegadoException();
+		}
 	}
 
 	private boolean possuiAplicacaoAtivaNaEmpresaAtiva(

@@ -267,7 +267,7 @@ GET /app            autenticada; redireciona para /app/dashboard
 GET /app/dashboard  autenticada; layout com sidebar, topbar e dashboard inicial
 ```
 
-A interface consome exclusivamente a API já existente (`/api/auth/*`, `/api/contexto/*`); ela não decide autorização, não guarda senha nem token sensível e não confia em dado local para segurança — o backend continua sendo a única fonte de verdade. Módulos de Usuários e Convites aparecem no menu como "Em breve": a navegação e a gestão completas desses módulos ficam para uma fase seguinte. Detalhes de arquitetura frontend, CSRF no navegador e estados de interface em [Decisões](docs/DECISOES.md), seção "Interface web".
+A interface consome exclusivamente a API já existente (`/api/auth/*`, `/api/contexto/*`); ela não decide autorização, não guarda senha nem token sensível e não confia em dado local para segurança — o backend continua sendo a única fonte de verdade. Os módulos de Usuários e Convites têm telas completas (ver seção "Telas de Usuários e Convites" abaixo). Detalhes de arquitetura frontend, CSRF no navegador e estados de interface em [Decisões](docs/DECISOES.md), seção "Interface web".
 
 ## Superadministrador e endpoints administrativos
 
@@ -313,6 +313,16 @@ DELETE /api/contexto/usuarios/{id}             (ADMINISTRADOR, empresa ativa)
 ```
 
 Suspensão e remoção são lógicas (o vínculo vira `INATIVO`; nunca há `DELETE` físico), preservam o `Usuario` global e os vínculos com outras empresas, e são bloqueadas quando afetariam o próprio vínculo do chamador ou o último `ADMINISTRADOR` ativo da empresa. Detalhes completos em [Decisões](docs/DECISOES.MD), seção "Gestão de acessos por empresa".
+
+## Telas de Usuários e Convites
+
+`GET /app/usuarios` e `GET /app/convites` (ambas exigem `ADMINISTRADOR` na empresa ativa; `GESTOR`/`USUARIO` recebem `403`) consomem integralmente os endpoints acima e de Convites — nenhum endpoint novo, nenhum `empresaId` enviado pelo cliente.
+
+Usuários: busca por nome/e-mail, filtros por perfil e status, tabela (desktop) e cards (mobile), detalhe do usuário, alterar perfil, suspender, reativar e remover acesso (lógico) — tudo com confirmação acessível e tratamento das respostas `400/401/403/404/409` do backend.
+
+Convites: listar com filtros (aplicados no cliente, já que o endpoint não os aceita), criar convite (perfil + e-mail), revogar (somente `PENDENTE`) e acompanhar status (`PENDENTE`/`UTILIZADO`/`EXPIRADO`/`REVOGADO`). Quando a resposta de criação inclui o token bruto (`local`/`test`), a interface mostra um link copiável (`{origem}/convites/{token}`) em um modal de sucesso — o token nunca é gravado em `localStorage`/`sessionStorage` nem logado, e é descartado ao fechar o modal. Em qualquer outro ambiente, mostra apenas aviso de que a entrega por e-mail será integrada em etapa futura. Não existe hoje uma página pública de aceite de convite (apenas a API já existente, `GET/POST /api/convites/{token}[/aceitar]`); construí-la fica para uma tarefa futura.
+
+Detalhes completos em [Decisões](docs/DECISOES.md), seção "Interface de Usuários e Convites".
 
 ## Catálogo de aplicações
 

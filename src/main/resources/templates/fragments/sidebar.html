@@ -43,7 +43,11 @@
 				     empresa ativa; este item nunca e exibido. -->
 				<li id="criati-nav-apps-dinamicas" hidden></li>
 				<li>
-					<a class="criati-nav-link is-disabled" href="#" aria-disabled="true" data-em-breve="true">
+					<a
+						class="criati-nav-link"
+						th:classappend="${paginaAtiva == 'usuarios'} ? 'is-active' : ''"
+						th:attr="aria-current=${paginaAtiva == 'usuarios'} ? 'page' : null"
+						href="/app/usuarios">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
 							<circle cx="10" cy="7" r="4" />
@@ -51,17 +55,19 @@
 							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
 						</svg>
 						Usuarios
-						<span class="criati-nav-badge">Em breve</span>
 					</a>
 				</li>
 				<li>
-					<a class="criati-nav-link is-disabled" href="#" aria-disabled="true" data-em-breve="true">
+					<a
+						class="criati-nav-link"
+						th:classappend="${paginaAtiva == 'convites'} ? 'is-active' : ''"
+						th:attr="aria-current=${paginaAtiva == 'convites'} ? 'page' : null"
+						href="/app/convites">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<path d="M4 4h16v16H4z" />
 							<path d="m4 6 8 7 8-7" />
 						</svg>
 						Convites
-						<span class="criati-nav-badge">Em breve</span>
 					</a>
 				</li>
 				<li>
