@@ -376,6 +376,25 @@ O MVP será dividido em duas etapas:
 - Segurança: `localStorage` guarda somente `criati.estilo` (`criati`/`windows`/`compact`) — nenhum dado de autenticação, sessão, token, empresa, usuário, e-mail, senha ou permissão. Nenhum endpoint novo; nenhuma alteração em `SecurityConfig`; nenhuma autorização decidida no frontend; nenhuma dependência ou migration.
 - Nenhum teste de execução real de JavaScript foi adicionado (mesma decisão já registrada nas fases anteriores). A cobertura automatizada (`PaginaEstiloTests`) é via `MockMvc`: presença e atributos do controle de estilo em página autenticada/`/login`/`/convites/{token}`, presença do script de preload e de `criati-estilo.js`, presença das variáveis de navegação/densidade em `criati-base.css` para os três estilos, ausência de dado sensível no HTML e no JavaScript servido, independência total entre os scripts de tema e de estilo (nenhum referencia o atributo do outro), e confirmação de que nenhuma rota privada nova foi liberada. A sintaxe de `criati-estilo.js` foi verificada com `node --check`. Validação visual num navegador real não foi possível neste ambiente (sem acesso a um Postgres local configurado nem a uma ferramenta de automação de navegador) — a revisão de estilo foi feita lendo o CSS/HTML resultante e conferindo cada combinação tema×estilo manualmente no código-fonte.
 
+## Correção do contexto de empresa do Superadministrador
+
+- Causa raiz do "skeleton preso" no seletor de empresa da topbar, identificado na homologação
+  visual (F4-008): puramente de frontend, não de autorização. `criati-contexto.js` só resolvia o
+  skeleton (`renderTopbarEmpresa`) no ramo de sucesso completo, nunca nos ramos "sem empresa" ou
+  "erro"; e as 6 páginas administrativas (`/app/admin/**`) nunca chamavam nenhum script que
+  populasse a topbar. Detalhes completos em `docs/CORRECAO-CONTEXTO-SUPERADMIN-F4-009.md`.
+- Decisão: detectar "é Superadministrador" no frontend por uma marcação já existente no DOM (o
+  link `href="/app/admin"` na sidebar, renderizado condicionalmente pelo servidor a partir do
+  model attribute `superAdministrador` já existente desde a F4-006) em vez de adicionar um campo
+  `superAdministrador` ao contrato de `/api/auth/me`. Motivo: `/api/auth/me` é um endpoint estável
+  já coberto por testes e consumido por múltiplas páginas; alterá-lo (mesmo de forma aditiva)
+  para uma necessidade puramente cosmética (qual mensagem mostrar em um estado vazio) não se
+  justificava frente à alternativa já disponível sem nenhuma mudança de contrato. Se uma
+  necessidade mais ampla de expor o papel do usuário ao frontend surgir no futuro, essa decisão
+  deve ser revisitada explicitamente aqui.
+- O Superadministrador não ganhou nenhum acesso novo: continua sem contexto de empresa ativa (por
+  regra de domínio, nunca tem vínculo próprio) e a correção é inteiramente de apresentação.
+
 ## Regra de alteração
 
 Nenhuma decisão estrutural registrada neste documento deverá ser alterada silenciosamente.

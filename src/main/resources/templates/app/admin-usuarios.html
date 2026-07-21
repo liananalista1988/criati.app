@@ -97,12 +97,14 @@
 	<script th:src="@{/js/criati-estilo.js}"></script>
 	<script th:src="@{/js/criati-ui.js}"></script>
 	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
 	<script th:src="@{/js/criati-admin-usuarios.js}"></script>
 	<script th:inline="javascript">
 		document.addEventListener("DOMContentLoaded", function () {
 			CriatiUI.initSidebarToggle();
 			CriatiUI.initUserMenu();
 			CriatiAuth.initLogout();
+			CriatiContexto.iniciarIdentidade();
 			CriatiAdminUsuarios.iniciar();
 		});
 	</script>
