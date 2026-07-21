@@ -269,6 +269,8 @@ GET /app/dashboard  autenticada; layout com sidebar, topbar e dashboard inicial
 
 A interface consome exclusivamente a API já existente (`/api/auth/*`, `/api/contexto/*`); ela não decide autorização, não guarda senha nem token sensível e não confia em dado local para segurança — o backend continua sendo a única fonte de verdade. Os módulos de Usuários e Convites têm telas completas (ver seção "Telas de Usuários e Convites" abaixo). Detalhes de arquitetura frontend, CSRF no navegador e estados de interface em [Decisões](docs/DECISOES.md), seção "Interface web".
 
+A sidebar é recolhível por um botão hambúrguer (visível no desktop e no mobile): no desktop alterna entre expandida e compacta (só ícones, com tooltip acessível); no mobile continua abrindo/fechando o menu off-canvas já existente, sem nenhum modo compacto. A preferência de sidebar recolhida é puramente visual, guardada em `localStorage` (`criati.sidebar.recolhida`) — nunca dado de sessão, token ou permissão. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Sidebar recolhível com menu hambúrguer".
+
 ## Superadministrador e endpoints administrativos
 
 Superadministrador é um papel global da plataforma (não é um perfil de empresa). O primeiro é criado apenas pelo bootstrap descrito em "Variáveis de ambiente" — não existe endpoint público para essa criação.

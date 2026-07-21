@@ -27,11 +27,25 @@
 			var link = document.createElement("a");
 			link.className = "criati-nav-link";
 			link.href = aplicacao.urlInicial;
-			link.textContent = aplicacao.nome;
+			link.setAttribute("aria-label", aplicacao.nome);
+			link.setAttribute("data-tooltip", aplicacao.nome);
 			if (window.location.pathname === aplicacao.urlInicial) {
 				link.classList.add("is-active");
 				link.setAttribute("aria-current", "page");
 			}
+
+			// Icone generico (mesmo glifo de "Aplicacoes"): o catalogo nao define
+			// um icone por aplicacao, e criar um novo ativo esta fora do escopo.
+			link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'
+				+ '<rect x="4" y="4" width="16" height="4" rx="1"></rect>'
+				+ '<rect x="4" y="10" width="16" height="4" rx="1"></rect>'
+				+ '<rect x="4" y="16" width="16" height="4" rx="1"></rect>'
+				+ "</svg>";
+
+			var label = document.createElement("span");
+			label.className = "criati-nav-label";
+			label.textContent = aplicacao.nome;
+			link.appendChild(label);
 
 			var item = document.createElement("li");
 			item.appendChild(link);

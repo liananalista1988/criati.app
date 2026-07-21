@@ -7,10 +7,6 @@
 }
 
 @media (max-width: 768px) {
-	.criati-menu-toggle {
-		display: inline-flex;
-	}
-
 	.criati-sidebar {
 		position: fixed;
 		left: 0;
@@ -62,5 +58,15 @@
 	.criati-topbar {
 		padding: 12px 14px;
 		gap: 10px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.criati-sidebar {
+		transition: none;
+	}
+
+	.criati-nav-link::after {
+		transition: none;
 	}
 }

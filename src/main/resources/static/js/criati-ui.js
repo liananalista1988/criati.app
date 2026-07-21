@@ -49,33 +49,116 @@
 		});
 	}
 
+	var CHAVE_SIDEBAR_RECOLHIDA = "criati.sidebar.recolhida";
+	var CONSULTA_MOBILE = "(max-width: 768px)";
+
+	function ehMobile() {
+		return window.matchMedia(CONSULTA_MOBILE).matches;
+	}
+
+	function lerPreferenciaRecolhida() {
+		try {
+			return window.localStorage.getItem(CHAVE_SIDEBAR_RECOLHIDA) === "true";
+		} catch (erro) {
+			return false;
+		}
+	}
+
+	function salvarPreferenciaRecolhida(recolhida) {
+		try {
+			window.localStorage.setItem(CHAVE_SIDEBAR_RECOLHIDA, String(recolhida));
+		} catch (erro) {
+			// localStorage indisponivel (modo privado, quota, etc.): a preferencia
+			// simplesmente nao persiste entre visitas, sem quebrar a alternancia.
+		}
+	}
+
 	function initSidebarToggle() {
 		var app = document.querySelector(".criati-app");
 		var toggle = document.querySelector(".criati-menu-toggle");
 		var overlay = document.querySelector(".criati-sidebar-overlay");
+		var nav = document.querySelector(".criati-nav");
+		var raiz = document.documentElement;
 		if (!app || !toggle) {
 			return;
 		}
 
-		function fechar() {
+		function atualizarAria() {
+			if (ehMobile()) {
+				var aberto = app.classList.contains("is-sidebar-open");
+				toggle.setAttribute("aria-expanded", String(aberto));
+				toggle.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
+			} else {
+				var recolhida = raiz.classList.contains("criati-sidebar-collapsed");
+				toggle.setAttribute("aria-expanded", String(!recolhida));
+				toggle.setAttribute("aria-label", recolhida ? "Expandir menu" : "Recolher menu");
+			}
+		}
+
+		function fecharMobile() {
+			if (!app.classList.contains("is-sidebar-open")) {
+				return;
+			}
 			app.classList.remove("is-sidebar-open");
-			toggle.setAttribute("aria-expanded", "false");
+			atualizarAria();
+		}
+
+		// No mobile a sidebar nunca aplica o modo compacto (somente aberta ou
+		// fechada); ao voltar para desktop, a preferencia salva e reaplicada.
+		function aplicarEstadoConformeViewport() {
+			if (ehMobile()) {
+				raiz.classList.remove("criati-sidebar-collapsed");
+			} else {
+				app.classList.remove("is-sidebar-open");
+				raiz.classList.toggle("criati-sidebar-collapsed", lerPreferenciaRecolhida());
+			}
+			atualizarAria();
 		}
 
 		toggle.addEventListener("click", function () {
-			var aberto = app.classList.toggle("is-sidebar-open");
-			toggle.setAttribute("aria-expanded", String(aberto));
+			if (ehMobile()) {
+				var aberto = app.classList.toggle("is-sidebar-open");
+				if (aberto) {
+					var primeiroLink = app.querySelector(".criati-nav-link");
+					if (primeiroLink) {
+						window.setTimeout(function () {
+							primeiroLink.focus();
+						}, 0);
+					}
+				}
+			} else {
+				var recolhida = raiz.classList.toggle("criati-sidebar-collapsed");
+				salvarPreferenciaRecolhida(recolhida);
+			}
+			atualizarAria();
 		});
 
 		if (overlay) {
-			overlay.addEventListener("click", fechar);
+			overlay.addEventListener("click", fecharMobile);
+		}
+
+		if (nav) {
+			nav.addEventListener("click", function (evento) {
+				if (evento.target.closest(".criati-nav-link") && ehMobile()) {
+					fecharMobile();
+				}
+			});
 		}
 
 		document.addEventListener("keydown", function (evento) {
-			if (evento.key === "Escape") {
-				fechar();
+			if (evento.key === "Escape" && app.classList.contains("is-sidebar-open")) {
+				fecharMobile();
+				toggle.focus();
 			}
 		});
+
+		var reidimensionarPendente;
+		window.addEventListener("resize", function () {
+			window.clearTimeout(reidimensionarPendente);
+			reidimensionarPendente = window.setTimeout(aplicarEstadoConformeViewport, 120);
+		});
+
+		aplicarEstadoConformeViewport();
 	}
 
 	function initUserMenu() {

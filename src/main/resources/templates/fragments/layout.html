@@ -5,5 +5,24 @@
 		<meta name="_csrf" th:content="${_csrf.token}" />
 		<meta name="_csrf_header" th:content="${_csrf.headerName}" />
 	</th:block>
+
+	<!-- Aplica a preferencia visual de sidebar recolhida (somente desktop, so
+	     largura/estado, nunca dado sensivel) antes da primeira pintura, para
+	     evitar o "flash" de sidebar expandida seguida de recolhimento. -->
+	<th:block th:fragment="sidebarPreload">
+		<script th:inline="none">
+			(function () {
+				try {
+					if (window.matchMedia("(min-width: 769px)").matches
+							&& window.localStorage.getItem("criati.sidebar.recolhida") === "true") {
+						document.documentElement.classList.add("criati-sidebar-collapsed");
+					}
+				} catch (erro) {
+					// localStorage indisponivel (modo privado, quota, etc.): mantem o
+					// layout expandido padrao, sem quebrar a pagina.
+				}
+			})();
+		</script>
+	</th:block>
 </head>
 </html>

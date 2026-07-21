@@ -14,6 +14,8 @@
 						class="criati-nav-link"
 						th:classappend="${paginaAtiva == 'dashboard'} ? 'is-active' : ''"
 						th:attr="aria-current=${paginaAtiva == 'dashboard'} ? 'page' : null"
+						aria-label="Dashboard"
+						data-tooltip="Dashboard"
 						href="/app/dashboard">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -21,7 +23,7 @@
 							<rect x="3" y="14" width="7" height="7" rx="1.5" />
 							<rect x="14" y="14" width="7" height="7" rx="1.5" />
 						</svg>
-						Dashboard
+						<span class="criati-nav-label">Dashboard</span>
 					</a>
 				</li>
 				<li>
@@ -29,13 +31,15 @@
 						class="criati-nav-link"
 						th:classappend="${paginaAtiva == 'aplicacoes'} ? 'is-active' : ''"
 						th:attr="aria-current=${paginaAtiva == 'aplicacoes'} ? 'page' : null"
+						aria-label="Aplicacoes"
+						data-tooltip="Aplicacoes"
 						href="/app/aplicacoes">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<rect x="4" y="4" width="16" height="4" rx="1" />
 							<rect x="4" y="10" width="16" height="4" rx="1" />
 							<rect x="4" y="16" width="16" height="4" rx="1" />
 						</svg>
-						Aplicacoes
+						<span class="criati-nav-label">Aplicacoes</span>
 					</a>
 				</li>
 				<!-- Aplicacoes especificas (Financeiro/Clinica) sao inseridas aqui pelo
@@ -47,6 +51,8 @@
 						class="criati-nav-link"
 						th:classappend="${paginaAtiva == 'usuarios'} ? 'is-active' : ''"
 						th:attr="aria-current=${paginaAtiva == 'usuarios'} ? 'page' : null"
+						aria-label="Usuarios"
+						data-tooltip="Usuarios"
 						href="/app/usuarios">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
@@ -54,7 +60,7 @@
 							<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
 							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
 						</svg>
-						Usuarios
+						<span class="criati-nav-label">Usuarios</span>
 					</a>
 				</li>
 				<li>
@@ -62,22 +68,30 @@
 						class="criati-nav-link"
 						th:classappend="${paginaAtiva == 'convites'} ? 'is-active' : ''"
 						th:attr="aria-current=${paginaAtiva == 'convites'} ? 'page' : null"
+						aria-label="Convites"
+						data-tooltip="Convites"
 						href="/app/convites">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<path d="M4 4h16v16H4z" />
 							<path d="m4 6 8 7 8-7" />
 						</svg>
-						Convites
+						<span class="criati-nav-label">Convites</span>
 					</a>
 				</li>
 				<li>
-					<a class="criati-nav-link is-disabled" href="#" aria-disabled="true" data-em-breve="true">
+					<a
+						class="criati-nav-link is-disabled"
+						href="#"
+						aria-disabled="true"
+						data-em-breve="true"
+						aria-label="Configuracoes (em breve)"
+						data-tooltip="Configuracoes (em breve)">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<circle cx="12" cy="12" r="3" />
 							<path
 								d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
 						</svg>
-						Configuracoes
+						<span class="criati-nav-label">Configuracoes</span>
 						<span class="criati-nav-badge">Em breve</span>
 					</a>
 				</li>
