@@ -395,6 +395,29 @@ O MVP será dividido em duas etapas:
 - O Superadministrador não ganhou nenhum acesso novo: continua sem contexto de empresa ativa (por
   regra de domínio, nunca tem vínculo próprio) e a correção é inteiramente de apresentação.
 
+## Financeiro LeS — núcleo compartilhado com extensões específicas
+
+- Decisão arquitetural (analisada em `docs/empresas/financeiro-les/REGRAS-DE-NEGOCIO.md` na
+  LES-F1-002 e confirmada em `docs/empresas/financeiro-les/ARQUITETURA-FUNCIONAL.md` na
+  LES-F1-003): o domínio financeiro residencial do Financeiro LeS (cartões, faturas, parcelas,
+  compromissos, empréstimos, exposição a terceiros, orçamento, meta de economia, simulador) será
+  construído como uma **extensão** que reaproveita um **núcleo financeiro compartilhado** —
+  conta financeira, categoria, lançamento simples, pessoa, favorecido, anexo e recorrência — em
+  vez de duplicar esses conceitos em um domínio isolado (Opção B) ou de embutir a complexidade
+  residencial diretamente no módulo `FINANCEIRO` genérico já existente (Opção A, `docs/FINANCEIRO.md`).
+- Motivo, reutilizável por qualquer futuro domínio financeiro da plataforma (não só o
+  Financeiro LeS): o módulo `FINANCEIRO` genérico é um produto oferecido no catálogo de
+  aplicações a qualquer empresa (`docs/MODELO_MULTIEMPRESA.md`) — forçar nele conceitos
+  específicos de um único perfil de cliente acoplaria permanentemente o módulo genérico a um
+  caso de uso particular. Um núcleo compartilhado com extensões habilitáveis por empresa (mesmo
+  padrão de `EmpresaAplicacao` já existente) permite que a plataforma tenha múltiplos produtos
+  financeiros no futuro (ex.: um financeiro empresarial mais avançado, distinto do residencial)
+  sem duplicar contas, categorias e lançamentos a cada novo produto.
+- Esta decisão **não foi implementada** nesta tarefa — nenhuma entidade, migration ou código foi
+  criado. Ela orienta a modelagem técnica de uma etapa futura. Detalhes completos (entidades,
+  relacionamentos, invariantes) em `docs/empresas/financeiro-les/MODELO-DE-DADOS.md` e
+  `docs/empresas/financeiro-les/ARQUITETURA-FUNCIONAL.md`.
+
 ## Regra de alteração
 
 Nenhuma decisão estrutural registrada neste documento deverá ser alterada silenciosamente.
