@@ -69,6 +69,10 @@ Convites são sempre vistos/criados no contexto de uma empresa específica (`/ap
 - Nenhuma senha é criada pelo Superadministrador nos novos fluxos de onboarding; nenhum token é persistido além do hash já existente (`Convite.tokenHash`).
 - A sidebar mostra a seção "Administração da plataforma" apenas para quem tem `ROLE_SUPERADMIN` — isso é conveniência visual, não controle de acesso (a autorização real está sempre no backend).
 
+## Estilos visuais
+
+Todas as telas deste painel (visão geral, empresas, onboarding, detalhe de empresa, usuários globais, vínculos) respeitam os três estilos visuais da interface (Criati, Windows, Compacto — ver `docs/DECISOES.md`, seção "Estilos visuais"), incluindo tabelas largas, filtros, modais e a seção "Administração da plataforma" na sidebar. O estilo é puramente visual (tipografia, densidade, espaçamento) e não altera nenhuma regra, permissão ou conteúdo descrito neste documento.
+
 ## Limitações registradas
 
 - Sem paginação real em `GET /api/admin/empresas`, `GET /api/admin/usuarios` e `GET /api/admin/vinculos` (filtros aplicados em memória/cliente); adequado ao volume inicial, deve ser revisitado se o número de empresas/usuários crescer.

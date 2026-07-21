@@ -20,9 +20,11 @@
 	max-width: 440px;
 	background: var(--criati-surface);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius);
+	border-radius: var(--criati-radius-lg);
 	box-shadow: var(--criati-shadow);
-	padding: 36px 32px;
+	/* Mesmo piso confortavel do login (ver criati-login.css): a densidade do
+	   estilo Compacto nao deve reduzir demais uma pagina publica. */
+	padding: calc(var(--criati-card-padding) + 14px) calc(var(--criati-card-padding) + 10px);
 }
 
 .criati-convite-brand {

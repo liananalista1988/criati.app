@@ -7,7 +7,16 @@
 }
 
 @media (max-width: 768px) {
+	/* No mobile a sidebar e sempre off-canvas (aberta/fechada, nunca o modo
+	   "recolhido" com so icones - ver aplicarEstadoConformeViewport em
+	   criati-ui.js), entao a densidade extra dos estilos Windows/Compacto e
+	   moderada aqui: item de menu com piso confortavel para leitura e toque,
+	   independente do estilo ativo. */
 	.criati-sidebar {
+		--criati-nav-font-size: 14px;
+		--criati-nav-item-height: 44px;
+		--criati-nav-icon-size: 18px;
+		--criati-nav-gap: 12px;
 		position: fixed;
 		left: 0;
 		top: 0;

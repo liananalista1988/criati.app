@@ -23,12 +23,12 @@
 .criati-table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 0.9rem;
+	font-size: var(--criati-font-size-sm);
 }
 
 .criati-table th,
 .criati-table td {
-	padding: 12px 14px;
+	padding: var(--criati-table-cell-padding);
 	text-align: left;
 	white-space: nowrap;
 	border-bottom: 1px solid var(--criati-border);
@@ -36,7 +36,7 @@
 
 .criati-table th {
 	color: var(--criati-text-muted);
-	font-size: 0.78rem;
+	font-size: var(--criati-font-size-xs);
 	text-transform: uppercase;
 	letter-spacing: 0.03em;
 	background: var(--criati-surface-alt);
@@ -116,15 +116,15 @@
 .criati-modal {
 	background: var(--criati-surface);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius);
+	border-radius: var(--criati-radius-lg);
 	box-shadow: var(--criati-shadow);
 	width: 100%;
 	max-width: 480px;
-	padding: 24px;
+	padding: var(--criati-card-padding);
 }
 
 .criati-modal h2 {
-	font-size: 1.1rem;
+	font-size: var(--criati-font-size-lg);
 	margin-bottom: 18px;
 }
 

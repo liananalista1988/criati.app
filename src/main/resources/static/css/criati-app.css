@@ -14,7 +14,7 @@
 	border-right: 1px solid var(--criati-border);
 	display: flex;
 	flex-direction: column;
-	padding: 20px 14px;
+	padding: var(--criati-space-lg) var(--criati-space-md);
 	position: sticky;
 	top: 0;
 	height: 100vh;
@@ -25,12 +25,12 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 6px 10px 24px;
+	padding: 6px 10px 20px;
 }
 
 .criati-sidebar-logo {
-	width: 34px;
-	height: 34px;
+	width: 30px;
+	height: 30px;
 	border-radius: var(--criati-radius-sm);
 	background: var(--criati-gradient);
 	display: flex;
@@ -38,12 +38,13 @@
 	justify-content: center;
 	color: #fff;
 	font-weight: 700;
+	font-size: var(--criati-font-size-sm);
 	flex-shrink: 0;
 }
 
 .criati-sidebar-brand span {
 	font-weight: 700;
-	font-size: 1.05rem;
+	font-size: var(--criati-font-size-base);
 }
 
 .criati-nav {
@@ -52,26 +53,28 @@
 	padding: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 2px;
 	flex: 1;
 }
 
 .criati-nav-link {
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	padding: 10px 12px;
+	gap: var(--criati-nav-gap);
+	min-height: var(--criati-nav-item-height);
+	padding: 0 var(--criati-nav-padding-x);
 	border-radius: var(--criati-radius-sm);
 	color: var(--criati-text-muted);
 	text-decoration: none;
-	font-size: 0.92rem;
-	font-weight: 500;
+	font-size: var(--criati-nav-font-size);
+	font-weight: var(--criati-nav-font-weight);
+	line-height: 1.2;
 }
 
 .criati-nav-link svg {
 	flex-shrink: 0;
-	width: 18px;
-	height: 18px;
+	width: var(--criati-nav-icon-size);
+	height: var(--criati-nav-icon-size);
 }
 
 .criati-nav-link:hover {
@@ -97,7 +100,7 @@
 
 .criati-nav-badge {
 	margin-left: auto;
-	font-size: 0.68rem;
+	font-size: 0.65rem;
 	text-transform: uppercase;
 	letter-spacing: 0.03em;
 	background: var(--criati-surface-alt);
@@ -107,23 +110,24 @@
 }
 
 .criati-sidebar-footer {
-	font-size: 0.72rem;
+	font-size: var(--criati-font-size-xs);
 	color: var(--criati-text-muted);
-	padding: 10px;
+	padding: var(--criati-space-sm);
 	border-top: 1px solid var(--criati-border);
 }
 
 /* Secao "Administracao da plataforma" (somente Superadministrador) */
 
 .criati-nav-secao {
-	margin-top: 12px;
-	padding-top: 12px;
+	margin-top: var(--criati-space-sm);
+	padding-top: var(--criati-space-sm);
 	border-top: 1px solid var(--criati-border);
 }
 
 .criati-nav-secao-titulo {
-	padding: 0 12px 6px;
-	font-size: 0.68rem;
+	padding: 0 var(--criati-nav-padding-x) 6px;
+	font-size: var(--criati-nav-section-font-size);
+	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	color: var(--criati-text-muted);
@@ -154,13 +158,15 @@
 		position: relative;
 		justify-content: center;
 		gap: 0;
-		padding: 10px 6px;
+		padding: 0 6px;
 	}
 
 	/* Tooltip acessivel em CSS puro (sem JS): visivel no hover e no foco por
 	   teclado (:focus-visible). O nome acessivel do link vem do aria-label,
 	   presente sempre, entao nada e lido em duplicidade pelo leitor de tela
-	   quando o rotulo visual (.criati-nav-label) esta oculto. */
+	   quando o rotulo visual (.criati-nav-label) esta oculto. Usa o mesmo
+	   font-size do item de menu aberto (nunca maior) para nao parecer um
+	   componente "extra" fora da escala do estilo ativo. */
 	html.criati-sidebar-collapsed .criati-nav-link::after {
 		content: attr(data-tooltip);
 		position: absolute;
@@ -171,11 +177,12 @@
 		background: var(--criati-surface-alt);
 		color: var(--criati-text);
 		border: 1px solid var(--criati-border);
-		padding: 6px 10px;
+		padding: 5px 10px;
 		border-radius: var(--criati-radius-sm);
-		font-size: 0.82rem;
+		font-size: var(--criati-nav-font-size);
+		font-weight: 400;
 		white-space: nowrap;
-		box-shadow: var(--criati-shadow);
+		box-shadow: var(--criati-shadow-soft);
 		opacity: 0;
 		visibility: hidden;
 		pointer-events: none;
@@ -209,8 +216,8 @@
 .criati-topbar {
 	display: flex;
 	align-items: center;
-	gap: 16px;
-	padding: 14px 24px;
+	gap: var(--criati-space-md);
+	padding: var(--criati-space-sm) var(--criati-space-lg);
 	border-bottom: 1px solid var(--criati-border);
 	background: var(--criati-topbar-bg);
 	position: sticky;
@@ -233,8 +240,8 @@
 	border: 1px solid var(--criati-border);
 	color: var(--criati-text);
 	border-radius: var(--criati-radius-sm);
-	padding: 8px 10px;
-	font-size: 0.88rem;
+	padding: 7px var(--criati-control-padding-x);
+	font-size: var(--criati-font-size-sm);
 }
 
 .criati-topbar-spacer {
@@ -262,21 +269,21 @@
 }
 
 .criati-user-avatar {
-	width: 30px;
-	height: 30px;
+	width: 28px;
+	height: 28px;
 	border-radius: 50%;
 	background: var(--criati-gradient);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 0.8rem;
+	font-size: var(--criati-font-size-xs);
 	font-weight: 700;
 	color: #fff;
 	flex-shrink: 0;
 }
 
 .criati-user-name {
-	font-size: 0.88rem;
+	font-size: var(--criati-font-size-sm);
 	max-width: 160px;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -289,8 +296,8 @@
 	top: calc(100% + 8px);
 	background: var(--criati-surface-alt);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius-sm);
-	box-shadow: var(--criati-shadow);
+	border-radius: var(--criati-radius-md);
+	box-shadow: var(--criati-shadow-soft);
 	min-width: 180px;
 	padding: 8px;
 	display: flex;
@@ -308,16 +315,16 @@
 }
 
 .criati-content {
-	padding: 24px;
+	padding: var(--criati-space-xl) var(--criati-space-lg);
 	flex: 1;
 }
 
 .criati-page-header {
-	margin-bottom: 20px;
+	margin-bottom: var(--criati-space-lg);
 }
 
 .criati-page-header h1 {
-	font-size: 1.5rem;
+	font-size: var(--criati-font-size-xl);
 	font-weight: 700;
 }
 
@@ -329,41 +336,41 @@
 .criati-cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-	gap: 16px;
-	margin-bottom: 28px;
+	gap: var(--criati-space-md);
+	margin-bottom: var(--criati-space-xl);
 }
 
 .criati-card {
 	background: var(--criati-surface);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius);
-	padding: 18px;
+	border-radius: var(--criati-radius-lg);
+	padding: var(--criati-card-padding);
 }
 
 .criati-card-label {
 	color: var(--criati-text-muted);
-	font-size: 0.8rem;
+	font-size: var(--criati-font-size-xs);
 	text-transform: uppercase;
 	letter-spacing: 0.03em;
 }
 
 .criati-card-value {
-	font-size: 1.2rem;
+	font-size: var(--criati-font-size-lg);
 	font-weight: 700;
 	margin-top: 8px;
 }
 
 .criati-card-sub {
 	color: var(--criati-text-muted);
-	font-size: 0.82rem;
+	font-size: var(--criati-font-size-xs);
 	margin-top: 4px;
 }
 
 .criati-shortcuts {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 12px;
-	margin-bottom: 28px;
+	gap: var(--criati-space-sm);
+	margin-bottom: var(--criati-space-xl);
 }
 
 .criati-shortcut {
@@ -372,10 +379,11 @@
 	gap: 10px;
 	background: var(--criati-surface);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius);
-	padding: 14px 18px;
+	border-radius: var(--criati-radius-lg);
+	padding: var(--criati-space-md) var(--criati-space-lg);
 	text-decoration: none;
 	color: var(--criati-text);
+	font-size: var(--criati-font-size-sm);
 }
 
 .criati-shortcut:hover {
@@ -385,12 +393,13 @@
 .criati-next-steps {
 	background: var(--criati-surface);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius);
-	padding: 20px;
+	border-radius: var(--criati-radius-lg);
+	padding: var(--criati-card-padding);
 }
 
 .criati-next-steps h2 {
-	font-size: 1.05rem;
+	font-size: var(--criati-font-size-base);
+	font-weight: 700;
 	margin-bottom: 12px;
 }
 

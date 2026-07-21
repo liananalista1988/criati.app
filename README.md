@@ -273,6 +273,8 @@ A sidebar é recolhível por um botão hambúrguer (visível no desktop e no mob
 
 A interface tem três opções de aparência — Automático (padrão, segue o sistema operacional), Claro e Escuro —, trocáveis a qualquer momento por um controle na topbar (autenticado) ou no canto superior direito de `/login` e `/convites/{token}` (público). A preferência é só visual, guardada em `localStorage` (`criati.tema`, valores `auto`/`light`/`dark`) e aplicada por um script mínimo antes da primeira pintura para não haver "clarão" de tema errado ao carregar. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Temas claro, escuro e automático".
 
+Independente do tema, a interface também tem três **estilos** visuais — Criati (padrão), Windows e Compacto —, trocáveis por um segundo controle ao lado do seletor de tema (mesmo local, autenticado e público). Enquanto o tema controla cor/contraste, o estilo controla apenas tipografia, densidade, espaçamento, bordas e sombra — nunca dado, permissão, rota ou cor de marca. A preferência é só visual, guardada em `localStorage` (`criati.estilo`, valores `criati`/`windows`/`compact`) e aplicada por um script mínimo antes da primeira pintura, no mesmo padrão do preload de tema. A tipografia base da interface inteira também foi reduzida discretamente (~6%) e a sidebar ganhou uma escala mais enxuta e refinada nos três estilos. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Estilos visuais (Criati, Windows, Compacto) e tipografia refinada".
+
 ## Superadministrador e endpoints administrativos
 
 Superadministrador é um papel global da plataforma (não é um perfil de empresa). O primeiro é criado apenas pelo bootstrap descrito em "Variáveis de ambiente" — não existe endpoint público para essa criação.

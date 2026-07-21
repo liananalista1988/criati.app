@@ -34,6 +34,28 @@
 		</script>
 	</th:block>
 
+	<!-- Aplica o estilo visual (criati/windows/compact - somente forma,
+	     tipografia e densidade, independente do tema) antes da primeira
+	     pintura. Nao depende de sessao nem de backend; le somente a chave
+	     criati.estilo (criati por padrao) e valida o valor antes de aplicar. -->
+	<th:block th:fragment="estiloPreload">
+		<script th:inline="none">
+			(function () {
+				var VALORES_VALIDOS = ["criati", "windows", "compact"];
+				var estilo = "criati";
+				try {
+					var salvo = window.localStorage.getItem("criati.estilo");
+					if (VALORES_VALIDOS.indexOf(salvo) !== -1) {
+						estilo = salvo;
+					}
+				} catch (erro) {
+					// localStorage indisponivel: mantem o padrao "criati".
+				}
+				document.documentElement.setAttribute("data-style", estilo);
+			})();
+		</script>
+	</th:block>
+
 	<!-- Aplica a preferencia visual de sidebar recolhida (somente desktop, so
 	     largura/estado, nunca dado sensivel) antes da primeira pintura, para
 	     evitar o "flash" de sidebar expandida seguida de recolhimento. -->

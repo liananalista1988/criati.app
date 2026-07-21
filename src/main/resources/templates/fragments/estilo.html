@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<!-- Controle de estilo (Criati/Windows/Compacto): reutilizado igual em
+	     paginas publicas e autenticadas via criati-estilo.js. Independente do
+	     controle de tema (fragments/tema.html) - tema controla cor/contraste,
+	     estilo controla forma/tipografia/densidade. Em paginas publicas, o
+	     chamador envolve este fragmento com .criati-estilo-controle-flutuante
+	     para posiciona-lo ao lado do controle de tema. -->
+	<div th:fragment="estiloControle" class="criati-estilo-controle" id="criati-estilo-controle" data-estilo-atual="criati">
+		<button
+			type="button"
+			class="criati-icon-btn criati-estilo-toggle"
+			aria-haspopup="true"
+			aria-expanded="false"
+			aria-controls="criati-estilo-menu"
+			aria-label="Estilo">
+			<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<rect x="3" y="3" width="7" height="7" rx="1.5" />
+				<rect x="14" y="3" width="7" height="7" rx="1.5" />
+				<rect x="3" y="14" width="7" height="7" rx="1.5" />
+				<rect x="14" y="14" width="7" height="7" rx="1.5" />
+			</svg>
+		</button>
+		<div class="criati-estilo-menu" id="criati-estilo-menu" role="menu" aria-label="Escolher estilo" hidden>
+			<button type="button" class="criati-estilo-opcao" role="menuitemradio" data-estilo="criati" aria-checked="true">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<path d="M12 2 3 7v10l9 5 9-5V7z" />
+				</svg>
+				Criati
+			</button>
+			<button type="button" class="criati-estilo-opcao" role="menuitemradio" data-estilo="windows" aria-checked="false">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<rect x="3" y="4" width="8" height="8" />
+					<rect x="13" y="4" width="8" height="8" />
+					<rect x="3" y="14" width="8" height="6" />
+					<rect x="13" y="14" width="8" height="6" />
+				</svg>
+				Windows
+			</button>
+			<button type="button" class="criati-estilo-opcao" role="menuitemradio" data-estilo="compact" aria-checked="false">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<path d="M4 6h16M4 11h16M4 16h16M4 21h16" />
+				</svg>
+				Compacto
+			</button>
+		</div>
+	</div>
+</body>
+</html>

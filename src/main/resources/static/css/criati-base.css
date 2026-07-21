@@ -34,6 +34,163 @@
 	--criati-info-bg: rgba(59, 130, 246, 0.12);
 	--criati-info-fg: #bfdbfe;
 	color-scheme: dark;
+
+	/* Escala tipografica semantica (rem, relativa ao font-size reduzido do
+	   <html> logo abaixo - nao redefine o tamanho base por si so). */
+	--criati-font-size-xs: 0.75rem;
+	--criati-font-size-sm: 0.875rem;
+	--criati-font-size-base: 1rem;
+	--criati-font-size-lg: 1.125rem;
+	--criati-font-size-xl: 1.375rem;
+
+	/* Densidade/tipografia da navegacao (sidebar): valores do estilo Criati
+	   (padrao). Sobrescritos por [data-style="windows"|"compact"] abaixo. */
+	--criati-nav-font-size: 13.5px;
+	--criati-nav-section-font-size: 11px;
+	--criati-nav-item-height: 38px;
+	--criati-nav-icon-size: 17px;
+	--criati-nav-gap: 12px;
+	--criati-nav-font-weight: 500;
+	--criati-nav-padding-x: 12px;
+	--criati-sidebar-item-height: var(--criati-nav-item-height);
+
+	/* Formas e espacamento (estilo Criati / padrao) */
+	--criati-radius-md: 10px;
+	--criati-radius-lg: var(--criati-radius);
+	--criati-space-xs: 4px;
+	--criati-space-sm: 8px;
+	--criati-space-md: 12px;
+	--criati-space-lg: 20px;
+	--criati-space-xl: 28px;
+	--criati-control-height: 40px;
+	--criati-control-padding-x: 14px;
+	--criati-card-padding: 18px;
+	--criati-table-cell-padding: 10px 14px;
+	--criati-shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+/* Reducao global e discreta da tipografia da interface (~6% menor que o
+   padrao do navegador): como quase todo font-size do sistema e definido em
+   rem, esta unica regra reduz a escala inteira (topbar, sidebar, cards,
+   tabelas, formularios, paginas publicas) sem precisar tocar cada seletor
+   individualmente. Paddings/alturas de controles (definidos em px) nao sao
+   afetados, entao botoes e campos continuam com a mesma area confortavel. */
+html {
+	font-size: 93.75%;
+}
+
+/* Estilo visual (Criati/Windows/Compacto): somente forma, tipografia,
+   densidade e sombra - nunca cor (isso e responsabilidade do tema, ver
+   data-theme acima). "criati" e o padrao e repete os valores de :root para
+   documentar explicitamente os 3 estilos suportados. */
+:root[data-style="criati"] {
+	--criati-nav-font-size: 13.5px;
+	--criati-nav-section-font-size: 11px;
+	--criati-nav-item-height: 38px;
+	--criati-nav-icon-size: 17px;
+	--criati-nav-gap: 12px;
+	--criati-nav-font-weight: 500;
+	--criati-nav-padding-x: 12px;
+	--criati-radius-sm: 8px;
+	--criati-radius-md: 10px;
+	--criati-radius-lg: 12px;
+	--criati-space-xs: 4px;
+	--criati-space-sm: 8px;
+	--criati-space-md: 12px;
+	--criati-space-lg: 20px;
+	--criati-space-xl: 28px;
+	--criati-control-height: 40px;
+	--criati-control-padding-x: 14px;
+	--criati-card-padding: 18px;
+	--criati-table-cell-padding: 10px 14px;
+	--sidebar-width-expanded: 248px;
+	--sidebar-width-collapsed: 76px;
+}
+
+:root[data-style="windows"] {
+	--criati-nav-font-size: 13px;
+	--criati-nav-section-font-size: 11px;
+	--criati-nav-item-height: 36px;
+	--criati-nav-icon-size: 16px;
+	--criati-nav-gap: 10px;
+	--criati-nav-font-weight: 400;
+	--criati-nav-padding-x: 12px;
+	--criati-radius-sm: 6px;
+	--criati-radius-md: 8px;
+	--criati-radius-lg: 8px;
+	--criati-space-xs: 4px;
+	--criati-space-sm: 8px;
+	--criati-space-md: 12px;
+	--criati-space-lg: 16px;
+	--criati-space-xl: 24px;
+	--criati-control-height: 36px;
+	--criati-control-padding-x: 12px;
+	--criati-card-padding: 16px;
+	--criati-table-cell-padding: 9px 12px;
+	--sidebar-width-expanded: 236px;
+	--sidebar-width-collapsed: 72px;
+}
+
+:root[data-style="compact"] {
+	--criati-nav-font-size: 12.5px;
+	--criati-nav-section-font-size: 10.5px;
+	--criati-nav-item-height: 33px;
+	--criati-nav-icon-size: 15px;
+	--criati-nav-gap: 8px;
+	--criati-nav-font-weight: 500;
+	--criati-nav-padding-x: 10px;
+	--criati-radius-sm: 6px;
+	--criati-radius-md: 8px;
+	--criati-radius-lg: 10px;
+	--criati-space-xs: 3px;
+	--criati-space-sm: 6px;
+	--criati-space-md: 10px;
+	--criati-space-lg: 14px;
+	--criati-space-xl: 20px;
+	--criati-control-height: 34px;
+	--criati-control-padding-x: 10px;
+	--criati-card-padding: 12px;
+	--criati-table-cell-padding: 7px 10px;
+	--sidebar-width-expanded: 220px;
+	--sidebar-width-collapsed: 68px;
+}
+
+/* Sem preferencia valida ainda (antes do preload aplicar o padrao): usa os
+   mesmos valores do estilo Criati definidos em :root, entao nada "pisca". */
+
+/* --criati-shadow/--criati-shadow-soft dependem de TEMA (cor/opacidade) e de
+   ESTILO (tamanho/blur) ao mesmo tempo. Como as duas dimensoes tem a mesma
+   especificidade em ":root[data-x]", a ultima regra do arquivo venceria
+   sempre - por isso a combinacao (tema + estilo) e resolvida explicitamente
+   aqui, com maior especificidade, para as 3 sombras de cada tema. */
+:root[data-theme="dark"][data-style="criati"] {
+	--criati-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+	--criati-shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme="dark"][data-style="windows"] {
+	--criati-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	--criati-shadow-soft: 0 1px 5px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme="dark"][data-style="compact"] {
+	--criati-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+	--criati-shadow-soft: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="light"][data-style="criati"] {
+	--criati-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+	--criati-shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme="light"][data-style="windows"] {
+	--criati-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+	--criati-shadow-soft: 0 1px 5px rgba(15, 23, 42, 0.09);
+}
+
+:root[data-theme="light"][data-style="compact"] {
+	--criati-shadow: 0 1px 6px rgba(15, 23, 42, 0.1);
+	--criati-shadow-soft: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
 /* Tema claro: mesma identidade (azul/roxo como cores de acao), fundo geral
@@ -49,6 +206,7 @@
 	--criati-text: #1e2530;
 	--criati-text-muted: #5b6472;
 	--criati-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+	--criati-shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.1);
 	--criati-input-bg: #ffffff;
 	--criati-overlay: rgba(15, 23, 42, 0.5);
 	--criati-sidebar-bg: #eef1f7;
@@ -130,8 +288,8 @@ button {
 	gap: 8px;
 	border: 1px solid transparent;
 	border-radius: var(--criati-radius-sm);
-	padding: 10px 18px;
-	font-size: 0.95rem;
+	padding: 10px var(--criati-control-padding-x);
+	font-size: var(--criati-font-size-sm);
 	font-weight: 600;
 	cursor: pointer;
 	transition: transform 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
@@ -173,7 +331,7 @@ button {
 }
 
 .criati-field label {
-	font-size: 0.85rem;
+	font-size: var(--criati-font-size-xs);
 	color: var(--criati-text-muted);
 }
 
@@ -182,8 +340,8 @@ button {
 	border: 1px solid var(--criati-border);
 	border-radius: var(--criati-radius-sm);
 	color: var(--criati-text);
-	padding: 11px 14px;
-	font-size: 1rem;
+	padding: 11px var(--criati-control-padding-x);
+	font-size: var(--criati-font-size-base);
 }
 
 .criati-input:focus-visible {
@@ -226,7 +384,7 @@ button {
 .criati-alert {
 	border-radius: var(--criati-radius-sm);
 	padding: 12px 14px;
-	font-size: 0.9rem;
+	font-size: var(--criati-font-size-sm);
 	border: 1px solid transparent;
 	display: flex;
 	gap: 10px;
@@ -305,9 +463,9 @@ button {
 	border: 1px solid var(--criati-border);
 	border-left: 4px solid var(--criati-accent);
 	border-radius: var(--criati-radius-sm);
-	box-shadow: var(--criati-shadow);
+	box-shadow: var(--criati-shadow-soft);
 	padding: 12px 14px;
-	font-size: 0.9rem;
+	font-size: var(--criati-font-size-sm);
 	animation: criati-toast-in 0.18s ease;
 }
 
@@ -361,8 +519,8 @@ button {
 	top: calc(100% + 8px);
 	background: var(--criati-surface-alt);
 	border: 1px solid var(--criati-border);
-	border-radius: var(--criati-radius-sm);
-	box-shadow: var(--criati-shadow);
+	border-radius: var(--criati-radius-md);
+	box-shadow: var(--criati-shadow-soft);
 	min-width: 170px;
 	padding: 6px;
 	display: flex;
@@ -388,7 +546,7 @@ button {
 	border-radius: var(--criati-radius-sm);
 	padding: 8px 10px;
 	color: var(--criati-text);
-	font-size: 0.88rem;
+	font-size: var(--criati-font-size-sm);
 	text-align: left;
 	cursor: pointer;
 }
@@ -431,6 +589,94 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
 	.criati-tema-menu {
+		transition: none;
+	}
+}
+
+/* Controle de estilo (Criati/Windows/Compacto): mesmo padrao visual e de
+   interacao do controle de tema (botao + popover), reutilizado igual na
+   topbar (autenticado) e flutuante nas paginas publicas. */
+
+.criati-estilo-controle {
+	position: relative;
+}
+
+.criati-estilo-menu {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 8px);
+	background: var(--criati-surface-alt);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-md);
+	box-shadow: var(--criati-shadow-soft);
+	min-width: 170px;
+	padding: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	z-index: 100;
+	opacity: 1;
+	transform: translateY(0);
+	transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.criati-estilo-menu[hidden] {
+	display: none;
+}
+
+.criati-estilo-opcao {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	background: transparent;
+	border: none;
+	border-radius: var(--criati-radius-sm);
+	padding: 8px 10px;
+	color: var(--criati-text);
+	font-size: var(--criati-font-size-sm);
+	text-align: left;
+	cursor: pointer;
+}
+
+.criati-estilo-opcao svg {
+	flex-shrink: 0;
+	color: var(--criati-text-muted);
+}
+
+.criati-estilo-opcao:hover {
+	background: var(--criati-surface-hover);
+}
+
+.criati-estilo-opcao[aria-checked="true"] {
+	color: var(--criati-accent);
+	font-weight: 600;
+}
+
+.criati-estilo-opcao[aria-checked="true"] svg {
+	color: var(--criati-accent);
+}
+
+.criati-estilo-controle-flutuante {
+	position: fixed;
+	top: 16px;
+	right: 60px;
+	z-index: 200;
+}
+
+@media (max-width: 480px) {
+	.criati-estilo-controle-flutuante {
+		top: 10px;
+		right: 52px;
+	}
+
+	.criati-estilo-menu {
+		min-width: 150px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.criati-estilo-menu {
 		transition: none;
 	}
 }

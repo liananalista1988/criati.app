@@ -5,12 +5,14 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
 	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
 	<title>Aceite seu convite · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-convite.css}" />
 </head>
 <body class="criati-convite-page">
 	<div class="criati-tema-controle-flutuante" th:insert="~{fragments/tema :: temaControle}"></div>
+	<div class="criati-estilo-controle-flutuante" th:insert="~{fragments/estilo :: estiloControle}"></div>
 	<main class="criati-convite-card">
 		<div class="criati-convite-brand">
 			<div class="criati-convite-logo" aria-hidden="true">C</div>
@@ -165,6 +167,7 @@
 	<script th:src="@{/js/criati-api.js}"></script>
 	<script th:src="@{/js/criati-ui.js}"></script>
 	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
 	<script th:src="@{/js/criati-convite-aceite.js}"></script>
 	<script th:inline="javascript">
 		document.addEventListener("DOMContentLoaded", function () {
