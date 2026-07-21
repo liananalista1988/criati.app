@@ -53,7 +53,7 @@ registrado aqui como pendente, não preenchido com um exemplo fictício apresent
   cadastrados como saldo inicial — não informado além da previsão funcional de que o sistema deve
   suportar esse cadastro.
 
-## Decisão de arquitetura (identificada durante esta análise)
+## Decisão de arquitetura (identificada na LES-F1-001, agora com recomendação)
 
 - **Reaproveitar o módulo `FINANCEIRO` genérico já existente na plataforma (`docs/FINANCEIRO.md`)
   como base do Financeiro LeS, ou construir um módulo novo dedicado.** O módulo genérico atual
@@ -61,14 +61,45 @@ registrado aqui como pendente, não preenchido com um exemplo fictício apresent
   Financeiro LeS exige cartões de crédito, faturas, parcelas, contas a pagar recorrentes,
   empréstimos, simulador, orçamento, meta de economia, conciliação e categorização automática —
   nenhum desses recursos existe hoje no módulo genérico (todos estão listados em
-  `docs/FINANCEIRO.md`, seção "Limitações desta fase", como evolução futura). Esta é uma decisão
-  de arquitetura relevante que afeta diretamente a modelagem de dados da próxima etapa e **não
-  foi tomada nesta tarefa** — está registrada aqui, não em `docs/DECISOES.md`, por ainda não ter
-  sido decidida (`docs/DECISOES.md` registra decisões já tomadas, ver sua própria "Regra de
-  alteração").
+  `docs/FINANCEIRO.md`, seção "Limitações desta fase", como evolução futura). **Atualização
+  (LES-F1-002)**: uma recomendação foi elaborada — Opção C, núcleo compartilhado (conta,
+  categoria, lançamento simples) com extensões específicas para o uso residencial — ver
+  `REGRAS-DE-NEGOCIO.md`, seção "Recomendação sobre o módulo `FINANCEIRO` existente". Continua
+  registrada aqui, e não em `docs/DECISOES.md`, porque é uma **recomendação**, não uma decisão
+  aprovada e implementada (`docs/DECISOES.md` registra apenas decisões já tomadas, ver sua
+  própria "Regra de alteração"). Esta pendência só deve ser removida daqui e migrada para
+  `docs/DECISOES.md` quando a recomendação for formalmente aprovada e, de fato, implementada.
+
+## Dúvidas de regra identificadas durante o detalhamento de processos (LES-F1-002)
+
+- **Antecipação de parcela com desconto de juros**: quando uma compra parcelada tiver juros do
+  próprio parcelamento (não apenas juros por atraso), não está definido se antecipar uma parcela
+  deve gerar desconto proporcional desses juros ou se o valor da parcela permanece fixo mesmo
+  antecipado (`PROCESSOS.md`, seção 6).
+- **Prazo de retenção da lixeira**: não está definido se existirá um prazo automático após o
+  qual um item na lixeira é excluído definitivamente sem ação manual, ou se a exclusão definitiva
+  será sempre uma ação explícita da família, sem prazo (`PROCESSOS.md`, seção 18).
+- **Recebimento maior que o saldo a receber**: não está definido como o sistema deve tratar o
+  valor excedente quando um recebimento (de empréstimo concedido ou de compra para terceiro) é
+  maior que o saldo devido registrado — se deve virar um novo crédito, uma devolução, ou exigir
+  correção manual antes de ser aceito (`REGRAS-DE-NEGOCIO.md`, casos extremos).
+- **Janela da média histórica**: para o indicador de variação mensal comparado "contra a média
+  histórica" (`VISAO-FUNCIONAL.md`), não está definido quantos meses entram nessa média (últimos
+  3, 6, 12 meses, ou desde o início do uso do sistema) — `CALCULOS-E-INDICADORES.md`.
+- **Margem de segurança do risco de pagamento parcial da fatura**: o critério proposto em
+  `CALCULOS-E-INDICADORES.md` para classificar uma fatura como "atenção" depende de uma margem de
+  segurança percentual ainda não validada com a família.
+- **Ritmo de "meta em risco"**: não está definido a partir de que ponto do mês (ex.: metade do
+  período decorrido) e com que critério de ritmo de gasto o sistema deve classificar a meta de
+  economia como "em risco" antes do fechamento do período (`CALCULOS-E-INDICADORES.md`).
+- **Economia como meta projetada ou transferência real**: não está definido se atingir a meta de
+  economia deve ser apenas um cálculo/acompanhamento (a diferença permanece nas contas normais)
+  ou se deve envolver a transferência de fato de um valor para uma conta específica de reserva,
+  ou ambos em fases diferentes (`PROCESSOS.md`, seção 14, já registrado na LES-F1-001 e mantido
+  aqui por continuar sem resposta).
 
 ## Documentos relacionados
 
-- `VISAO-FUNCIONAL.md`
-- `MVP.md`
-- `GLOSSARIO.md`
+- `VISAO-FUNCIONAL.md`, `MVP.md`, `GLOSSARIO.md` (LES-F1-001).
+- `PROCESSOS.md`, `REGRAS-DE-NEGOCIO.md`, `ESTADOS-E-TRANSICOES.md`, `CALCULOS-E-INDICADORES.md`
+  (LES-F1-002).
