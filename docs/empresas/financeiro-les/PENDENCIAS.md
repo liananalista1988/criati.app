@@ -175,6 +175,45 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
   armazenamento privado e autorização por empresa.
 - Definir o comportamento técnico futuro em perda de conexão; o MVP não assume suporte offline.
 
+## Classificação para início da implementação (LES-F1-005)
+
+### Bloqueia implementação
+
+- Aprovação do roadmap técnico e do escopo de `LES-F2-001` antes de iniciar código.
+
+Não há dado real bloqueando a primeira tarefa. Uma decisão técnica passa a bloquear apenas a tarefa
+que altera seu respectivo contrato, nunca todo o roadmap.
+
+### Pode ser resolvido durante o desenvolvimento
+
+- Código definitivo da aplicação/extensão e fronteiras detalhadas entre núcleo e Financeiro LeS,
+  como saída de `LES-F2-001` e antes de qualquer contrato dependente.
+- Conciliação dos tipos de conta existentes com os tipos conceituais novos, antes da migration que
+  alterar ou ampliar `ContaFinanceira`.
+- Regra para dia 31 em meses menores, antes de implementar recorrências; a proposta conservadora é
+  usar o último dia válido.
+- Ordem final da sidebar, navegação inferior mobile, densidade do dashboard e formato inicial da
+  Agenda, por protótipo e homologação das respectivas tarefas.
+- Local de Histórico/Lixeira, visão consolidada de terceiros e necessidade de central de anexos,
+  sem unificar naturezas financeiras distintas.
+- Formatos, tamanho máximo e visualização de anexos, antes de `LES-F2-010`.
+- Momento da conciliação manual simples, respeitando que importação não bloqueia o primeiro MVP.
+
+### Dado real a preencher depois
+
+- Nomes, e-mails, contas, saldos, salários, recorrências, assinaturas, cartões, limites, datas de
+  fechamento/vencimento, bandeiras e titulares.
+- Metas adicionais, histórico disponível e compromissos já existentes.
+
+Esses dados não bloqueiam implementação porque serão campos configuráveis e podem ser validados
+com valores fictícios. Não devem ser versionados em migration ou fixture.
+
+### Evolução futura
+
+- Redução da quantidade de cartões, conta em espécie opcional e metas nomeadas adicionais.
+- Gráficos não essenciais, calendário mensal completo, central de anexos e suporte offline.
+- Importação avançada, PDF/OCR, integrações e refinamentos baseados no uso real.
+
 ## Documentos relacionados
 
 - `VISAO-FUNCIONAL.md`, `MVP.md`, `GLOSSARIO.md` (LES-F1-001).
@@ -185,3 +224,5 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
 - `MAPA-DE-TELAS.md`, `NAVEGACAO.md`, `EXPERIENCIA-DO-USUARIO.md`,
   `ESPECIFICACAO-DAS-TELAS.md`, `JORNADAS-DO-USUARIO.md`, `ESTADOS-DE-INTERFACE.md`
   (LES-F1-004).
+- `ROADMAP-TECNICO.md`, `PLANO-DE-IMPLEMENTACAO.md`, `DEPENDENCIAS-ENTRE-MODULOS.md`,
+  `ESTRATEGIA-DE-TESTES.md`, `BACKLOG-INICIAL.md` (LES-F1-005).

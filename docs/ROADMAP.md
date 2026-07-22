@@ -4,6 +4,15 @@
 
 Este documento organiza a evolução da Criati em fases, evitando que funcionalidades futuras desviem o foco do MVP.
 
+## Roadmap específico — Financeiro LeS
+
+O Financeiro LeS possui roadmap técnico próprio, organizado em fundação, operação financeira,
+cartões e faturas, planejamento, terceiros, simulador e automações posteriores. A primeira tarefa
+recomendada é `LES-F2-001 — Preparação técnica do domínio Financeiro LeS`. Fases, dependências,
+gates, testes e backlog estão em
+[`empresas/financeiro-les/ROADMAP-TECNICO.md`](empresas/financeiro-les/ROADMAP-TECNICO.md), sem
+alterar a prioridade geral do núcleo SaaS registrada neste documento.
+
 O roadmap poderá ser atualizado conforme:
 
 - validação com clientes;
