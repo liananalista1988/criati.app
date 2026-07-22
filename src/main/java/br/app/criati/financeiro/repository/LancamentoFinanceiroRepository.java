@@ -42,6 +42,16 @@ public interface LancamentoFinanceiroRepository extends JpaRepository<Lancamento
 	List<LancamentoFinanceiro> findAllByEmpresaIdAndStatusAndDataVencimentoBefore(UUID empresaId,
 			br.app.criati.shared.enums.StatusLancamentoFinanceiro status, java.time.LocalDate data);
 
+	boolean existsByRecorrenciaIdAndDataCompetencia(UUID recorrenciaId, java.time.LocalDate dataCompetencia);
+
+	Optional<LancamentoFinanceiro> findByRecorrenciaIdAndDataCompetencia(UUID recorrenciaId,
+			java.time.LocalDate dataCompetencia);
+
+	List<LancamentoFinanceiro> findAllByEmpresaIdAndRecorrenciaIdOrderByDataCompetenciaDesc(UUID empresaId,
+			UUID recorrenciaId);
+
+	long countByRecorrenciaId(UUID recorrenciaId);
+
 	@Query("""
 			select coalesce(sum(l.valor), 0) from LancamentoFinanceiro l
 			where l.empresa.id = :empresaId and l.tipo = :tipo and l.status in :status

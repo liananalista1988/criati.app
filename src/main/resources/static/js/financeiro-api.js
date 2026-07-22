@@ -91,6 +91,38 @@
 		return window.CriatiApi.get(BASE + "/dashboard" + query({ competencia: competencia }));
 	}
 
+	var recorrenciasBase = recurso(BASE + "/recorrencias");
+	var recorrencias = {
+		listar: recorrenciasBase.listar,
+		criar: recorrenciasBase.criar,
+		buscar: recorrenciasBase.buscar,
+		editar: recorrenciasBase.editar,
+		pausar: function (id) {
+			return window.CriatiApi.post(BASE + "/recorrencias/" + id + "/pausar");
+		},
+		retomar: function (id) {
+			return window.CriatiApi.post(BASE + "/recorrencias/" + id + "/retomar");
+		},
+		encerrar: function (id) {
+			return window.CriatiApi.post(BASE + "/recorrencias/" + id + "/encerrar");
+		},
+		gerar: function (id) {
+			return window.CriatiApi.post(BASE + "/recorrencias/" + id + "/gerar");
+		},
+		gerarCompetencia: function (id, competencia) {
+			return window.CriatiApi.post(BASE + "/recorrencias/" + id + "/gerar-competencia", { competencia: competencia });
+		},
+		gerarAutomaticas: function () {
+			return window.CriatiApi.post(BASE + "/recorrencias/gerar-automaticas");
+		},
+		ocorrencias: function (id) {
+			return window.CriatiApi.get(BASE + "/recorrencias/" + id + "/ocorrencias");
+		},
+		resumo: function () {
+			return window.CriatiApi.get(BASE + "/recorrencias/resumo");
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -100,6 +132,7 @@
 			return window.CriatiApi.get(BASE + "/pessoas/usuarios-vinculaveis");
 		},
 		lancamentos: lancamentos,
+		recorrencias: recorrencias,
 		dashboard: dashboard
 	};
 })(window);

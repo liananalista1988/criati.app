@@ -25,6 +25,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,7 +33,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "lancamento_financeiro")
+@Table(name = "lancamento_financeiro", uniqueConstraints = @UniqueConstraint(
+		name = "uq_lancamento_financeiro_recorrencia_competencia",
+		columnNames = {"recorrencia_id", "data_competencia"}))
 public class LancamentoFinanceiro {
 
 	@Id
@@ -108,6 +111,10 @@ public class LancamentoFinanceiro {
 	@JoinColumn(name = "atualizado_por_usuario_id")
 	private Usuario atualizadoPor;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "recorrencia_id")
+	private RecorrenciaFinanceira recorrencia;
+
 	public LancamentoFinanceiro(
 			Empresa empresa,
 			ContaFinanceira conta,
@@ -158,6 +165,19 @@ public class LancamentoFinanceiro {
 		this.atualizadoEm = this.criadoEm;
 		this.criadoPor = Objects.requireNonNull(autor, "autor nao pode ser nulo");
 		this.atualizadoPor = autor;
+	}
+
+	public static LancamentoFinanceiro gerarDeRecorrencia(RecorrenciaFinanceira recorrencia, LocalDate dataCompetencia,
+			LocalDate dataVencimento, Usuario autor) {
+		Objects.requireNonNull(recorrencia, "recorrencia nao pode ser nula");
+		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(recorrencia.getEmpresa(), recorrencia.getConta(),
+				recorrencia.getCategoria(), recorrencia.getPessoaFinanceira(), recorrencia.getParteFinanceira(),
+				recorrencia.getTipo(), recorrencia.getDescricao(), recorrencia.getValorPadrao(), dataCompetencia,
+				dataVencimento, null, StatusLancamentoFinanceiro.PENDENTE, recorrencia.getFormaPagamento(), null,
+				autor);
+		lancamento.origem = OrigemLancamentoFinanceiro.RECORRENCIA;
+		lancamento.recorrencia = recorrencia;
+		return lancamento;
 	}
 
 	public void atualizarDados(

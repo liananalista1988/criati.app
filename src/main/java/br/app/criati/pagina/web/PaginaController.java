@@ -99,6 +99,14 @@ public class PaginaController {
 		return "app/financeiro-lancamentos";
 	}
 
+	@GetMapping("/app/financeiro/recorrencias")
+	public String financeiroRecorrencias(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		return "app/financeiro-recorrencias";
+	}
+
 	@GetMapping("/app/financeiro/pessoas")
 	public String financeiroPessoas(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {

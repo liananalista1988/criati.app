@@ -151,8 +151,12 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
   propostos (`CONTA_PAGAMENTO`, `DINHEIRO`, `CARTEIRA`) — `MODELO-DE-DADOS.md` registra que é uma
   decisão de modelagem técnica futura, não resolvida aqui.
 - **Critério de "meses sem o dia configurado"** em uma recorrência (ex.: dia 31 em mês de 30
-  dias) — proposto usar o último dia válido do mês (`MODELO-DE-DADOS.md`, seção "Recorrência"),
-  mas ainda a confirmar com a família na modelagem técnica.
+  dias) — **RESOLVIDO na LES-F2-006:** implementado usando o último dia válido do mês (a mesma
+  proposta conservadora já registrada aqui), aplicado uniformemente a recorrências mensais e
+  anuais, inclusive 29 de fevereiro em anos não bissextos. Ver
+  `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-006.md` e `docs/DECISOES.md`. A confirmação da
+  família permanece útil para validar a expectativa de uso real, mas não bloqueia mais a
+  implementação.
 
 ## Pendências de navegação e experiência (LES-F1-004)
 
@@ -189,8 +193,8 @@ que altera seu respectivo contrato, nunca todo o roadmap.
 
 - Conciliação dos tipos de conta existentes com os tipos conceituais novos, antes da migration que
   alterar ou ampliar `ContaFinanceira`.
-- Regra para dia 31 em meses menores, antes de implementar recorrências; a proposta conservadora é
-  usar o último dia válido.
+- Regra para dia 31 em meses menores, antes de implementar recorrências — **RESOLVIDO na
+  LES-F2-006**, usando o último dia válido do mês (ver acima).
 - Ordem final da sidebar, navegação inferior mobile, densidade do dashboard e formato inicial da
   Agenda, por protótipo e homologação das respectivas tarefas.
 - Local de Histórico/Lixeira, visão consolidada de terceiros e necessidade de central de anexos,

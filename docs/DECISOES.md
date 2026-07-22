@@ -418,6 +418,34 @@ O MVP será dividido em duas etapas:
   relacionamentos, invariantes) em `docs/empresas/financeiro-les/MODELO-DE-DADOS.md` e
   `docs/empresas/financeiro-les/ARQUITETURA-FUNCIONAL.md`.
 
+## Recorrências financeiras — regra de geração e idempotência (LES-F2-006)
+
+- Decisão arquitetural, reutilizável por qualquer domínio que precise gerar registros periódicos
+  a partir de uma regra (não só o Financeiro LeS): três conceitos distintos — **regra** (a
+  recorrência, nunca movimenta saldo por si só), **ocorrência** (uma competência específica gerada
+  pela regra) e **fato** (o `LancamentoFinanceiro` já existente, reaproveitado em vez de duplicado
+  como um segundo tipo de lançamento paralelo). A regra apenas gera o fato; o fato mantém
+  referência opcional à regra de origem (`recorrencia_id`) e uma origem explícita (`RECORRENCIA`,
+  já reservada desde a V9).
+- Idempotência de geração: unicidade `(recorrencia_id, data_competencia)` — NULL é tratado como
+  distinto pelo SQL padrão, então lançamentos manuais (sem recorrência) nunca colidem entre si.
+  Reexecutar a geração da mesma competência sempre retorna o registro já existente em vez de
+  duplicar. Esse padrão (unicidade regra+competência, verificação antes de inserir) é reutilizável
+  por qualquer futura geração periódica na plataforma.
+- Regra de dia inválido em mês menor (dia 31 em mês de 30 dias, 29/30/31 de fevereiro): usa o
+  último dia válido do mês, aplicada uniformemente a recorrências mensais e anuais. Resolve a
+  pendência registrada em `docs/empresas/financeiro-les/PENDENCIAS.md` ("Critério de 'meses sem o
+  dia configurado'"), adotando a proposta conservadora já sugerida ali.
+- Geração automática: implementada como endpoint explícito
+  (`POST /api/contexto/financeiro/recorrencias/gerar-automaticas`), processado sob demanda (ex.:
+  ao acessar o módulo ou por acionamento manual), em vez de `@Scheduled`. Evita introduzir
+  agendamento oculto e difícil de testar antes de existir uma necessidade real de execução em
+  background; se essa necessidade surgir para este ou outro módulo, a decisão de adotar
+  `@Scheduled` deve ser tomada e registrada separadamente.
+- Escopo desta entrega: apenas periodicidade `MENSAL` e `ANUAL`. `SEMANAL` e `PERSONALIZADA` foram
+  avaliadas e adiadas deliberadamente — não haveria uma competência mensal única para ancorar a
+  regra de duplicidade acima sem um redesenho do conceito de "competência da ocorrência".
+
 ## Regra de alteração
 
 Nenhuma decisão estrutural registrada neste documento deverá ser alterada silenciosamente.
