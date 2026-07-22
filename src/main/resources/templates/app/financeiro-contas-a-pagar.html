@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Contas a pagar · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Contas a pagar</h1>
+					<p>Compromissos, ocorrencias de cada competencia e pagamentos integrais ou parciais.</p>
+				</div>
+
+				<div class="criati-toolbar">
+					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-ocorrencias">Ocorrencias</button>
+					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-compromissos">Compromissos</button>
+					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-calendario">Calendario</button>
+				</div>
+
+				<!-- ==================== OCORRENCIAS ==================== -->
+				<section id="contas-a-pagar-secao-ocorrencias">
+					<div class="criati-toolbar">
+						<div class="criati-field">
+							<label for="ocorrencias-filtro-status">Status</label>
+							<select class="criati-select" id="ocorrencias-filtro-status">
+								<option value="">Todos</option>
+								<option value="PENDENTE">Pendente</option>
+								<option value="PARCIALMENTE_PAGA">Parcialmente paga</option>
+								<option value="PAGA">Paga</option>
+								<option value="CANCELADA">Cancelada</option>
+							</select>
+						</div>
+						<div class="criati-field">
+							<label for="ocorrencias-filtro-vencidas">Vencidas</label>
+							<select class="criati-select" id="ocorrencias-filtro-vencidas">
+								<option value="">Todas</option>
+								<option value="true">Somente vencidas</option>
+								<option value="false">Somente em dia</option>
+							</select>
+						</div>
+						<div class="criati-field"><label for="ocorrencias-filtro-pessoa">Pessoa</label>
+							<select class="criati-select" id="ocorrencias-filtro-pessoa"></select></div>
+						<div class="criati-field"><label for="ocorrencias-filtro-categoria">Categoria</label>
+							<select class="criati-select" id="ocorrencias-filtro-categoria"></select></div>
+						<div class="criati-field" style="flex: 1; min-width: 200px;">
+							<label for="ocorrencias-filtro-busca">Buscar</label>
+							<input class="criati-input" type="text" id="ocorrencias-filtro-busca" placeholder="Descricao..." />
+						</div>
+					</div>
+
+					<div class="criati-grid criati-grid-4" id="ocorrencias-resumo" aria-live="polite">
+						<div class="criati-card"><p class="criati-card-sub">Previsto</p><p class="criati-card-value" id="resumo-total-previsto">R$ 0,00</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Total (principal + juros + multa - desconto)</p><p class="criati-card-value" id="resumo-total-principal">R$ 0,00</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Pago</p><p class="criati-card-value" id="resumo-total-pago">R$ 0,00</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Saldo pendente</p><p class="criati-card-value" id="resumo-saldo-pendente">R$ 0,00</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Pendentes</p><p class="criati-card-value" id="resumo-qtd-pendente">0</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Parcialmente pagas</p><p class="criati-card-value" id="resumo-qtd-parcial">0</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Vencidas</p><p class="criati-card-value" id="resumo-qtd-vencida">0</p></div>
+						<div class="criati-card"><p class="criati-card-sub">Vencendo em ate 3 dias</p><p class="criati-card-value" id="resumo-qtd-vencendo">0</p></div>
+					</div>
+					<p class="criati-card-sub">Saldo pendente e a obrigacao em aberto, nao o saldo bancario das contas.</p>
+
+					<div class="criati-toolbar">
+						<div style="flex: 1"></div>
+						<button type="button" id="ocorrencias-nova" class="criati-btn criati-btn-primary">Nova obrigacao avulsa</button>
+					</div>
+
+					<p id="ocorrencias-carregando">Carregando ocorrencias...</p>
+					<div id="ocorrencias-erro" class="criati-error-state" hidden><p>Nao foi possivel carregar as ocorrencias agora.</p></div>
+					<div id="ocorrencias-vazio" class="criati-empty-state" hidden>
+						<p>Nenhuma conta a pagar encontrada. Cadastre obrigacoes avulsas ou recorrentes para acompanhar vencimentos e pagamentos.</p>
+					</div>
+
+					<div class="criati-table-wrap" id="ocorrencias-tabela-wrap" hidden>
+						<table class="criati-table">
+							<thead>
+								<tr>
+									<th>Descricao</th><th>Competencia</th><th>Vencimento</th><th>Valor total</th>
+									<th>Pago</th><th>Saldo</th><th>Pessoa</th><th>Categoria</th><th>Status</th><th>Acoes</th>
+								</tr>
+							</thead>
+							<tbody id="ocorrencias-tbody"></tbody>
+						</table>
+					</div>
+				</section>
+
+				<!-- ==================== COMPROMISSOS ==================== -->
+				<section id="contas-a-pagar-secao-compromissos" hidden>
+					<div class="criati-toolbar">
+						<div class="criati-field">
+							<label for="compromissos-filtro-ativo">Situacao</label>
+							<select class="criati-select" id="compromissos-filtro-ativo">
+								<option value="">Todos</option>
+								<option value="true">Ativos</option>
+								<option value="false">Inativos</option>
+							</select>
+						</div>
+						<div class="criati-field" style="flex: 1; min-width: 200px;">
+							<label for="compromissos-filtro-busca">Buscar</label>
+							<input class="criati-input" type="text" id="compromissos-filtro-busca" placeholder="Descricao..." />
+						</div>
+						<div style="flex: 1"></div>
+						<button type="button" id="compromissos-novo" class="criati-btn criati-btn-primary">Novo compromisso</button>
+					</div>
+
+					<p id="compromissos-carregando">Carregando compromissos...</p>
+					<div id="compromissos-erro" class="criati-error-state" hidden><p>Nao foi possivel carregar os compromissos agora.</p></div>
+					<div id="compromissos-vazio" class="criati-empty-state" hidden><p>Nenhum compromisso cadastrado.</p></div>
+
+					<div class="criati-table-wrap" id="compromissos-tabela-wrap" hidden>
+						<table class="criati-table">
+							<thead>
+								<tr><th>Descricao</th><th>Tipo de valor</th><th>Recorrencia</th><th>Pessoa</th><th>Categoria</th><th>Situacao</th><th>Acoes</th></tr>
+							</thead>
+							<tbody id="compromissos-tbody"></tbody>
+						</table>
+					</div>
+				</section>
+
+				<!-- ==================== CALENDARIO ==================== -->
+				<section id="contas-a-pagar-secao-calendario" hidden>
+					<div class="criati-toolbar">
+						<div class="criati-field">
+							<label for="calendario-mes">Mes</label>
+							<input class="criati-input" type="month" id="calendario-mes" />
+						</div>
+					</div>
+					<p id="calendario-carregando">Carregando calendario...</p>
+					<div id="calendario-vazio" class="criati-empty-state" hidden><p>Nenhum vencimento neste mes.</p></div>
+					<div class="criati-table-wrap" id="calendario-tabela-wrap" hidden>
+						<table class="criati-table">
+							<thead><tr><th>Vencimento</th><th>Descricao</th><th>Valor total</th><th>Saldo</th><th>Status</th><th>Atraso</th></tr></thead>
+							<tbody id="calendario-tbody"></tbody>
+						</table>
+					</div>
+				</section>
+			</main>
+		</div>
+	</div>
+
+	<!-- Modal: nova/editar ocorrencia avulsa -->
+	<div class="criati-modal-overlay" id="ocorrencia-modal" hidden>
+		<div class="criati-modal">
+			<h2 id="ocorrencia-modal-titulo">Nova obrigacao avulsa</h2>
+			<form class="criati-modal-form" id="ocorrencia-form">
+				<div class="criati-field"><label for="ocorrencia-descricao">Descricao</label>
+					<input class="criati-input" id="ocorrencia-descricao" required maxlength="200" /></div>
+				<div class="criati-field"><label for="ocorrencia-competencia">Competencia</label>
+					<input class="criati-input" type="month" id="ocorrencia-competencia" required /></div>
+				<div class="criati-field"><label for="ocorrencia-categoria">Categoria</label>
+					<select class="criati-select" id="ocorrencia-categoria" required></select></div>
+				<div class="criati-field"><label for="ocorrencia-pessoa">Pessoa</label>
+					<select class="criati-select" id="ocorrencia-pessoa" required></select></div>
+				<div class="criati-field"><label for="ocorrencia-parte">Contato financeiro (opcional)</label>
+					<select class="criati-select" id="ocorrencia-parte"></select></div>
+				<div class="criati-field"><label for="ocorrencia-conta-prevista">Conta prevista (opcional)</label>
+					<select class="criati-select" id="ocorrencia-conta-prevista"></select></div>
+				<div class="criati-field"><label for="ocorrencia-valor-previsto">Valor previsto (opcional)</label>
+					<input class="criati-input" type="number" step="0.01" min="0.01" id="ocorrencia-valor-previsto" /></div>
+				<div class="criati-field"><label for="ocorrencia-valor-principal">Valor principal</label>
+					<input class="criati-input" type="number" step="0.01" min="0.01" id="ocorrencia-valor-principal" required /></div>
+				<div class="criati-field"><label for="ocorrencia-vencimento">Vencimento</label>
+					<input class="criati-input" type="date" id="ocorrencia-vencimento" required /></div>
+				<div class="criati-field"><label for="ocorrencia-data-recebimento">Data de recebimento da cobranca (opcional)</label>
+					<input class="criati-input" type="date" id="ocorrencia-data-recebimento" /></div>
+				<div class="criati-field"><label for="ocorrencia-juros">Juros (opcional)</label>
+					<input class="criati-input" type="number" step="0.01" min="0" id="ocorrencia-juros" value="0" /></div>
+				<div class="criati-field"><label for="ocorrencia-multa">Multa (opcional)</label>
+					<input class="criati-input" type="number" step="0.01" min="0" id="ocorrencia-multa" value="0" /></div>
+				<div class="criati-field"><label for="ocorrencia-desconto">Desconto (opcional)</label>
+					<input class="criati-input" type="number" step="0.01" min="0" id="ocorrencia-desconto" value="0" /></div>
+				<div class="criati-field"><label for="ocorrencia-observacao">Observacao (opcional)</label>
+					<input class="criati-input" id="ocorrencia-observacao" maxlength="500" /></div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="ocorrencia-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="ocorrencia-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Modal: pagamento (integral ou parcial) -->
+	<div class="criati-modal-overlay" id="pagamento-modal" hidden>
+		<div class="criati-modal">
+			<h2>Pagar ocorrencia</h2>
+			<p class="criati-card-sub">Valor total: <span id="pagamento-valor-total">R$ 0,00</span> ·
+				Ja pago: <span id="pagamento-valor-pago">R$ 0,00</span> ·
+				Saldo pendente: <span id="pagamento-saldo-pendente">R$ 0,00</span></p>
+			<p id="pagamento-erro-excedente" class="criati-error-state" hidden><p>O valor do pagamento nao pode superar o saldo pendente.</p></p>
+			<form class="criati-modal-form" id="pagamento-form">
+				<div class="criati-field criati-field-checkbox">
+					<label><input type="checkbox" id="pagamento-integral" checked /> Pagamento integral (usa o saldo pendente)</label>
+				</div>
+				<div class="criati-field"><label for="pagamento-valor">Valor do pagamento</label>
+					<input class="criati-input" type="number" step="0.01" min="0.01" id="pagamento-valor" /></div>
+				<div class="criati-field"><label for="pagamento-conta">Conta</label>
+					<select class="criati-select" id="pagamento-conta" required></select></div>
+				<div class="criati-field"><label for="pagamento-data">Data do pagamento</label>
+					<input class="criati-input" type="date" id="pagamento-data" required /></div>
+				<div class="criati-field"><label for="pagamento-forma">Forma de pagamento (opcional)</label>
+					<select class="criati-select" id="pagamento-forma"><option value="">Nao informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select></div>
+				<div class="criati-field"><label for="pagamento-observacao">Observacao (opcional)</label>
+					<input class="criati-input" id="pagamento-observacao" maxlength="500" /></div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="pagamento-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="pagamento-confirmar">Confirmar pagamento</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Modal: historico de pagamentos / estorno -->
+	<div class="criati-modal-overlay" id="pagamentos-historico-modal" hidden>
+		<div class="criati-modal">
+			<h2>Pagamentos da ocorrencia</h2>
+			<div class="criati-table-wrap" style="border: none;">
+				<table class="criati-table">
+					<thead><tr><th>Data</th><th>Valor</th><th>Conta</th><th>Forma</th><th>Status</th><th></th></tr></thead>
+					<tbody id="pagamentos-historico-tbody"></tbody>
+				</table>
+			</div>
+			<p id="pagamentos-historico-vazio" class="criati-card-sub" hidden>Nenhum pagamento registrado ainda.</p>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-primary" id="pagamentos-historico-fechar">Fechar</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal: novo/editar compromisso -->
+	<div class="criati-modal-overlay" id="compromisso-modal" hidden>
+		<div class="criati-modal">
+			<h2 id="compromisso-modal-titulo">Novo compromisso</h2>
+			<form class="criati-modal-form" id="compromisso-form">
+				<div class="criati-field"><label for="compromisso-descricao">Descricao</label>
+					<input class="criati-input" id="compromisso-descricao" required maxlength="200" /></div>
+				<div class="criati-field"><label for="compromisso-categoria">Categoria (despesa)</label>
+					<select class="criati-select" id="compromisso-categoria" required></select></div>
+				<div class="criati-field"><label for="compromisso-pessoa">Pessoa responsavel</label>
+					<select class="criati-select" id="compromisso-pessoa" required></select></div>
+				<div class="criati-field"><label for="compromisso-parte">Contato financeiro (opcional)</label>
+					<select class="criati-select" id="compromisso-parte"></select></div>
+				<div class="criati-field"><label for="compromisso-conta-padrao">Conta padrao (opcional)</label>
+					<select class="criati-select" id="compromisso-conta-padrao"></select></div>
+				<div class="criati-field"><label for="compromisso-recorrencia">Recorrencia vinculada (opcional, somente na criacao)</label>
+					<select class="criati-select" id="compromisso-recorrencia"><option value="">Nenhuma (compromisso avulso)</option></select></div>
+				<div class="criati-field"><label for="compromisso-tipo-valor">Tipo de valor</label>
+					<select class="criati-select" id="compromisso-tipo-valor">
+						<option value="FIXO">Fixo</option><option value="VARIAVEL">Variavel</option>
+					</select></div>
+				<div class="criati-field"><label for="compromisso-valor-padrao">Valor padrao (opcional)</label>
+					<input class="criati-input" type="number" step="0.01" min="0.01" id="compromisso-valor-padrao" /></div>
+				<div class="criati-field"><label for="compromisso-dia-vencimento">Dia padrao de vencimento (opcional)</label>
+					<input class="criati-input" type="number" min="1" max="31" step="1" id="compromisso-dia-vencimento" /></div>
+				<div class="criati-field"><label for="compromisso-forma">Forma de pagamento padrao (opcional)</label>
+					<select class="criati-select" id="compromisso-forma"><option value="">Nao informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select></div>
+				<div class="criati-field"><label for="compromisso-observacao">Observacao (opcional)</label>
+					<input class="criati-input" id="compromisso-observacao" maxlength="500" /></div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="compromisso-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="compromisso-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-contas-a-pagar.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroContasAPagar.iniciar();
+		});
+	</script>
+</body>
+</html>

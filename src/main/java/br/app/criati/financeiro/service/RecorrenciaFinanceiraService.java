@@ -32,6 +32,7 @@ import br.app.criati.financeiro.model.ContaFinanceira;
 import br.app.criati.financeiro.model.LancamentoFinanceiro;
 import br.app.criati.financeiro.model.RecorrenciaFinanceira;
 import br.app.criati.financeiro.repository.CategoriaFinanceiraRepository;
+import br.app.criati.financeiro.repository.CompromissoFinanceiroRepository;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
 import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
 import br.app.criati.financeiro.repository.RecorrenciaFinanceiraRepository;
@@ -60,12 +61,13 @@ public class RecorrenciaFinanceiraService {
 	private final ParteFinanceiraRepository parteRepository;
 	private final EmpresaRepository empresaRepository;
 	private final UsuarioRepository usuarioRepository;
+	private final CompromissoFinanceiroRepository compromissoRepository;
 
 	public RecorrenciaFinanceiraService(RecorrenciaFinanceiraRepository recorrenciaRepository,
 			LancamentoFinanceiroRepository lancamentoRepository, ContaFinanceiraRepository contaRepository,
 			CategoriaFinanceiraRepository categoriaRepository, PessoaFinanceiraRepository pessoaRepository,
 			ParteFinanceiraRepository parteRepository, EmpresaRepository empresaRepository,
-			UsuarioRepository usuarioRepository) {
+			UsuarioRepository usuarioRepository, CompromissoFinanceiroRepository compromissoRepository) {
 		this.recorrenciaRepository = recorrenciaRepository;
 		this.lancamentoRepository = lancamentoRepository;
 		this.contaRepository = contaRepository;
@@ -74,6 +76,7 @@ public class RecorrenciaFinanceiraService {
 		this.parteRepository = parteRepository;
 		this.empresaRepository = empresaRepository;
 		this.usuarioRepository = usuarioRepository;
+		this.compromissoRepository = compromissoRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -221,6 +224,7 @@ public class RecorrenciaFinanceiraService {
 		exigirEscrita(contexto);
 		RecorrenciaFinanceira r = buscarDaEmpresa(id, contexto.empresaId());
 		exigirAtiva(r);
+		exigirNaoVinculadaACompromisso(r);
 		YearMonth alvo = r.getProximaCompetencia();
 		if (alvo.isAfter(YearMonth.now())) {
 			throw new DadosInvalidosException("Ainda nao e possivel gerar: proxima competencia esta fora do periodo");
@@ -239,6 +243,7 @@ public class RecorrenciaFinanceiraService {
 		}
 		RecorrenciaFinanceira r = buscarDaEmpresa(id, contexto.empresaId());
 		exigirAtiva(r);
+		exigirNaoVinculadaACompromisso(r);
 		if (competencia.isAfter(YearMonth.now())) {
 			throw new DadosInvalidosException("Nao e possivel gerar uma competencia futura");
 		}
@@ -259,6 +264,12 @@ public class RecorrenciaFinanceiraService {
 						contexto.empresaId(), StatusRecorrencia.ATIVA, atual.atDay(1));
 		int geradas = 0;
 		for (RecorrenciaFinanceira r : elegiveis) {
+			if (compromissoRepository.existsByRecorrenciaId(r.getId())) {
+				// Recorrencias vinculadas a um compromisso a pagar geram OcorrenciaCompromisso
+				// (OcorrenciaCompromissoService.gerarPorRecorrencia), nao LancamentoFinanceiro
+				// direto; ficam fora deste lote para nao consumir a competencia duas vezes.
+				continue;
+			}
 			YearMonth alvo = r.getProximaCompetencia();
 			if (!r.dentroDoPeriodo(alvo)) {
 				continue;
@@ -294,6 +305,21 @@ public class RecorrenciaFinanceiraService {
 	private void exigirAtiva(RecorrenciaFinanceira r) {
 		if (r.getStatus() != StatusRecorrencia.ATIVA) {
 			throw new RecorrenciaFinanceiraStatusInvalidoException("Recorrencia nao esta ativa");
+		}
+	}
+
+	/**
+	 * Uma recorrencia vinculada a um compromisso a pagar (LES-F2-007) gera
+	 * OcorrenciaCompromisso pelo fluxo dedicado
+	 * (OcorrenciaCompromissoService.gerarPorRecorrencia), nao um
+	 * LancamentoFinanceiro direto por este servico — evita consumir a mesma
+	 * competencia (avancar proximaCompetencia) duas vezes por dois caminhos
+	 * diferentes.
+	 */
+	private void exigirNaoVinculadaACompromisso(RecorrenciaFinanceira r) {
+		if (compromissoRepository.existsByRecorrenciaId(r.getId())) {
+			throw new DadosInvalidosException(
+					"Recorrencia vinculada a um compromisso a pagar; gere a ocorrencia pelo compromisso");
 		}
 	}
 

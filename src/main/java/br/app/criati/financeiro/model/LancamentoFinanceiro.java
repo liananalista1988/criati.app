@@ -180,6 +180,29 @@ public class LancamentoFinanceiro {
 		return lancamento;
 	}
 
+	/**
+	 * Gera o lancamento de despesa liquidado que representa o impacto financeiro
+	 * unico de um pagamento (integral ou parcial) de uma ocorrencia de
+	 * compromisso a pagar. Deliberadamente nao referencia recorrencia_id mesmo
+	 * quando a ocorrencia se origina de uma recorrencia: mais de um pagamento
+	 * parcial na mesma competencia geraria mais de um lancamento com o mesmo par
+	 * (recorrencia_id, data_competencia), colidindo com
+	 * uq_lancamento_financeiro_recorrencia_competencia (criada para o fluxo
+	 * recorrencia -> lancamento direto da LES-F2-006, que nao se aplica aqui). A
+	 * rastreabilidade fica a cargo de PagamentoOcorrenciaCompromisso e
+	 * OcorrenciaCompromisso (compromisso_id/recorrencia_id/competencia).
+	 */
+	public static LancamentoFinanceiro gerarDeContaAPagar(Empresa empresa, ContaFinanceira conta,
+			CategoriaFinanceira categoria, PessoaFinanceira pessoaFinanceira, ParteFinanceira parteFinanceira,
+			String descricao, BigDecimal valor, LocalDate dataCompetencia, LocalDate dataVencimento,
+			LocalDate dataLiquidacao, FormaPagamentoLancamento formaPagamento, Usuario autor) {
+		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, pessoaFinanceira,
+				parteFinanceira, TipoFinanceiro.DESPESA, descricao, valor, dataCompetencia, dataVencimento,
+				dataLiquidacao, StatusLancamentoFinanceiro.LIQUIDADO, formaPagamento, null, autor);
+		lancamento.origem = OrigemLancamentoFinanceiro.CONTA_A_PAGAR;
+		return lancamento;
+	}
+
 	public void atualizarDados(
 			ContaFinanceira conta,
 			CategoriaFinanceira categoria,

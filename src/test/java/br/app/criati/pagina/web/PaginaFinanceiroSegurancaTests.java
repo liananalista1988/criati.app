@@ -64,7 +64,7 @@ class PaginaFinanceiroSegurancaTests {
 		String[] rotas = {
 				"/app/financeiro", "/app/financeiro/contas", "/app/financeiro/categorias",
 				"/app/financeiro/lancamentos", "/app/financeiro/pessoas", "/app/financeiro/contatos",
-				"/app/financeiro/recorrencias"
+				"/app/financeiro/recorrencias", "/app/financeiro/contas-a-pagar"
 		};
 		for (String rota : rotas) {
 			mockMvc.perform(get(rota))
@@ -97,6 +97,8 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/contatos").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 		mockMvc.perform(get("/app/financeiro/recorrencias").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/contas-a-pagar").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 	}
 
@@ -138,6 +140,8 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhum contato financeiro cadastrado")));
 		mockMvc.perform(get("/app/financeiro/recorrencias").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma recorrencia cadastrada")));
+		mockMvc.perform(get("/app/financeiro/contas-a-pagar").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma conta a pagar encontrada")));
 	}
 
 	@Test

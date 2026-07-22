@@ -446,6 +446,45 @@ O MVP será dividido em duas etapas:
   avaliadas e adiadas deliberadamente — não haveria uma competência mensal única para ancorar a
   regra de duplicidade acima sem um redesenho do conceito de "competência da ocorrência".
 
+## Contas a pagar — compromisso, ocorrência e pagamento (LES-F2-007)
+
+- Decisão arquitetural, reutilizável por qualquer domínio que precise separar uma obrigação
+  recorrente/avulsa da sua liquidação parcial: três conceitos distintos — **compromisso**
+  (`CompromissoFinanceiro`, a regra ou origem, nunca movimenta saldo), **ocorrência**
+  (`OcorrenciaCompromisso`, a obrigação concreta de uma competência, com valor previsto/principal/
+  juros/multa/desconto/total/pago/saldo e status calculado) e **pagamento**
+  (`PagamentoOcorrenciaCompromisso`, a liquidação integral ou parcial, sempre gerando exatamente um
+  `LancamentoFinanceiro`). Diferente da LES-F2-006 (onde a ocorrência não tem tabela própria, é
+  apenas `recorrencia_id + data_competencia` no próprio lançamento), aqui a ocorrência precisa de
+  tabela própria porque precisa suportar múltiplos pagamentos parciais e valores ajustáveis por
+  competência — o que `LancamentoFinanceiro` (valor único, status de registro inteiro) não suporta.
+- Integração com `RecorrenciaFinanceira` (reaproveitada integralmente, sem segundo motor de
+  periodicidade): quando um compromisso é recorrente, ele referencia uma `RecorrenciaFinanceira` já
+  existente; a geração de ocorrências reaproveita os métodos públicos já testados na LES-F2-006
+  (`getProximaCompetencia`/`calcularVencimento`/`dentroDoPeriodo`/`avancarProximaCompetencia`), mas
+  o resultado é uma `OcorrenciaCompromisso`, não um `LancamentoFinanceiro` direto. Uma recorrência
+  vinculada a um compromisso fica bloqueada no fluxo antigo de geração direta de lançamento (guard
+  em `RecorrenciaFinanceiraService`), para que a mesma competência nunca seja consumida duas vezes
+  por dois caminhos concorrentes. Recorrências sem compromisso vinculado continuam gerando
+  lançamento diretamente, sem nenhuma mudança de comportamento (zero regressão).
+- `LancamentoFinanceiro` gerado por um pagamento de conta a pagar (`gerarDeContaAPagar`, nova origem
+  `CONTA_A_PAGAR`) deliberadamente **não** referencia `recorrencia_id`, mesmo quando a ocorrência é
+  recorrente: a constraint `uq_lancamento_financeiro_recorrencia_competencia` (LES-F2-006) pressupõe
+  um único lançamento por competência, o que quebraria com múltiplos pagamentos parciais da mesma
+  ocorrência. A rastreabilidade fica no pagamento (`PagamentoOcorrenciaCompromisso.ocorrencia`), não
+  no lançamento.
+- Estorno de pagamento reaproveita `LancamentoFinanceiro.cancelar(...)` (método já existente) em vez
+  de criar um mecanismo de reversão paralelo; o pagamento nunca é apagado fisicamente, apenas
+  marcado `ESTORNADO` com motivo/usuário/instante. Exige perfil `ADMINISTRADOR`, mesmo precedente já
+  usado por `LancamentoFinanceiroService.desliquidar`.
+- Comprovantes (anexos de ocorrência/pagamento) **não foram implementados**: nenhuma infraestrutura
+  de upload existe em nenhum domínio do projeto, e construí-la de forma segura é um esforço de base
+  já reservado para `LES-F2-010` em `docs/empresas/financeiro-les/PENDENCIAS.md`. Implementar um
+  upload improvisado nesta tarefa violaria a diretriz explícita de não introduzir armazenamento
+  inseguro sem a base adequada.
+- Detalhes completos (cálculos, migration, endpoints, testes, limitações) em
+  `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-007.md`.
+
 ## Regra de alteração
 
 Nenhuma decisão estrutural registrada neste documento deverá ser alterada silenciosamente.

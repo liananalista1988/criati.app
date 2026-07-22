@@ -20,6 +20,7 @@ import br.app.criati.exception.CategoriaFinanceiraInativaException;
 import br.app.criati.exception.CategoriaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.CategoriaFinanceiraNomeDuplicadaException;
 import br.app.criati.exception.CnpjJaCadastradoException;
+import br.app.criati.exception.CompromissoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.ContaFinanceiraComLancamentosException;
 import br.app.criati.exception.ContaFinanceiraInativaException;
 import br.app.criati.exception.ContaFinanceiraNaoEncontradaException;
@@ -34,6 +35,10 @@ import br.app.criati.exception.FinanceiroStatusInvalidoException;
 import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.LancamentoStatusInvalidoException;
 import br.app.criati.exception.InstituicaoFinanceiraNaoEncontradaException;
+import br.app.criati.exception.OcorrenciaCompromissoNaoEncontradaException;
+import br.app.criati.exception.OcorrenciaCompromissoStatusInvalidoException;
+import br.app.criati.exception.PagamentoOcorrenciaNaoEncontradoException;
+import br.app.criati.exception.PagamentoOcorrenciaStatusInvalidoException;
 import br.app.criati.exception.ParteFinanceiraNaoEncontradaException;
 import br.app.criati.exception.PessoaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.PessoaFinanceiraInativaException;
@@ -104,7 +109,9 @@ public class GlobalExceptionHandler {
 			CategoriaFinanceiraNomeDuplicadaException.class,
 			UsuarioJaVinculadoPessoaFinanceiraException.class,
 			PessoaFinanceiraInativaException.class,
-			RecorrenciaFinanceiraStatusInvalidoException.class
+			RecorrenciaFinanceiraStatusInvalidoException.class,
+			OcorrenciaCompromissoStatusInvalidoException.class,
+			PagamentoOcorrenciaStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -123,7 +130,10 @@ public class GlobalExceptionHandler {
 			PessoaFinanceiraNaoEncontradaException.class,
 			ParteFinanceiraNaoEncontradaException.class,
 			InstituicaoFinanceiraNaoEncontradaException.class,
-			RecorrenciaFinanceiraNaoEncontradaException.class
+			RecorrenciaFinanceiraNaoEncontradaException.class,
+			CompromissoFinanceiroNaoEncontradoException.class,
+			OcorrenciaCompromissoNaoEncontradaException.class,
+			PagamentoOcorrenciaNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

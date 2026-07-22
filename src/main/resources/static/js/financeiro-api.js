@@ -123,6 +123,54 @@
 		}
 	};
 
+	var compromissosBase = recurso(BASE + "/compromissos");
+	var compromissos = {
+		listar: compromissosBase.listar,
+		criar: compromissosBase.criar,
+		buscar: compromissosBase.buscar,
+		editar: compromissosBase.editar,
+		ativar: function (id) {
+			return window.CriatiApi.post(BASE + "/compromissos/" + id + "/ativar");
+		},
+		desativar: function (id) {
+			return window.CriatiApi.post(BASE + "/compromissos/" + id + "/desativar");
+		}
+	};
+
+	var OCORRENCIAS_BASE = BASE + "/ocorrencias-compromisso";
+	var ocorrenciasBase = recurso(OCORRENCIAS_BASE);
+	var ocorrenciasCompromisso = {
+		listar: ocorrenciasBase.listar,
+		criar: ocorrenciasBase.criar,
+		buscar: ocorrenciasBase.buscar,
+		editar: ocorrenciasBase.editar,
+		gerarPorCompromisso: function (compromissoId) {
+			return window.CriatiApi.post(OCORRENCIAS_BASE + "/gerar-por-compromisso/" + compromissoId);
+		},
+		cancelar: function (id) {
+			return window.CriatiApi.post(OCORRENCIAS_BASE + "/" + id + "/cancelar");
+		},
+		resumo: function (filtros) {
+			return window.CriatiApi.get(OCORRENCIAS_BASE + "/resumo" + query(filtros));
+		},
+		calendario: function (mes) {
+			return window.CriatiApi.get(OCORRENCIAS_BASE + "/calendario" + query({ mes: mes }));
+		},
+		pagamentos: function (id) {
+			return window.CriatiApi.get(OCORRENCIAS_BASE + "/" + id + "/pagamentos");
+		},
+		pagarIntegral: function (id, dados) {
+			return window.CriatiApi.post(OCORRENCIAS_BASE + "/" + id + "/pagar-integral", dados);
+		},
+		pagarParcial: function (id, dados) {
+			return window.CriatiApi.post(OCORRENCIAS_BASE + "/" + id + "/pagar-parcial", dados);
+		},
+		estornarPagamento: function (id, pagamentoId, motivo) {
+			return window.CriatiApi.post(
+				OCORRENCIAS_BASE + "/" + id + "/pagamentos/" + pagamentoId + "/estornar", { motivo: motivo });
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -133,6 +181,8 @@
 		},
 		lancamentos: lancamentos,
 		recorrencias: recorrencias,
+		compromissos: compromissos,
+		ocorrenciasCompromisso: ocorrenciasCompromisso,
 		dashboard: dashboard
 	};
 })(window);

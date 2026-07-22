@@ -157,6 +157,13 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
   `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-006.md` e `docs/DECISOES.md`. A confirmação da
   família permanece útil para validar a expectativa de uso real, mas não bloqueia mais a
   implementação.
+- **Comprovantes de contas a pagar (ocorrência/pagamento) — CONFIRMADO como pendente na LES-F2-007:**
+  a tarefa de contas a pagar (compromisso/ocorrência/pagamento) diagnosticou que nenhuma
+  infraestrutura de upload/anexo existe em nenhum domínio do projeto e optou por não implementar
+  armazenamento improvisado, exatamente conforme já reservado abaixo para `LES-F2-010`. Nenhum campo
+  de comprovante foi adicionado ao modelo de dados de `ocorrencia_compromisso`/
+  `pagamento_ocorrencia_compromisso` nesta entrega; ver
+  `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-007.md`, seção "Comprovantes".
 
 ## Pendências de navegação e experiência (LES-F1-004)
 
