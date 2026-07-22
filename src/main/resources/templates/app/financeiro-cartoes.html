@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Cartões · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Cartões de crédito</h1>
+					<p>Cadastro estrutural de cartões, limites, fechamento e vencimento. Compras e faturas ainda não são controladas aqui.</p>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field"><label for="cartoes-filtro-titular">Titular</label>
+						<select class="criati-select" id="cartoes-filtro-titular"></select></div>
+					<div class="criati-field"><label for="cartoes-filtro-instituicao">Instituição</label>
+						<select class="criati-select" id="cartoes-filtro-instituicao"></select></div>
+					<div class="criati-field">
+						<label for="cartoes-filtro-tipo">Tipo</label>
+						<select class="criati-select" id="cartoes-filtro-tipo">
+							<option value="">Todos</option>
+							<option value="FISICO">Físico</option>
+							<option value="VIRTUAL">Virtual</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="cartoes-filtro-status">Situação</label>
+						<select class="criati-select" id="cartoes-filtro-status">
+							<option value="">Todas</option>
+							<option value="ATIVO">Ativo</option>
+							<option value="INATIVO">Inativo</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="cartoes-filtro-bloqueado">Bloqueio</label>
+						<select class="criati-select" id="cartoes-filtro-bloqueado">
+							<option value="">Todos</option>
+							<option value="true">Somente bloqueados</option>
+							<option value="false">Somente não bloqueados</option>
+						</select>
+					</div>
+					<div class="criati-field" style="flex: 1; min-width: 200px;">
+						<label for="cartoes-filtro-busca">Buscar</label>
+						<input class="criati-input" type="text" id="cartoes-filtro-busca" placeholder="Nome do cartão..." />
+					</div>
+				</div>
+
+				<div class="criati-grid criati-grid-4" id="cartoes-resumo" aria-live="polite">
+					<div class="criati-card"><p class="criati-card-sub">Cartões ativos</p><p class="criati-card-value" id="resumo-cartoes-ativos">0</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Limite total</p><p class="criati-card-value" id="resumo-cartoes-limite-total">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Limite saudável</p><p class="criati-card-value" id="resumo-cartoes-limite-saudavel">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Limite disponível</p><p class="criati-card-value" id="resumo-cartoes-limite-disponivel">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Cartões bloqueados</p><p class="criati-card-value" id="resumo-cartoes-bloqueados">0</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Cartões virtuais</p><p class="criati-card-value" id="resumo-cartoes-virtuais">0</p></div>
+				</div>
+				<p class="criati-card-sub">Cartões virtuais compartilham o limite do cartão principal e nunca são somados novamente no consolidado.</p>
+
+				<div class="criati-toolbar">
+					<div style="flex: 1"></div>
+					<button type="button" id="cartoes-novo" class="criati-btn criati-btn-primary">Cadastrar cartão</button>
+				</div>
+
+				<p id="cartoes-carregando">Carregando cartões...</p>
+				<div id="cartoes-erro" class="criati-error-state" hidden><p>Não foi possível carregar os cartões agora.</p></div>
+				<div id="cartoes-vazio" class="criati-empty-state" hidden>
+					<p>Nenhum cartão cadastrado. Cadastre os cartões da residência para acompanhar limites, fechamento e vencimento.</p>
+				</div>
+
+				<div class="criati-table-wrap" id="cartoes-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th>Nome</th><th>Titular</th><th>Instituição</th><th>Bandeira</th><th>Tipo</th>
+								<th>Final</th><th>Limite total</th><th>Limite saudável</th><th>Limite disponível</th>
+								<th>Fechamento</th><th>Vencimento</th><th>Situação</th><th>Ações</th>
+							</tr>
+						</thead>
+						<tbody id="cartoes-tbody"></tbody>
+					</table>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<!-- Modal: novo/editar cartao -->
+	<div class="criati-modal-overlay" id="cartao-modal" hidden>
+		<div class="criati-modal">
+			<h2 id="cartao-modal-titulo">Cadastrar cartão</h2>
+			<form class="criati-modal-form" id="cartao-form">
+				<div class="criati-field"><label for="cartao-nome">Nome</label>
+					<input class="criati-input" id="cartao-nome" required maxlength="150" /></div>
+				<div class="criati-field">
+					<label for="cartao-tipo">Tipo</label>
+					<select class="criati-select" id="cartao-tipo">
+						<option value="FISICO">Físico</option>
+						<option value="VIRTUAL">Virtual</option>
+					</select>
+				</div>
+				<div class="criati-field" id="cartao-principal-campo"><label for="cartao-principal">Cartão principal</label>
+					<select class="criati-select" id="cartao-principal"></select></div>
+				<p class="criati-card-sub" id="cartao-aviso-virtual" hidden>
+					Cartões virtuais compartilham o mesmo limite do cartão principal e não aumentam o limite consolidado.
+				</p>
+				<div class="criati-field"><label for="cartao-titular">Titular</label>
+					<select class="criati-select" id="cartao-titular" required></select></div>
+				<div class="criati-field"><label for="cartao-instituicao">Instituição</label>
+					<select class="criati-select" id="cartao-instituicao" required></select></div>
+				<div class="criati-field">
+					<label for="cartao-bandeira">Bandeira</label>
+					<select class="criati-select" id="cartao-bandeira">
+						<option value="VISA">Visa</option>
+						<option value="MASTERCARD">Mastercard</option>
+						<option value="ELO">Elo</option>
+						<option value="AMERICAN_EXPRESS">American Express</option>
+						<option value="HIPERCARD">Hipercard</option>
+						<option value="OUTRA">Outra</option>
+					</select>
+				</div>
+				<div class="criati-field"><label for="cartao-ultimos-digitos">Últimos 4 dígitos (opcional)</label>
+					<input class="criati-input" id="cartao-ultimos-digitos" maxlength="4" pattern="[0-9]{4}" /></div>
+				<div class="criati-field" id="cartao-limite-total-campo"><label for="cartao-limite-total">Limite total</label>
+					<input class="criati-input" type="number" step="0.01" min="0" id="cartao-limite-total" /></div>
+				<div class="criati-field" id="cartao-limite-saudavel-campo"><label for="cartao-limite-saudavel">Limite saudável (opcional)</label>
+					<input class="criati-input" type="number" step="0.01" min="0" id="cartao-limite-saudavel" /></div>
+				<div class="criati-field" id="cartao-fechamento-campo"><label for="cartao-fechamento">Dia de fechamento</label>
+					<input class="criati-input" type="number" min="1" max="31" step="1" id="cartao-fechamento" /></div>
+				<div class="criati-field" id="cartao-vencimento-campo"><label for="cartao-vencimento">Dia de vencimento</label>
+					<input class="criati-input" type="number" min="1" max="31" step="1" id="cartao-vencimento" /></div>
+				<div class="criati-field"><label for="cartao-observacao">Observação (opcional)</label>
+					<input class="criati-input" id="cartao-observacao" maxlength="500" /></div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="cartao-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="cartao-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Modal: cartoes virtuais de um principal -->
+	<div class="criati-modal-overlay" id="cartao-virtuais-modal" hidden>
+		<div class="criati-modal">
+			<h2>Cartões virtuais</h2>
+			<div class="criati-table-wrap" style="border: none;">
+				<table class="criati-table">
+					<thead><tr><th>Nome</th><th>Final</th><th>Situação</th></tr></thead>
+					<tbody id="cartao-virtuais-tbody"></tbody>
+				</table>
+			</div>
+			<p id="cartao-virtuais-vazio" class="criati-card-sub" hidden>Nenhum cartão virtual vinculado ainda.</p>
+			<div class="criati-modal-acoes">
+				<button type="button" class="criati-btn criati-btn-primary" id="cartao-virtuais-fechar">Fechar</button>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-cartoes.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroCartoes.iniciar();
+		});
+	</script>
+</body>
+</html>

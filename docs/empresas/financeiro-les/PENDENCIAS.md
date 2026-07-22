@@ -18,6 +18,13 @@ registrado aqui como pendente, não preenchido com um exemplo fictício apresent
 - Se e quando o número de cartões será reduzido (mencionado como possibilidade futura, sem
   cartão ou prazo definido).
 
+**Nota da LES-F3-001**: a estrutura cadastral de cartões (`CartaoCredito`, físico/virtual, limite total,
+limite saudável, fechamento, vencimento, bandeira, instituição, titular, bloqueio) foi implementada nesta
+tarefa e já é capaz de armazenar todos os dados acima assim que a família os informar. Nenhum dos dados
+concretos listados acima foi preenchido com valor fictício apresentado como real — os testes usam apenas
+valores de exemplo claramente fictícios (`1234`, `5000.00` etc.). Esta pendência permanece aberta apenas
+quanto aos **dados reais**, não quanto à arquitetura, que já está pronta para recebê-los.
+
 ## Dados das contas bancárias
 
 - Saldo inicial de cada uma das 4 contas (Pessoa 1 — BB, Pessoa 1 — Inter, Pessoa 2 — BB,

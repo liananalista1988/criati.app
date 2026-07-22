@@ -171,6 +171,33 @@
 		}
 	};
 
+	var CARTOES_BASE = BASE + "/cartoes";
+	var cartoesBase = recurso(CARTOES_BASE);
+	var cartoes = {
+		listar: cartoesBase.listar,
+		criar: cartoesBase.criar,
+		buscar: cartoesBase.buscar,
+		editar: cartoesBase.editar,
+		inativar: function (id) {
+			return window.CriatiApi.post(CARTOES_BASE + "/" + id + "/inativar");
+		},
+		reativar: function (id) {
+			return window.CriatiApi.post(CARTOES_BASE + "/" + id + "/reativar");
+		},
+		bloquear: function (id, motivo) {
+			return window.CriatiApi.post(CARTOES_BASE + "/" + id + "/bloquear", { motivo: motivo });
+		},
+		desbloquear: function (id) {
+			return window.CriatiApi.post(CARTOES_BASE + "/" + id + "/desbloquear");
+		},
+		virtuais: function (id) {
+			return window.CriatiApi.get(CARTOES_BASE + "/" + id + "/virtuais");
+		},
+		resumo: function () {
+			return window.CriatiApi.get(CARTOES_BASE + "/resumo");
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -183,6 +210,7 @@
 		recorrencias: recorrencias,
 		compromissos: compromissos,
 		ocorrenciasCompromisso: ocorrenciasCompromisso,
+		cartoes: cartoes,
 		dashboard: dashboard
 	};
 })(window);

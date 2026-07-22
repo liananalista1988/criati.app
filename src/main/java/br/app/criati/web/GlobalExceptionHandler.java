@@ -19,6 +19,8 @@ import br.app.criati.exception.CategoriaFinanceiraComLancamentosException;
 import br.app.criati.exception.CategoriaFinanceiraInativaException;
 import br.app.criati.exception.CategoriaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.CategoriaFinanceiraNomeDuplicadaException;
+import br.app.criati.exception.CartaoCreditoNaoEncontradoException;
+import br.app.criati.exception.CartaoCreditoStatusInvalidoException;
 import br.app.criati.exception.CnpjJaCadastradoException;
 import br.app.criati.exception.CompromissoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.ContaFinanceiraComLancamentosException;
@@ -111,7 +113,8 @@ public class GlobalExceptionHandler {
 			PessoaFinanceiraInativaException.class,
 			RecorrenciaFinanceiraStatusInvalidoException.class,
 			OcorrenciaCompromissoStatusInvalidoException.class,
-			PagamentoOcorrenciaStatusInvalidoException.class
+			PagamentoOcorrenciaStatusInvalidoException.class,
+			CartaoCreditoStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -133,7 +136,8 @@ public class GlobalExceptionHandler {
 			RecorrenciaFinanceiraNaoEncontradaException.class,
 			CompromissoFinanceiroNaoEncontradoException.class,
 			OcorrenciaCompromissoNaoEncontradaException.class,
-			PagamentoOcorrenciaNaoEncontradoException.class
+			PagamentoOcorrenciaNaoEncontradoException.class,
+			CartaoCreditoNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

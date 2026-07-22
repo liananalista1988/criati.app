@@ -485,6 +485,47 @@ O MVP será dividido em duas etapas:
 - Detalhes completos (cálculos, migration, endpoints, testes, limitações) em
   `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-007.md`.
 
+## Cartões de crédito — bandeira como enum, limite delegado ao principal (LES-F3-001)
+
+- **Bandeira é um enum Java (`VISA, MASTERCARD, ELO, AMERICAN_EXPRESS, HIPERCARD, OUTRA`), não uma
+  tabela de domínio**, apesar de `docs/empresas/financeiro-les/MODELO-DE-DADOS.md` propor originalmente
+  replicar para bandeira o mesmo padrão de catálogo global-com-extensão-local já usado por
+  `InstituicaoFinanceira` (`empresa_id` nulo = global). Decisão consciente de divergir dessa proposta:
+  instituições financeiras variam genuinamente por família/empresa (cooperativas locais, fintechs) e por
+  isso precisam de cadastro local; bandeiras de cartão são um conjunto pequeno e globalmente padronizado
+  que nunca varia por empresa e não tem nenhuma regra de negócio anexada (explicitamente pedido pelo
+  enunciado da tarefa) — uma tabela para um enum fechado sem regra de negócio seria arquitetura em
+  excesso; o valor `OUTRA` já dá a mesma extensibilidade prática de um catálogo. Reutilizável: qualquer
+  domínio futuro que precise de um "conjunto pequeno e padronizado, sem regra de negócio, nunca
+  customizado por tenant" deve preferir enum a tabela de domínio, reservando o padrão de tabela
+  (`empresa_id` nulo = global) para conceitos que realmente variam por empresa.
+- **`CartaoCredito` introduz um eixo de bloqueio (`bloqueado` + `motivoBloqueio`) independente de
+  `StatusCadastro`** (que continua representando só ativo/inativo em todo o módulo, sem alteração). É a
+  primeira entidade do financeiro com dois eixos de situação ortogonais. Reutilizável: qualquer entidade
+  futura que precise diferenciar "desativado" (encerramento, reversível, preserva histórico) de
+  "bloqueado" (suspensão temporária de uso, também reversível, mas com motivo e semântica distintos) deve
+  seguir o mesmo padrão de dois campos independentes, em vez de sobrecarregar um único enum de status com
+  mais um valor.
+- **Limite total, limite saudável, dia de fechamento e dia de vencimento de um cartão virtual são
+  fisicamente `NULL` na própria linha** — nunca uma cópia do principal — e os valores efetivos são sempre
+  obtidos por delegação (`CartaoCredito.getLimiteTotalEfetivo()` etc., que consultam `cartaoPrincipal`
+  quando `tipo = VIRTUAL`). Diferente de titular/instituição/bandeira, que são copiados do principal como
+  conveniência na criação mas armazenados independentemente em cada linha (podem divergir depois, por
+  decisão explícita do usuário). Essa distinção é deliberada: o enunciado exige que "cartão virtual não
+  gere limite independente" de forma estrutural, não apenas por convenção de interface — armazenar `NULL`
+  torna impossível um virtual acumular um limite próprio através do fluxo normal do serviço, e o
+  consolidado (`CartaoCreditoService.resumir`) soma apenas cartões físicos, eliminando por construção o
+  risco de duplicar o limite concedido.
+- **Bloquear o cartão principal nunca escreve no campo `bloqueado` de um cartão virtual vinculado.**
+  `CartaoCredito.estaBloqueadoEfetivo()` combina o campo próprio com o do principal
+  (`bloqueado || cartaoPrincipal.isBloqueado()`) apenas para leitura/exibição. Alternativa descartada:
+  cascatear o bloqueio do principal para os virtuais no momento do bloqueio — rejeitada porque o
+  enunciado pede explicitamente "impedir uso e exibir alerta, sem alterar status silenciosamente", e uma
+  cascata automática tornaria impossível distinguir depois "este virtual foi bloqueado diretamente" de
+  "este virtual está bloqueado só porque o principal foi bloqueado".
+- Detalhes completos (campos, validações, migration, endpoints, testes, limitações) em
+  `docs/empresas/financeiro-les/IMPLEMENTACAO-F3-001.md`.
+
 ## Regra de alteração
 
 Nenhuma decisão estrutural registrada neste documento deverá ser alterada silenciosamente.
