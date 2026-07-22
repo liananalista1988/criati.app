@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Pessoas da residencia · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Pessoas da residencia</h1>
+					<p>Cadastre os integrantes usados na titularidade de contas, cartoes e gastos.</p>
+				</div>
+				<div class="criati-toolbar">
+					<div class="criati-field">
+						<label for="pessoas-filtro-status">Status</label>
+						<select id="pessoas-filtro-status" class="criati-select">
+							<option value="ATIVO">Ativas</option>
+							<option value="INATIVO">Inativas</option>
+							<option value="">Todas</option>
+						</select>
+					</div>
+					<button type="button" id="pessoas-nova" class="criati-btn criati-btn-primary">Nova pessoa</button>
+				</div>
+				<p id="pessoas-carregando">Carregando pessoas...</p>
+				<div id="pessoas-erro" class="criati-error-state" hidden><p>Nao foi possivel carregar as pessoas agora.</p></div>
+				<div id="pessoas-vazio" class="criati-empty-state" hidden>
+					<p>Nenhuma pessoa cadastrada.</p>
+					<p>Cadastre os integrantes da residencia para associar contas e cartoes.</p>
+				</div>
+				<div class="criati-table-wrap" id="pessoas-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead><tr><th>Nome</th><th>Apelido</th><th>Usuario vinculado</th><th>Status</th><th>Acoes</th></tr></thead>
+						<tbody id="pessoas-tbody"></tbody>
+					</table>
+				</div>
+			</main>
+		</div>
+	</div>
+	<div class="criati-modal-overlay" id="pessoa-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="pessoa-modal-titulo">
+			<h2 id="pessoa-modal-titulo">Nova pessoa</h2>
+			<form class="criati-modal-form" id="pessoa-form">
+				<div class="criati-field"><label for="pessoa-nome">Nome</label><input class="criati-input" id="pessoa-nome" required maxlength="150" /></div>
+				<div class="criati-field"><label for="pessoa-apelido">Apelido ou descricao</label><input class="criati-input" id="pessoa-apelido" maxlength="100" /></div>
+				<div class="criati-field">
+					<label for="pessoa-usuario">Usuario vinculado (opcional)</label>
+					<select class="criati-select" id="pessoa-usuario"><option value="">Sem acesso ao sistema</option></select>
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="pessoa-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="pessoa-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script><script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script><script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script><script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-pessoas.js}"></script>
+	<script>document.addEventListener("DOMContentLoaded", function () { CriatiUI.initSidebarToggle(); CriatiUI.initUserMenu(); CriatiAuth.initLogout(); CriatiContexto.iniciar(); CriatiAplicacoes.carregarSidebar(); FinanceiroPessoas.iniciar(); });</script>
+</body>
+</html>

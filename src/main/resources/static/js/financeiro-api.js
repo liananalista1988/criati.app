@@ -53,6 +53,8 @@
 
 	var contas = recurso(BASE + "/contas");
 	var categorias = recurso(BASE + "/categorias");
+	var pessoas = recurso(BASE + "/pessoas");
+	var contatos = recurso(BASE + "/contatos");
 	var lancamentosBase = recurso(BASE + "/lancamentos");
 
 	var lancamentos = {
@@ -78,6 +80,11 @@
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
+		pessoas: pessoas,
+		contatos: contatos,
+		usuariosVinculaveis: function () {
+			return window.CriatiApi.get(BASE + "/pessoas/usuarios-vinculaveis");
+		},
 		lancamentos: lancamentos,
 		dashboard: dashboard
 	};

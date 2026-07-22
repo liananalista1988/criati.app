@@ -4,6 +4,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -61,7 +62,8 @@ class PaginaFinanceiroSegurancaTests {
 	@Test
 	void todasAsPaginasFinanceirasAnonimoRedirecionamParaLogin() throws Exception {
 		String[] rotas = {
-				"/app/financeiro", "/app/financeiro/contas", "/app/financeiro/categorias", "/app/financeiro/lancamentos"
+				"/app/financeiro", "/app/financeiro/contas", "/app/financeiro/categorias",
+				"/app/financeiro/lancamentos", "/app/financeiro/pessoas", "/app/financeiro/contatos"
 		};
 		for (String rota : rotas) {
 			mockMvc.perform(get(rota))
@@ -89,6 +91,10 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/lancamentos").session(session))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/pessoas").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/contatos").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 	}
 
 	@Test
@@ -114,11 +120,16 @@ class PaginaFinanceiroSegurancaTests {
 
 		mockMvc.perform(get("/app/financeiro").session(session))
 				.andExpect(status().isOk())
-				.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-						.contentTypeCompatibleWith(MediaType.TEXT_HTML));
+				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/pessoas")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/contatos")));
 		mockMvc.perform(get("/app/financeiro/contas").session(session)).andExpect(status().isOk());
 		mockMvc.perform(get("/app/financeiro/categorias").session(session)).andExpect(status().isOk());
 		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk());
+		mockMvc.perform(get("/app/financeiro/pessoas").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma pessoa cadastrada")));
+		mockMvc.perform(get("/app/financeiro/contatos").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhum contato financeiro cadastrado")));
 	}
 
 	@Test

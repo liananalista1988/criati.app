@@ -33,7 +33,10 @@ import br.app.criati.exception.EmpresaStatusInvalidoException;
 import br.app.criati.exception.FinanceiroStatusInvalidoException;
 import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.LancamentoStatusInvalidoException;
+import br.app.criati.exception.ParteFinanceiraNaoEncontradaException;
+import br.app.criati.exception.PessoaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
+import br.app.criati.exception.UsuarioJaVinculadoPessoaFinanceiraException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.exception.VinculoStatusInvalidoException;
@@ -94,7 +97,8 @@ public class GlobalExceptionHandler {
 			LancamentoStatusInvalidoException.class,
 			FinanceiroStatusInvalidoException.class,
 			ContaFinanceiraNomeDuplicadoException.class,
-			CategoriaFinanceiraNomeDuplicadaException.class
+			CategoriaFinanceiraNomeDuplicadaException.class,
+			UsuarioJaVinculadoPessoaFinanceiraException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -109,7 +113,9 @@ public class GlobalExceptionHandler {
 			AplicacaoNaoEncontradaException.class,
 			ContaFinanceiraNaoEncontradaException.class,
 			CategoriaFinanceiraNaoEncontradaException.class,
-			LancamentoFinanceiroNaoEncontradoException.class
+			LancamentoFinanceiroNaoEncontradoException.class,
+			PessoaFinanceiraNaoEncontradaException.class,
+			ParteFinanceiraNaoEncontradaException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,
