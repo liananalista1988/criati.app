@@ -153,6 +153,28 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
   dias) — proposto usar o último dia válido do mês (`MODELO-DE-DADOS.md`, seção "Recorrência"),
   mas ainda a confirmar com a família na modelagem técnica.
 
+## Pendências de navegação e experiência (LES-F1-004)
+
+- Validar a ordem final da sidebar com uso real; a proposta prioriza Dashboard, lançamentos,
+  cartões, planejamento e terceiros.
+- Confirmar a navegação inferior mobile `Início | Lançar | Simular | Agenda | Mais`; ela favorece
+  uso com uma mão, mas ocupa espaço e pode duplicar o menu off-canvas.
+- Validar por protótipo quantos indicadores cabem antes da rolagem em 1280 × 720 e 360 × 800; a
+  especificação propõe no máximo seis na primeira faixa desktop.
+- Definir quais comparações serão gráficos no MVP. Cards/tabelas podem bastar inicialmente; todo
+  gráfico terá resumo e tabela equivalente.
+- Confirmar se a Agenda do MVP terá tela própria em lista ou ficará no Dashboard. O calendário
+  mensal permanece na fase seguinte.
+- Confirmar o momento da conciliação manual simples; importação e sugestões avançadas permanecem
+  fora do MVP obrigatório conforme `MVP.md`.
+- Validar se Histórico e Lixeira ficam diretos em Configurações ou em “Segurança e dados”.
+- Confirmar a necessidade de central de anexos; o MVP usa acesso dentro do registro.
+- Avaliar uma visão consolidada adicional para Empréstimos, Compromissos e Recebíveis, sem
+  unificar seus cálculos ou naturezas.
+- Definir formatos, tamanho máximo e visualização no navegador para anexos, respeitando allowlist,
+  armazenamento privado e autorização por empresa.
+- Definir o comportamento técnico futuro em perda de conexão; o MVP não assume suporte offline.
+
 ## Documentos relacionados
 
 - `VISAO-FUNCIONAL.md`, `MVP.md`, `GLOSSARIO.md` (LES-F1-001).
@@ -160,3 +182,6 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
   (LES-F1-002).
 - `MODELO-DE-DADOS.md`, `ARQUITETURA-FUNCIONAL.md`, `INVARIANTES.md`,
   `MATRIZ-ENTIDADES-PROCESSOS.md` (LES-F1-003).
+- `MAPA-DE-TELAS.md`, `NAVEGACAO.md`, `EXPERIENCIA-DO-USUARIO.md`,
+  `ESPECIFICACAO-DAS-TELAS.md`, `JORNADAS-DO-USUARIO.md`, `ESTADOS-DE-INTERFACE.md`
+  (LES-F1-004).
