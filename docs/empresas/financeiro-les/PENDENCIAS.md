@@ -143,9 +143,10 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
 
 ## Novas pendências identificadas na modelagem (LES-F1-003)
 
-- **Nome exato do código de aplicação da extensão** no catálogo (`EmpresaAplicacao`) — proposto
-  como `FINANCEIRO_RESIDENCIAL` em `ARQUITETURA-FUNCIONAL.md`, mas o nome definitivo é uma
-  decisão técnica da etapa de modelagem física, não desta tarefa.
+- **Código da aplicação da extensão — RESOLVIDO na LES-F2-001:** `FINANCEIRO_RESIDENCIAL`, por
+  representar uma extensão reutilizável para clientes residenciais sem acoplamento ao nome LeS.
+  O código foi apenas reservado; sua inclusão no enum, catálogo e migration pertence à tarefa
+  funcional que habilitar a extensão e não foi antecipada nesta preparação.
 - **Conciliação entre `TipoContaFinanceira` (enum já existente) e os novos tipos de conta**
   propostos (`CONTA_PAGAMENTO`, `DINHEIRO`, `CARTEIRA`) — `MODELO-DE-DADOS.md` registra que é uma
   decisão de modelagem técnica futura, não resolvida aqui.
@@ -186,8 +187,6 @@ que altera seu respectivo contrato, nunca todo o roadmap.
 
 ### Pode ser resolvido durante o desenvolvimento
 
-- Código definitivo da aplicação/extensão e fronteiras detalhadas entre núcleo e Financeiro LeS,
-  como saída de `LES-F2-001` e antes de qualquer contrato dependente.
 - Conciliação dos tipos de conta existentes com os tipos conceituais novos, antes da migration que
   alterar ou ampliar `ContaFinanceira`.
 - Regra para dia 31 em meses menores, antes de implementar recorrências; a proposta conservadora é
