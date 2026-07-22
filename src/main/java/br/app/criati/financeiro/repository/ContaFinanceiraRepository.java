@@ -13,9 +13,23 @@ public interface ContaFinanceiraRepository extends JpaRepository<ContaFinanceira
 
 	List<ContaFinanceira> findAllByEmpresaId(UUID empresaId);
 
+	List<ContaFinanceira> findAllByEmpresaIdAndStatusOrderByNomeAsc(UUID empresaId, StatusCadastro status);
+
+	List<ContaFinanceira> findAllByEmpresaIdAndTitularIdOrderByNomeAsc(UUID empresaId, UUID titularId);
+
+	List<ContaFinanceira> findAllByEmpresaIdAndInstituicaoIdOrderByNomeAsc(UUID empresaId, UUID instituicaoId);
+
+	List<ContaFinanceira> findAllByEmpresaIdAndNomeContainingIgnoreCaseOrderByNomeAsc(UUID empresaId, String nome);
+
+	List<ContaFinanceira> findAllByEmpresaIdAndPermiteConciliacaoTrueAndStatusOrderByNomeAsc(
+			UUID empresaId, StatusCadastro status);
+
 	Optional<ContaFinanceira> findByIdAndEmpresaId(UUID id, UUID empresaId);
 
 	boolean existsByEmpresaIdAndNomeIgnoreCaseAndStatus(UUID empresaId, String nome, StatusCadastro status);
+
+	boolean existsByEmpresaIdAndNomeIgnoreCaseAndStatusAndIdNot(
+			UUID empresaId, String nome, StatusCadastro status, UUID id);
 
 	long countByEmpresaIdAndStatus(UUID empresaId, StatusCadastro status);
 }

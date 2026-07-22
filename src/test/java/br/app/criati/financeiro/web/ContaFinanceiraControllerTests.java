@@ -8,6 +8,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -26,7 +30,12 @@ import br.app.criati.aplicacao.service.AplicacaoService;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
 import br.app.criati.financeiro.model.ContaFinanceira;
+import br.app.criati.financeiro.model.InstituicaoFinanceira;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
+import br.app.criati.financeiro.repository.InstituicaoFinanceiraRepository;
+import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
+import br.app.criati.financeiro.shared.model.PessoaFinanceira;
+import br.app.criati.financeiro.shared.repository.PessoaFinanceiraRepository;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.shared.enums.TipoContaFinanceira;
@@ -40,248 +49,224 @@ import br.app.criati.usuario.repository.UsuarioRepository;
 class ContaFinanceiraControllerTests {
 
 	private static final String SENHA = "senha-correta";
-	private static final String URL_BASE = "/api/contexto/financeiro/contas";
+	private static final String URL = "/api/contexto/financeiro/contas";
+	private static final LocalDate DATA = LocalDate.of(2025, 1, 15);
 
-	@Autowired
-	private MockMvc mockMvc;
-
-	@Autowired
-	private UsuarioRepository usuarioRepository;
-
-	@Autowired
-	private EmpresaRepository empresaRepository;
-
-	@Autowired
-	private UsuarioEmpresaRepository usuarioEmpresaRepository;
-
-	@Autowired
-	private ContaFinanceiraRepository contaFinanceiraRepository;
-
-	@Autowired
-	private AplicacaoService aplicacaoService;
-
-	@Autowired
-	private PasswordEncoder passwordEncoder;
+	@Autowired private MockMvc mockMvc;
+	@Autowired private UsuarioRepository usuarioRepository;
+	@Autowired private EmpresaRepository empresaRepository;
+	@Autowired private UsuarioEmpresaRepository usuarioEmpresaRepository;
+	@Autowired private PessoaFinanceiraRepository pessoaRepository;
+	@Autowired private InstituicaoFinanceiraRepository instituicaoRepository;
+	@Autowired private ContaFinanceiraRepository contaRepository;
+	@Autowired private LancamentoFinanceiroRepository lancamentoRepository;
+	@Autowired private AplicacaoService aplicacaoService;
+	@Autowired private PasswordEncoder passwordEncoder;
 
 	@Test
-	void administradorCriaContaComSucesso() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("11111111000161");
-		Usuario admin = criarUsuario("conta.admin.criar@criati.test");
-		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
-		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
-
-		mockMvc.perform(post(URL_BASE)
-				.session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Caixa Loja", "tipo": "CAIXA", "saldoInicial": 500.00 }
-						"""))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.nome").value("Caixa Loja"))
-				.andExpect(jsonPath("$.saldoInicial").value(500.00))
-				.andExpect(jsonPath("$.saldoAtual").value(500.00))
-				.andExpect(jsonPath("$.status").value("ATIVO"));
+	void criaContaBancariaCompletaNaEmpresaAtiva() throws Exception {
+		Cenario c = cenario("11111111000401", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), c.instituicao().getId(), "Banco da casa", "CONTA_CORRENTE", "500.25", DATA, true)))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.nome").value("Banco da casa"))
+				.andExpect(jsonPath("$.titularId").value(c.pessoa().getId().toString()))
+				.andExpect(jsonPath("$.instituicaoNome").value("Banco Teste"))
+				.andExpect(jsonPath("$.moeda").value("BRL"))
+				.andExpect(jsonPath("$.saldoInicial").value(500.25))
+				.andExpect(jsonPath("$.dataSaldoInicial").value(DATA.toString()))
+				.andExpect(jsonPath("$.permiteConciliacao").value(true));
+		assertThat(lancamentoRepository.count()).isZero();
 	}
 
 	@Test
-	void criarContaComSaldoInicialNegativoOuZeroEPermitido() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("22222222000162");
-		Usuario admin = criarUsuario("conta.saldo.negativo@criati.test");
-		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
-		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
-
-		mockMvc.perform(post(URL_BASE).session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Conta Negativa", "tipo": "CONTA_CORRENTE", "saldoInicial": -100.00 }
-						"""))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.saldoInicial").value(-100.00));
-
-		mockMvc.perform(post(URL_BASE).session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Conta Zero", "tipo": "CONTA_CORRENTE", "saldoInicial": 0 }
-						"""))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.saldoInicial").value(0));
+	void aceitaSaldosPositivoZeroENegativoSemGerarLancamentos() throws Exception {
+		Cenario c = cenario("11111111000402", PerfilUsuario.ADMINISTRADOR);
+		for (String saldo : new String[] { "10.00", "0", "-50.75" }) {
+			mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+					.content(json(c.pessoa().getId(), null, "Carteira " + saldo, "CARTEIRA", saldo, DATA, false)))
+					.andExpect(status().isCreated());
+		}
+		assertThat(contaRepository.findAllByEmpresaId(c.empresa().getId())).hasSize(3);
+		assertThat(lancamentoRepository.count()).isZero();
 	}
 
 	@Test
-	void criarContaSemNomeRetorna400() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("33333333000163");
-		Usuario admin = criarUsuario("conta.sem.nome@criati.test");
-		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
-		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
-
-		mockMvc.perform(post(URL_BASE).session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "", "tipo": "CAIXA", "saldoInicial": 10 }
-						"""))
+	void validaNomeTitularTipoMoedaEData() throws Exception {
+		Cenario c = cenario("11111111000403", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nome\":\"\",\"moeda\":\"USD\"}"))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.nome").exists())
+				.andExpect(jsonPath("$.fieldErrors.titularId").exists())
+				.andExpect(jsonPath("$.fieldErrors.tipo").exists());
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), c.instituicao().getId(), "Futura", "CONTA_CORRENTE", "0", LocalDate.now().plusDays(1), true)))
 				.andExpect(status().isBadRequest());
 	}
 
 	@Test
-	void naoDevePermitirNomeDuplicadoEntreContasAtivas() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("44444444000164");
-		Usuario admin = criarUsuario("conta.duplicada@criati.test");
-		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
-		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
-
-		mockMvc.perform(post(URL_BASE).session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Caixa Unico", "tipo": "CAIXA", "saldoInicial": 0 }
-						"""))
+	void exigeInstituicaoParaContaBancariaMasNaoParaDinheiro() throws Exception {
+		Cenario c = cenario("11111111000404", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), null, "Corrente", "CONTA_CORRENTE", "0", DATA, true)))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), null, "Dinheiro", "DINHEIRO", "0", DATA, false)))
 				.andExpect(status().isCreated());
+	}
 
-		mockMvc.perform(post(URL_BASE).session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Caixa Unico", "tipo": "CAIXA", "saldoInicial": 0 }
-						"""))
+	@Test
+	void rejeitaConciliacaoParaDinheiroOuCarteira() throws Exception {
+		Cenario c = cenario("11111111000405", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), null, "Carteira", "CARTEIRA", "0", DATA, true)))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void rejeitaTitularEInstituicaoDeOutroTenant() throws Exception {
+		Cenario a = cenario("11111111000406", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("22222222000406", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(post(URL).session(a.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(b.pessoa().getId(), a.instituicao().getId(), "Titular alheio", "CONTA_CORRENTE", "0", DATA, true)))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post(URL).session(a.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(a.pessoa().getId(), b.instituicao().getId(), "Banco alheio", "CONTA_CORRENTE", "0", DATA, true)))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void rejeitaTitularInativoEmNovaConta() throws Exception {
+		Cenario c = cenario("11111111000407", PerfilUsuario.ADMINISTRADOR);
+		c.pessoa().desativar(c.admin()); pessoaRepository.saveAndFlush(c.pessoa());
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), null, "Carteira", "CARTEIRA", "0", DATA, false)))
 				.andExpect(status().isConflict());
 	}
 
 	@Test
-	void gestorNaoPodeCriarConta() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("55555555000165");
-		Usuario gestor = criarUsuario("conta.gestor@criati.test");
-		criarVinculo(gestor, empresa, PerfilUsuario.GESTOR);
-		MockHttpSession session = autenticarNaEmpresa(gestor.getEmail(), empresa.getId());
+	void nomeDuplicadoGeraAlertaMasNaoBloqueia() throws Exception {
+		Cenario c = cenario("11111111000408", PerfilUsuario.ADMINISTRADOR);
+		for (int i = 0; i < 2; i++) {
+			mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+					.content(json(c.pessoa().getId(), null, "Mesmo nome", "CARTEIRA", "0", DATA, false)))
+					.andExpect(status().isCreated()).andExpect(jsonPath("$.possivelDuplicidade").value(i == 1));
+		}
+	}
 
-		mockMvc.perform(post(URL_BASE).session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Conta Gestor", "tipo": "CAIXA", "saldoInicial": 0 }
-						"""))
+	@Test
+	void atualizaContaERegistraAuditoria() throws Exception {
+		Cenario c = cenario("11111111000409", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira conta = criarConta(c, "Antes", BigDecimal.ZERO);
+		mockMvc.perform(put(URL + "/" + conta.getId()).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(c.pessoa().getId(), c.instituicao().getId(), "Depois", "CONTA_PAGAMENTO", "-10", DATA, true)))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.nome").value("Depois"));
+		ContaFinanceira atualizada = contaRepository.findByIdAndEmpresaId(conta.getId(), c.empresa().getId()).orElseThrow();
+		assertThat(atualizada.getAtualizadoPor().getId()).isEqualTo(c.admin().getId());
+	}
+
+	@Test
+	void desativaReativaEPreservaConta() throws Exception {
+		Cenario c = cenario("11111111000410", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira conta = criarConta(c, "Conta", BigDecimal.ZERO);
+		mockMvc.perform(post(URL + "/" + conta.getId() + "/inativar").session(c.session()).with(csrf()))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("INATIVO"));
+		mockMvc.perform(get(URL).session(c.session())).andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+		mockMvc.perform(post(URL + "/" + conta.getId() + "/reativar").session(c.session()).with(csrf()))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ATIVO"));
+		assertThat(contaRepository.findById(conta.getId())).isPresent();
+	}
+
+	@Test
+	void listaPesquisaFiltraEResumeSemVazarTenant() throws Exception {
+		Cenario a = cenario("11111111000411", PerfilUsuario.USUARIO);
+		Cenario b = cenario("22222222000411", PerfilUsuario.ADMINISTRADOR);
+		criarConta(a, "Inter A", new BigDecimal("100.00")); criarConta(b, "Inter B", new BigDecimal("900.00"));
+		mockMvc.perform(get(URL).param("busca", "inter").param("titularId", a.pessoa().getId().toString())
+				.param("instituicaoId", a.instituicao().getId().toString()).session(a.session()))
+				.andExpect(status().isOk()).andExpect(jsonPath("$[0].nome").value("Inter A"))
+				.andExpect(jsonPath("$[1]").doesNotExist());
+		mockMvc.perform(get(URL + "/resumo").session(a.session())).andExpect(status().isOk())
+				.andExpect(jsonPath("$.quantidadeContasAtivas").value(1))
+				.andExpect(jsonPath("$.saldoInicialConsolidado").value(100.00));
+	}
+
+	@Test
+	void contaDeOutroTenantNaoPodeSerConsultadaAlteradaOuDesativada() throws Exception {
+		Cenario a = cenario("11111111000412", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("22222222000412", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira contaB = criarConta(b, "Conta B", BigDecimal.ZERO);
+		mockMvc.perform(get(URL + "/" + contaB.getId()).session(a.session())).andExpect(status().isNotFound());
+		mockMvc.perform(put(URL + "/" + contaB.getId()).session(a.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(json(a.pessoa().getId(), a.instituicao().getId(), "Alterada", "CONTA_CORRENTE", "0", DATA, true)))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post(URL + "/" + contaB.getId() + "/inativar").session(a.session()).with(csrf()))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void listaTitularesInstituicoesECadastraInstituicaoLocal() throws Exception {
+		Cenario c = cenario("11111111000413", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(get(URL + "/titulares").session(c.session())).andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(c.pessoa().getId().toString()));
+		mockMvc.perform(get(URL + "/instituicoes").session(c.session())).andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].nome").value("Banco Teste"));
+		mockMvc.perform(post(URL + "/instituicoes").session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nome\":\" Nova Instituicao \",\"codigo\":\"999\"}"))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.nome").value("Nova Instituicao"));
+	}
+
+	@Test
+	void bloqueiaEscritaSemPerfilOuCsrfEPreservaLeituraAutenticada() throws Exception {
+		Cenario c = cenario("11111111000414", PerfilUsuario.GESTOR);
+		String corpo = json(c.pessoa().getId(), null, "Carteira", "CARTEIRA", "0", DATA, false);
+		mockMvc.perform(post(URL).session(c.session()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(corpo))
 				.andExpect(status().isForbidden());
+		mockMvc.perform(post(URL).session(c.session()).contentType(MediaType.APPLICATION_JSON).content(corpo))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get(URL).session(c.session())).andExpect(status().isOk());
+		mockMvc.perform(get(URL)).andExpect(status().isUnauthorized());
 	}
 
-	@Test
-	void usuarioComumPodeListarContas() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("66666666000166");
-		Usuario usuario = criarUsuario("conta.usuario.lista@criati.test");
-		criarVinculo(usuario, empresa, PerfilUsuario.USUARIO);
-		criarConta(empresa, "Conta Vista", new java.math.BigDecimal("10.00"));
-		MockHttpSession session = autenticarNaEmpresa(usuario.getEmail(), empresa.getId());
-
-		mockMvc.perform(get(URL_BASE).session(session))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1));
-	}
-
-	@Test
-	void empresaANaoListaNemConsultaContaDaEmpresaB() throws Exception {
-		Empresa empresaA = criarEmpresaComFinanceiro("77777777000167");
-		Empresa empresaB = criarEmpresaComFinanceiro("88888888000168");
-		ContaFinanceira contaB = criarConta(empresaB, "Conta B", java.math.BigDecimal.TEN);
-
-		Usuario usuarioA = criarUsuario("conta.empresaA@criati.test");
-		criarVinculo(usuarioA, empresaA, PerfilUsuario.ADMINISTRADOR);
-		MockHttpSession sessaoA = autenticarNaEmpresa(usuarioA.getEmail(), empresaA.getId());
-
-		mockMvc.perform(get(URL_BASE).session(sessaoA))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(0));
-
-		mockMvc.perform(get(URL_BASE + "/" + contaB.getId()).session(sessaoA))
-				.andExpect(status().isNotFound());
-	}
-
-	@Test
-	void empresaANaoAlteraContaDaEmpresaB() throws Exception {
-		Empresa empresaA = criarEmpresaComFinanceiro("11111111000171");
-		Empresa empresaB = criarEmpresaComFinanceiro("22222222000172");
-		ContaFinanceira contaB = criarConta(empresaB, "Conta Alvo B", java.math.BigDecimal.ONE);
-
-		Usuario usuarioA = criarUsuario("conta.altera.empresaA@criati.test");
-		criarVinculo(usuarioA, empresaA, PerfilUsuario.ADMINISTRADOR);
-		MockHttpSession sessaoA = autenticarNaEmpresa(usuarioA.getEmail(), empresaA.getId());
-
-		mockMvc.perform(put(URL_BASE + "/" + contaB.getId()).session(sessaoA).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "nome": "Hackeada", "tipo": "CAIXA", "saldoInicial": 0 }
-						"""))
-				.andExpect(status().isNotFound());
-
-		mockMvc.perform(post(URL_BASE + "/" + contaB.getId() + "/inativar").session(sessaoA).with(csrf()))
-				.andExpect(status().isNotFound());
-
-		ContaFinanceira recarregada = contaFinanceiraRepository.findById(contaB.getId()).orElseThrow();
-		assertThat(recarregada.getNome()).isEqualTo("Conta Alvo B");
-		assertThat(recarregada.getStatus()).isEqualTo(StatusCadastro.ATIVO);
-	}
-
-	@Test
-	void deveInativarEReativarConta() throws Exception {
-		Empresa empresa = criarEmpresaComFinanceiro("33333333000173");
-		Usuario admin = criarUsuario("conta.inativar@criati.test");
-		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
-		ContaFinanceira conta = criarConta(empresa, "Conta Toggle", java.math.BigDecimal.ZERO);
-		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
-
-		mockMvc.perform(post(URL_BASE + "/" + conta.getId() + "/inativar").session(session).with(csrf()))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("INATIVO"));
-
-		mockMvc.perform(post(URL_BASE + "/" + conta.getId() + "/inativar").session(session).with(csrf()))
-				.andExpect(status().isConflict());
-
-		mockMvc.perform(post(URL_BASE + "/" + conta.getId() + "/reativar").session(session).with(csrf()))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("ATIVO"));
-
-		mockMvc.perform(post(URL_BASE + "/" + conta.getId() + "/reativar").session(session).with(csrf()))
-				.andExpect(status().isConflict());
-	}
-
-	@Test
-	void anonimoRecebe401() throws Exception {
-		mockMvc.perform(get(URL_BASE)).andExpect(status().isUnauthorized());
-	}
-
-	private Empresa criarEmpresaComFinanceiro(String cnpj) {
-		Empresa empresa = empresaRepository.saveAndFlush(
-				new Empresa("Empresa Financeiro Ltda", "Empresa Financeiro", cnpj, StatusCadastro.ATIVO));
+	private Cenario cenario(String cnpj, PerfilUsuario perfil) throws Exception {
+		Empresa empresa = empresaRepository.saveAndFlush(new Empresa("Empresa Teste", "Empresa Teste", cnpj, StatusCadastro.ATIVO));
 		aplicacaoService.habilitar(empresa.getId(), "FINANCEIRO");
-		return empresa;
+		Usuario admin = criarUsuario("usuario." + cnpj + "@criati.test"); criarVinculo(admin, empresa, perfil);
+		PessoaFinanceira pessoa = pessoaRepository.saveAndFlush(new PessoaFinanceira(empresa, "Titular Teste", null, null, admin));
+		InstituicaoFinanceira instituicao = instituicaoRepository.saveAndFlush(new InstituicaoFinanceira(empresa, "Banco Teste", "123", admin));
+		return new Cenario(empresa, admin, pessoa, instituicao, autenticarNaEmpresa(admin.getEmail(), empresa.getId()));
 	}
 
-	private ContaFinanceira criarConta(Empresa empresa, String nome, java.math.BigDecimal saldoInicial) {
-		return contaFinanceiraRepository.saveAndFlush(
-				new ContaFinanceira(empresa, nome, TipoContaFinanceira.CAIXA, saldoInicial, StatusCadastro.ATIVO));
+	private ContaFinanceira criarConta(Cenario c, String nome, BigDecimal saldo) {
+		return contaRepository.saveAndFlush(new ContaFinanceira(c.empresa(), c.pessoa(), c.instituicao(), nome,
+				TipoContaFinanceira.CONTA_CORRENTE, saldo, DATA, true, c.admin()));
+	}
+
+	private String json(UUID titularId, UUID instituicaoId, String nome, String tipo, String saldo, LocalDate data, boolean conciliacao) {
+		return "{\"nome\":\"%s\",\"titularId\":\"%s\",\"instituicaoId\":%s,\"tipo\":\"%s\",\"moeda\":\"BRL\",\"saldoInicial\":%s,\"dataSaldoInicial\":\"%s\",\"permiteConciliacao\":%s}"
+				.formatted(nome, titularId, instituicaoId == null ? "null" : "\"" + instituicaoId + "\"", tipo, saldo, data, conciliacao);
 	}
 
 	private Usuario criarUsuario(String email) {
-		Usuario usuario = new Usuario("Usuario Teste", email, passwordEncoder.encode(SENHA), StatusCadastro.ATIVO);
-		return usuarioRepository.saveAndFlush(usuario);
+		return usuarioRepository.saveAndFlush(new Usuario("Usuario Teste", email, passwordEncoder.encode(SENHA), StatusCadastro.ATIVO));
 	}
 
 	private UsuarioEmpresa criarVinculo(Usuario usuario, Empresa empresa, PerfilUsuario perfil) {
-		UsuarioEmpresa vinculo = new UsuarioEmpresa(usuario, empresa, perfil, StatusCadastro.ATIVO);
-		return usuarioEmpresaRepository.saveAndFlush(vinculo);
+		return usuarioEmpresaRepository.saveAndFlush(new UsuarioEmpresa(usuario, empresa, perfil, StatusCadastro.ATIVO));
 	}
 
-	private MockHttpSession autenticarNaEmpresa(String email, java.util.UUID empresaId) throws Exception {
-		MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "email": "%s", "senha": "%s" }
-						""".formatted(email, SENHA)))
-				.andExpect(status().isOk())
-				.andReturn();
-		MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
-
-		mockMvc.perform(post("/api/contexto/empresa-ativa")
-				.session(session).with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{ "empresaId": "%s" }
-						""".formatted(empresaId)))
+	private MockHttpSession autenticarNaEmpresa(String email, UUID empresaId) throws Exception {
+		MvcResult login = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"%s\",\"senha\":\"%s\"}".formatted(email, SENHA)))
+				.andExpect(status().isOk()).andReturn();
+		MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
+		mockMvc.perform(post("/api/contexto/empresa-ativa").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content("{\"empresaId\":\"%s\"}".formatted(empresaId)))
 				.andExpect(status().isOk());
 		return session;
+	}
+
+	private record Cenario(
+			Empresa empresa, Usuario admin, PessoaFinanceira pessoa,
+			InstituicaoFinanceira instituicao, MockHttpSession session) {
 	}
 }

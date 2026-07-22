@@ -52,6 +52,10 @@
 	}
 
 	var contas = recurso(BASE + "/contas");
+	contas.resumo = function () { return window.CriatiApi.get(BASE + "/contas/resumo"); };
+	contas.titulares = function () { return window.CriatiApi.get(BASE + "/contas/titulares"); };
+	contas.instituicoes = function () { return window.CriatiApi.get(BASE + "/contas/instituicoes"); };
+	contas.criarInstituicao = function (dados) { return window.CriatiApi.post(BASE + "/contas/instituicoes", dados); };
 	var categorias = recurso(BASE + "/categorias");
 	var pessoas = recurso(BASE + "/pessoas");
 	var contatos = recurso(BASE + "/contatos");

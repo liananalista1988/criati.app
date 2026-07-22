@@ -123,7 +123,10 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/pessoas")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/contatos")));
-		mockMvc.perform(get("/app/financeiro/contas").session(session)).andExpect(status().isOk());
+		mockMvc.perform(get("/app/financeiro/contas").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma conta financeira cadastrada")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Saldo inicial consolidado")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("O saldo informado representa a posição inicial")));
 		mockMvc.perform(get("/app/financeiro/categorias").session(session)).andExpect(status().isOk());
 		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk());
 		mockMvc.perform(get("/app/financeiro/pessoas").session(session)).andExpect(status().isOk())
