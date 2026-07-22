@@ -57,6 +57,7 @@
 	contas.instituicoes = function () { return window.CriatiApi.get(BASE + "/contas/instituicoes"); };
 	contas.criarInstituicao = function (dados) { return window.CriatiApi.post(BASE + "/contas/instituicoes", dados); };
 	var categorias = recurso(BASE + "/categorias");
+	categorias.resumo = function () { return window.CriatiApi.get(BASE + "/categorias/resumo"); };
 	var pessoas = recurso(BASE + "/pessoas");
 	var contatos = recurso(BASE + "/contatos");
 	var lancamentosBase = recurso(BASE + "/lancamentos");

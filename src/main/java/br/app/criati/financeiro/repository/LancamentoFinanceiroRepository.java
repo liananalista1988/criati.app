@@ -18,5 +18,7 @@ public interface LancamentoFinanceiroRepository extends JpaRepository<Lancamento
 
 	boolean existsByCategoriaId(UUID categoriaId);
 
+	boolean existsByCategoriaIdAndEmpresaId(UUID categoriaId, UUID empresaId);
+
 	List<LancamentoFinanceiro> findAllByContaId(UUID contaId);
 }

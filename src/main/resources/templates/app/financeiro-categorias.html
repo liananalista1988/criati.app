@@ -29,9 +29,18 @@
 
 				<div class="criati-toolbar">
 					<div class="criati-field">
+						<label for="financeiro-categorias-busca">Buscar</label>
+						<input id="financeiro-categorias-busca" class="criati-input" type="search" placeholder="Nome da categoria" />
+					</div>
+					<div class="criati-field">
+						<label for="financeiro-categorias-filtro-tipo">Natureza</label>
+						<select id="financeiro-categorias-filtro-tipo" class="criati-select">
+							<option value="">Todas</option><option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option>
+						</select>
+					</div>
+					<div class="criati-field">
 						<label for="financeiro-categorias-filtro-status">Status</label>
 						<select id="financeiro-categorias-filtro-status" class="criati-select">
-							<option value="">Todas</option>
 							<option value="ATIVO">Ativas</option>
 							<option value="INATIVO">Inativas</option>
 						</select>
@@ -44,13 +53,14 @@
 						Nova categoria de despesa
 					</button>
 				</div>
+				<p id="financeiro-categorias-resumo" class="criati-card-sub" aria-live="polite"></p>
 
 				<p id="financeiro-categorias-carregando">Carregando categorias...</p>
 				<div id="financeiro-categorias-erro" class="criati-error-state" hidden>
 					<p>Nao foi possivel carregar as categorias agora.</p>
 				</div>
 				<div id="financeiro-categorias-vazio" class="criati-empty-state" hidden>
-					<p>Nenhuma categoria cadastrada ainda.</p>
+					<p>Nenhuma categoria cadastrada. Crie categorias para organizar receitas e despesas da residência.</p>
 				</div>
 
 				<div id="financeiro-categorias-conteudo" hidden style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
@@ -75,7 +85,25 @@
 					<label for="financeiro-categoria-nome">Nome</label>
 					<input class="criati-input" id="financeiro-categoria-nome" name="nome" required maxlength="150" />
 				</div>
-				<input type="hidden" id="financeiro-categoria-tipo" name="tipo" />
+				<div class="criati-field">
+					<label for="financeiro-categoria-descricao">Descrição</label>
+					<textarea class="criati-input" id="financeiro-categoria-descricao" name="descricao" maxlength="500"></textarea>
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-categoria-tipo">Natureza</label>
+					<select class="criati-select" id="financeiro-categoria-tipo" name="tipo" required>
+						<option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option>
+					</select>
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-categoria-pai">Categoria pai</label>
+					<select class="criati-select" id="financeiro-categoria-pai" name="categoriaPaiId"></select>
+				</div>
+				<div class="criati-field">
+					<label for="financeiro-categoria-ordem">Ordem de exibição</label>
+					<input class="criati-input" id="financeiro-categoria-ordem" name="ordem" type="number" min="0" required />
+				</div>
+				<label><input id="financeiro-categoria-orcamento" name="permiteOrcamento" type="checkbox" /> Permite uso em orçamento futuro</label>
 				<div class="criati-modal-acoes">
 					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-categoria-cancelar">Cancelar</button>
 					<button type="submit" class="criati-btn criati-btn-primary" id="financeiro-categoria-salvar">Salvar</button>

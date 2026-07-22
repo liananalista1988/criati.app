@@ -42,11 +42,16 @@ public class CategoriaFinanceiraController {
 	public ResponseEntity<List<CategoriaFinanceiraResponse>> listar(
 			@RequestParam(required = false) StatusCadastro status,
 			@RequestParam(required = false) TipoFinanceiro tipo,
+			@RequestParam(required = false) UUID paiId,
+			@RequestParam(required = false) String busca,
+			@RequestParam(required = false) Boolean principais,
+			@RequestParam(required = false) Boolean permiteOrcamento,
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
-		List<CategoriaFinanceiraResponse> resposta = categoriaFinanceiraService.listar(contexto, status, tipo).stream()
-				.map(CategoriaFinanceiraResponse::from)
+		List<CategoriaFinanceiraResponse> resposta = categoriaFinanceiraService
+				.listar(contexto, status, tipo, paiId, busca, principais, permiteOrcamento).stream()
+				.map(c -> resposta(c))
 				.toList();
 		return ResponseEntity.ok(resposta);
 	}
@@ -57,8 +62,9 @@ public class CategoriaFinanceiraController {
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
-		CategoriaFinanceira categoria = categoriaFinanceiraService.criar(request.nome(), request.tipo(), contexto);
-		return ResponseEntity.status(HttpStatus.CREATED).body(CategoriaFinanceiraResponse.from(categoria));
+		CategoriaFinanceira categoria = categoriaFinanceiraService.criar(request.nome(), request.descricao(),
+				request.categoriaPaiId(), request.tipo(), request.ordem(), request.permiteOrcamento(), contexto);
+		return ResponseEntity.status(HttpStatus.CREATED).body(resposta(categoria));
 	}
 
 	@GetMapping("/{id}")
@@ -66,7 +72,7 @@ public class CategoriaFinanceiraController {
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		CategoriaFinanceira categoria = categoriaFinanceiraService.buscar(id, contexto);
-		return ResponseEntity.ok(CategoriaFinanceiraResponse.from(categoria));
+		return ResponseEntity.ok(resposta(categoria));
 	}
 
 	@PutMapping("/{id}")
@@ -76,9 +82,9 @@ public class CategoriaFinanceiraController {
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
-		CategoriaFinanceira categoria = categoriaFinanceiraService.editar(
-				id, request.nome(), request.tipo(), contexto);
-		return ResponseEntity.ok(CategoriaFinanceiraResponse.from(categoria));
+		CategoriaFinanceira categoria = categoriaFinanceiraService.editar(id, request.nome(), request.descricao(),
+				request.categoriaPaiId(), request.tipo(), request.ordem(), request.permiteOrcamento(), contexto);
+		return ResponseEntity.ok(resposta(categoria));
 	}
 
 	@PostMapping("/{id}/inativar")
@@ -86,7 +92,7 @@ public class CategoriaFinanceiraController {
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		CategoriaFinanceira categoria = categoriaFinanceiraService.inativar(id, contexto);
-		return ResponseEntity.ok(CategoriaFinanceiraResponse.from(categoria));
+		return ResponseEntity.ok(resposta(categoria));
 	}
 
 	@PostMapping("/{id}/reativar")
@@ -94,7 +100,18 @@ public class CategoriaFinanceiraController {
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		CategoriaFinanceira categoria = categoriaFinanceiraService.reativar(id, contexto);
-		return ResponseEntity.ok(CategoriaFinanceiraResponse.from(categoria));
+		return ResponseEntity.ok(resposta(categoria));
+	}
+
+	@GetMapping("/resumo")
+	public ResponseEntity<ResumoCategoriasResponse> resumir(HttpSession session,
+			@AuthenticationPrincipal UsuarioPrincipal principal) {
+		return ResponseEntity.ok(ResumoCategoriasResponse.from(
+				categoriaFinanceiraService.resumir(exigirAcesso(session, principal))));
+	}
+
+	private CategoriaFinanceiraResponse resposta(CategoriaFinanceira categoria) {
+		return CategoriaFinanceiraResponse.from(categoria, categoriaFinanceiraService.contarSubcategorias(categoria));
 	}
 
 	private ContextoEmpresaAtual exigirAcesso(HttpSession session, UsuarioPrincipal principal) {
