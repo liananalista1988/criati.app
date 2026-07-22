@@ -54,8 +54,8 @@ public class DashboardFinanceiroService {
 				.map(ContaFinanceira::getSaldoInicial)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
-		BigDecimal receitasPagas = somar(doMes, TipoFinanceiro.RECEITA, StatusLancamentoFinanceiro.PAGO);
-		BigDecimal despesasPagas = somar(doMes, TipoFinanceiro.DESPESA, StatusLancamentoFinanceiro.PAGO);
+		BigDecimal receitasPagas = somarLiquidados(doMes, TipoFinanceiro.RECEITA);
+		BigDecimal despesasPagas = somarLiquidados(doMes, TipoFinanceiro.DESPESA);
 		BigDecimal resultadoMes = receitasPagas.subtract(despesasPagas);
 
 		// Pendentes representam o que falta receber/pagar no total (nao
@@ -111,7 +111,7 @@ public class DashboardFinanceiroService {
 	private List<ResumoCategoriaFinanceira> resumoPorCategoria(List<LancamentoFinanceiro> doMes) {
 		Map<UUID, ResumoAcumulado> acumulado = new LinkedHashMap<>();
 		for (LancamentoFinanceiro lancamento : doMes) {
-			if (lancamento.getStatus() != StatusLancamentoFinanceiro.PAGO) {
+			if (!lancamento.compoeSaldoRealizado()) {
 				continue;
 			}
 			CategoriaFinanceira categoria = lancamento.getCategoria();
@@ -123,6 +123,11 @@ public class DashboardFinanceiroService {
 				.map(entry -> new ResumoCategoriaFinanceira(
 						entry.getKey(), entry.getValue().nome, entry.getValue().tipo, entry.getValue().total))
 				.toList();
+	}
+
+	private BigDecimal somarLiquidados(List<LancamentoFinanceiro> lancamentos, TipoFinanceiro tipo) {
+		return lancamentos.stream().filter(l -> l.getTipo() == tipo && l.compoeSaldoRealizado())
+				.map(LancamentoFinanceiro::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
 	private static final class ResumoAcumulado {

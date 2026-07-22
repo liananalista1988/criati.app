@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import br.app.criati.financeiro.model.ContaFinanceira;
 import br.app.criati.financeiro.model.LancamentoFinanceiro;
 import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
-import br.app.criati.shared.enums.StatusLancamentoFinanceiro;
 import br.app.criati.shared.enums.TipoFinanceiro;
 
 /**
@@ -30,7 +29,8 @@ public class SaldoFinanceiroService {
 
 	@Transactional(readOnly = true)
 	public BigDecimal calcularSaldoAtual(ContaFinanceira conta) {
-		List<LancamentoFinanceiro> lancamentos = lancamentoFinanceiroRepository.findAllByContaId(conta.getId());
+		List<LancamentoFinanceiro> lancamentos = lancamentoFinanceiroRepository
+				.findAllByContaIdAndEmpresaId(conta.getId(), conta.getEmpresa().getId());
 		return calcularSaldoAtual(conta, lancamentos);
 	}
 
@@ -42,7 +42,7 @@ public class SaldoFinanceiroService {
 
 	private BigDecimal somar(List<LancamentoFinanceiro> lancamentos, TipoFinanceiro tipo) {
 		return lancamentos.stream()
-				.filter(l -> l.getStatus() == StatusLancamentoFinanceiro.PAGO && l.getTipo() == tipo)
+				.filter(l -> l.compoeSaldoRealizado() && l.getTipo() == tipo)
 				.map(LancamentoFinanceiro::getValor)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}

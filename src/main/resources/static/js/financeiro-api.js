@@ -73,6 +73,15 @@
 		reabrir: function (id) {
 			return window.CriatiApi.post(BASE + "/lancamentos/" + id + "/reabrir");
 		},
+		liquidar: function (id, dados) {
+			return window.CriatiApi.post(BASE + "/lancamentos/" + id + "/liquidar", dados);
+		},
+		desliquidar: function (id) {
+			return window.CriatiApi.post(BASE + "/lancamentos/" + id + "/desliquidar");
+		},
+		resumo: function (filtros) {
+			return window.CriatiApi.get(BASE + "/lancamentos/resumo" + query(filtros));
+		},
 		cancelar: function (id) {
 			return window.CriatiApi.post(BASE + "/lancamentos/" + id + "/cancelar");
 		}

@@ -3,6 +3,7 @@ package br.app.criati.financeiro.web;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.time.YearMonth;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -49,12 +50,16 @@ public class LancamentoFinanceiroController {
 			@RequestParam(required = false) StatusLancamentoFinanceiro status,
 			@RequestParam(required = false) UUID contaId,
 			@RequestParam(required = false) UUID categoriaId,
+			@RequestParam(required = false) UUID pessoaId,
+			@RequestParam(required = false) UUID parteId,
+			@RequestParam(required = false) Boolean vencido,
 			@RequestParam(required = false) String busca,
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		List<LancamentoFinanceiroResponse> resposta = lancamentoFinanceiroService
-				.listar(contexto, dataInicial, dataFinal, tipo, status, contaId, categoriaId, busca)
+				.listar(contexto, dataInicial, dataFinal, tipo, status, contaId, categoriaId,
+						pessoaId, parteId, vencido, busca)
 				.stream()
 				.map(LancamentoFinanceiroResponse::from)
 				.toList();
@@ -70,12 +75,16 @@ public class LancamentoFinanceiroController {
 		LancamentoFinanceiro lancamento = lancamentoFinanceiroService.criar(
 				request.contaId(),
 				request.categoriaId(),
+				request.pessoaFinanceiraId(),
+				request.parteFinanceiraId(),
 				request.tipo(),
 				request.descricao(),
 				request.valor(),
 				request.dataCompetencia(),
+				request.dataVencimento(),
 				request.status(),
-				request.dataPagamento(),
+				request.dataLiquidacaoEfetiva(),
+				request.formaPagamento(),
 				request.observacao(),
 				contexto);
 		return ResponseEntity.status(HttpStatus.CREATED).body(LancamentoFinanceiroResponse.from(lancamento));
@@ -100,12 +109,27 @@ public class LancamentoFinanceiroController {
 				id,
 				request.contaId(),
 				request.categoriaId(),
+				request.pessoaFinanceiraId(),
+				request.parteFinanceiraId(),
+				request.tipo(),
 				request.descricao(),
 				request.valor(),
 				request.dataCompetencia(),
+				request.dataVencimento(),
+				request.dataLiquidacao(),
+				request.formaPagamento(),
 				request.observacao(),
 				contexto);
 		return ResponseEntity.ok(LancamentoFinanceiroResponse.from(lancamento));
+	}
+
+	@PostMapping("/{id}/liquidar")
+	public ResponseEntity<LancamentoFinanceiroResponse> liquidar(@PathVariable UUID id,
+			@Valid @RequestBody LiquidarLancamentoRequest request, HttpSession session,
+			@AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return ResponseEntity.ok(LancamentoFinanceiroResponse.from(lancamentoFinanceiroService
+				.liquidar(id, request.dataLiquidacao(), request.formaPagamento(), contexto)));
 	}
 
 	@PostMapping("/{id}/pagar")
@@ -117,6 +141,24 @@ public class LancamentoFinanceiroController {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		LancamentoFinanceiro lancamento = lancamentoFinanceiroService.pagar(id, request.dataPagamento(), contexto);
 		return ResponseEntity.ok(LancamentoFinanceiroResponse.from(lancamento));
+	}
+
+	@PostMapping("/{id}/desliquidar")
+	public ResponseEntity<LancamentoFinanceiroResponse> desliquidar(@PathVariable UUID id,
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return ResponseEntity.ok(LancamentoFinanceiroResponse.from(lancamentoFinanceiroService.desliquidar(id, contexto)));
+	}
+
+	@GetMapping("/resumo")
+	public ResponseEntity<ResumoLancamentosResponse> resumir(
+			@RequestParam(required = false) YearMonth competencia,
+			@RequestParam(required = false) UUID pessoaId,
+			@RequestParam(required = false) UUID contaId,
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return ResponseEntity.ok(ResumoLancamentosResponse.from(
+				lancamentoFinanceiroService.resumir(contexto, competencia, pessoaId, contaId)));
 	}
 
 	@PostMapping("/{id}/reabrir")

@@ -24,7 +24,7 @@
 			<main class="criati-content">
 				<div class="criati-page-header">
 					<h1>Lancamentos</h1>
-					<p>Receitas e despesas da sua empresa.</p>
+					<p>Receitas e despesas da residência, separando competência, vencimento e liquidação.</p>
 				</div>
 
 				<div class="criati-toolbar">
@@ -49,7 +49,8 @@
 						<select class="criati-select" id="financeiro-filtro-status">
 							<option value="">Todos</option>
 							<option value="PENDENTE">Pendente</option>
-							<option value="PAGO">Pago</option>
+							<option value="LIQUIDADO">Liquidado</option>
+							<option value="PAGO">Pago (legado)</option>
 							<option value="CANCELADO">Cancelado</option>
 						</select>
 					</div>
@@ -61,10 +62,25 @@
 						<label for="financeiro-filtro-categoria">Categoria</label>
 						<select class="criati-select" id="financeiro-filtro-categoria"></select>
 					</div>
+					<div class="criati-field"><label for="financeiro-filtro-pessoa">Pessoa</label>
+						<select class="criati-select" id="financeiro-filtro-pessoa"></select></div>
+					<div class="criati-field"><label for="financeiro-filtro-parte">Contato</label>
+						<select class="criati-select" id="financeiro-filtro-parte"></select></div>
+					<div class="criati-field"><label for="financeiro-filtro-vencido">Vencimento</label>
+						<select class="criati-select" id="financeiro-filtro-vencido"><option value="">Todos</option><option value="true">Vencidos</option></select></div>
 					<div class="criati-field" style="flex: 1; min-width: 200px;">
 						<label for="financeiro-filtro-busca">Buscar</label>
 						<input class="criati-input" type="text" id="financeiro-filtro-busca" placeholder="Descricao..." />
 					</div>
+				</div>
+				<div class="criati-grid criati-grid-4" id="financeiro-lancamentos-resumo" aria-live="polite">
+					<div class="criati-card"><p class="criati-card-sub">Receitas liquidadas</p><p class="criati-card-value" id="resumo-receitas-liquidadas">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Despesas liquidadas</p><p class="criati-card-value" id="resumo-despesas-liquidadas">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Resultado liquidado</p><p class="criati-card-value" id="resumo-resultado-liquidado">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Saldo atual consolidado</p><p class="criati-card-value" id="resumo-saldo-consolidado">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Receitas pendentes</p><p class="criati-card-value" id="resumo-receitas-pendentes">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Despesas pendentes</p><p class="criati-card-value" id="resumo-despesas-pendentes">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Pendentes vencidos</p><p class="criati-card-value" id="resumo-vencidos">0</p></div>
 				</div>
 
 				<div class="criati-toolbar">
@@ -82,7 +98,7 @@
 					<p>Nao foi possivel carregar os lancamentos agora.</p>
 				</div>
 				<div id="financeiro-lancamentos-vazio" class="criati-empty-state" hidden>
-					<p>Nenhum lancamento encontrado para os filtros selecionados.</p>
+					<p>Nenhum lançamento nesta competência. Cadastre receitas e despesas para acompanhar o fluxo financeiro da residência.</p>
 				</div>
 
 				<div class="criati-table-wrap" id="financeiro-lancamentos-tabela-wrap" hidden>
@@ -93,10 +109,12 @@
 								<th>Descricao</th>
 								<th>Categoria</th>
 								<th>Conta</th>
+								<th>Pessoa</th>
 								<th>Tipo</th>
 								<th>Valor</th>
 								<th>Status</th>
-								<th>Pagamento</th>
+								<th>Vencimento</th>
+								<th>Liquidação</th>
 								<th>Acoes</th>
 							</tr>
 						</thead>
@@ -116,6 +134,10 @@
 					<label for="financeiro-lancamento-conta">Conta</label>
 					<select class="criati-select" id="financeiro-lancamento-conta" required></select>
 				</div>
+				<div class="criati-field"><label for="financeiro-lancamento-pessoa">Pessoa responsável</label>
+					<select class="criati-select" id="financeiro-lancamento-pessoa" required></select></div>
+				<div class="criati-field"><label for="financeiro-lancamento-parte">Contato financeiro (opcional)</label>
+					<select class="criati-select" id="financeiro-lancamento-parte"></select></div>
 				<div class="criati-field">
 					<label for="financeiro-lancamento-categoria">Categoria</label>
 					<select class="criati-select" id="financeiro-lancamento-categoria" required></select>
@@ -129,9 +151,17 @@
 					<input class="criati-input" id="financeiro-lancamento-valor" type="number" step="0.01" min="0.01" required />
 				</div>
 				<div class="criati-field">
-					<label for="financeiro-lancamento-data-competencia">Data de competencia</label>
+					<label for="financeiro-lancamento-data-competencia">Competência — mês ao qual pertence</label>
 					<input class="criati-input" id="financeiro-lancamento-data-competencia" type="date" required />
 				</div>
+				<div class="criati-field"><label for="financeiro-lancamento-data-vencimento">Vencimento — data prevista (opcional)</label>
+					<input class="criati-input" id="financeiro-lancamento-data-vencimento" type="date" /></div>
+				<div class="criati-field"><label for="financeiro-lancamento-status">Status inicial</label>
+					<select class="criati-select" id="financeiro-lancamento-status"><option value="PENDENTE">Pendente</option><option value="LIQUIDADO">Liquidado</option></select></div>
+				<div class="criati-field"><label for="financeiro-lancamento-data-liquidacao">Liquidação — quando o dinheiro entrou ou saiu</label>
+					<input class="criati-input" id="financeiro-lancamento-data-liquidacao" type="date" /></div>
+				<div class="criati-field"><label for="financeiro-lancamento-forma">Forma de pagamento (opcional)</label>
+					<select class="criati-select" id="financeiro-lancamento-forma"><option value="">Não informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select></div>
 				<div class="criati-field">
 					<label for="financeiro-lancamento-observacao">Observacao (opcional)</label>
 					<input class="criati-input" id="financeiro-lancamento-observacao" maxlength="500" />
@@ -146,12 +176,13 @@
 
 	<div class="criati-modal-overlay" id="financeiro-pagar-modal" hidden>
 		<div class="criati-modal">
-			<h2>Confirmar pagamento</h2>
+			<h2>Confirmar liquidação</h2>
 			<form class="criati-modal-form" id="financeiro-pagar-form">
 				<div class="criati-field">
-					<label for="financeiro-pagar-data">Data de pagamento</label>
+					<label for="financeiro-pagar-data">Data de liquidação</label>
 					<input class="criati-input" id="financeiro-pagar-data" type="date" required />
 				</div>
+				<div class="criati-field"><label for="financeiro-pagar-forma">Forma (opcional)</label><select class="criati-select" id="financeiro-pagar-forma"><option value="">Não informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select></div>
 				<div class="criati-modal-acoes">
 					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-pagar-cancelar">Cancelar</button>
 					<button type="submit" class="criati-btn criati-btn-primary" id="financeiro-pagar-confirmar">Confirmar</button>

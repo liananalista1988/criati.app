@@ -6,13 +6,14 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
-
 import br.app.criati.empresa.model.Empresa;
+import br.app.criati.financeiro.shared.model.ParteFinanceira;
+import br.app.criati.financeiro.shared.model.PessoaFinanceira;
+import br.app.criati.shared.enums.FormaPagamentoLancamento;
+import br.app.criati.shared.enums.OrigemLancamentoFinanceiro;
 import br.app.criati.shared.enums.StatusLancamentoFinanceiro;
 import br.app.criati.shared.enums.TipoFinanceiro;
+import br.app.criati.usuario.model.Usuario;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -51,6 +52,14 @@ public class LancamentoFinanceiro {
 	@JoinColumn(name = "categoria_id", nullable = false)
 	private CategoriaFinanceira categoria;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "pessoa_financeira_id")
+	private PessoaFinanceira pessoaFinanceira;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "parte_financeira_id")
+	private ParteFinanceira parteFinanceira;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "tipo", nullable = false, length = 20)
 	private TipoFinanceiro tipo;
@@ -67,6 +76,17 @@ public class LancamentoFinanceiro {
 	@Column(name = "data_pagamento")
 	private LocalDate dataPagamento;
 
+	@Column(name = "data_vencimento")
+	private LocalDate dataVencimento;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "forma_pagamento", length = 30)
+	private FormaPagamentoLancamento formaPagamento;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "origem", nullable = false, length = 30)
+	private OrigemLancamentoFinanceiro origem;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false, length = 20)
 	private StatusLancamentoFinanceiro status;
@@ -74,15 +94,19 @@ public class LancamentoFinanceiro {
 	@Column(name = "observacao", length = 500)
 	private String observacao;
 
-	@Generated(event = EventType.INSERT)
-	@ColumnDefault("CURRENT_TIMESTAMP")
 	@Column(name = "criado_em", nullable = false, updatable = false)
 	private OffsetDateTime criadoEm;
 
-	@Generated(event = EventType.INSERT)
-	@ColumnDefault("CURRENT_TIMESTAMP")
 	@Column(name = "atualizado_em", nullable = false)
 	private OffsetDateTime atualizadoEm;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "criado_por_usuario_id", updatable = false)
+	private Usuario criadoPor;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "atualizado_por_usuario_id")
+	private Usuario atualizadoPor;
 
 	public LancamentoFinanceiro(
 			Empresa empresa,
@@ -103,8 +127,37 @@ public class LancamentoFinanceiro {
 		this.valor = Objects.requireNonNull(valor, "valor nao pode ser nulo");
 		this.dataCompetencia = Objects.requireNonNull(dataCompetencia, "dataCompetencia nao pode ser nula");
 		this.dataPagamento = dataPagamento;
+		this.origem = OrigemLancamentoFinanceiro.MANUAL;
 		this.status = Objects.requireNonNull(status, "status nao pode ser nulo");
 		this.observacao = observacao;
+		this.criadoEm = OffsetDateTime.now();
+		this.atualizadoEm = this.criadoEm;
+	}
+
+	public LancamentoFinanceiro(Empresa empresa, ContaFinanceira conta, CategoriaFinanceira categoria,
+			PessoaFinanceira pessoaFinanceira, ParteFinanceira parteFinanceira, TipoFinanceiro tipo,
+			String descricao, BigDecimal valor, LocalDate dataCompetencia, LocalDate dataVencimento,
+			LocalDate dataLiquidacao, StatusLancamentoFinanceiro status,
+			FormaPagamentoLancamento formaPagamento, String observacao, Usuario autor) {
+		this.empresa = Objects.requireNonNull(empresa, "empresa nao pode ser nula");
+		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
+		this.categoria = Objects.requireNonNull(categoria, "categoria nao pode ser nula");
+		this.pessoaFinanceira = pessoaFinanceira;
+		this.parteFinanceira = parteFinanceira;
+		this.tipo = Objects.requireNonNull(tipo, "tipo nao pode ser nulo");
+		this.descricao = Objects.requireNonNull(descricao, "descricao nao pode ser nula");
+		this.valor = Objects.requireNonNull(valor, "valor nao pode ser nulo");
+		this.dataCompetencia = Objects.requireNonNull(dataCompetencia, "dataCompetencia nao pode ser nula");
+		this.dataVencimento = dataVencimento;
+		this.dataPagamento = dataLiquidacao;
+		this.status = Objects.requireNonNull(status, "status nao pode ser nulo");
+		this.formaPagamento = formaPagamento;
+		this.origem = OrigemLancamentoFinanceiro.MANUAL;
+		this.observacao = observacao;
+		this.criadoEm = OffsetDateTime.now();
+		this.atualizadoEm = this.criadoEm;
+		this.criadoPor = Objects.requireNonNull(autor, "autor nao pode ser nulo");
+		this.atualizadoPor = autor;
 	}
 
 	public void atualizarDados(
@@ -122,9 +175,40 @@ public class LancamentoFinanceiro {
 		this.observacao = observacao;
 	}
 
+	public void atualizarDados(ContaFinanceira conta, CategoriaFinanceira categoria,
+			PessoaFinanceira pessoaFinanceira, ParteFinanceira parteFinanceira, TipoFinanceiro tipo,
+			String descricao, BigDecimal valor, LocalDate dataCompetencia, LocalDate dataVencimento,
+			LocalDate dataLiquidacao, FormaPagamentoLancamento formaPagamento, String observacao, Usuario autor) {
+		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
+		this.categoria = Objects.requireNonNull(categoria, "categoria nao pode ser nula");
+		this.pessoaFinanceira = pessoaFinanceira;
+		this.parteFinanceira = parteFinanceira;
+		this.tipo = Objects.requireNonNull(tipo, "tipo nao pode ser nulo");
+		this.descricao = Objects.requireNonNull(descricao, "descricao nao pode ser nula");
+		this.valor = Objects.requireNonNull(valor, "valor nao pode ser nulo");
+		this.dataCompetencia = Objects.requireNonNull(dataCompetencia, "dataCompetencia nao pode ser nula");
+		this.dataVencimento = dataVencimento;
+		this.dataPagamento = dataLiquidacao;
+		this.formaPagamento = formaPagamento;
+		this.observacao = observacao;
+		registrarAlteracao(autor);
+	}
+
 	public void pagar(LocalDate dataPagamento) {
 		this.status = StatusLancamentoFinanceiro.PAGO;
 		this.dataPagamento = Objects.requireNonNull(dataPagamento, "dataPagamento nao pode ser nula");
+	}
+
+	public void pagar(LocalDate dataPagamento, Usuario autor) {
+		pagar(dataPagamento);
+		registrarAlteracao(autor);
+	}
+
+	public void liquidar(LocalDate dataLiquidacao, FormaPagamentoLancamento formaPagamento, Usuario autor) {
+		this.status = StatusLancamentoFinanceiro.LIQUIDADO;
+		this.dataPagamento = Objects.requireNonNull(dataLiquidacao, "dataLiquidacao nao pode ser nula");
+		this.formaPagamento = formaPagamento;
+		registrarAlteracao(autor);
 	}
 
 	public void reabrir() {
@@ -132,11 +216,40 @@ public class LancamentoFinanceiro {
 		this.dataPagamento = null;
 	}
 
+	public void desliquidar(Usuario autor) {
+		reabrir();
+		registrarAlteracao(autor);
+	}
+
+	public void reabrir(Usuario autor) {
+		desliquidar(autor);
+	}
+
 	public void cancelar() {
 		this.status = StatusLancamentoFinanceiro.CANCELADO;
+		this.dataPagamento = null;
+	}
+
+	public void cancelar(Usuario autor) {
+		cancelar();
+		registrarAlteracao(autor);
 	}
 
 	public boolean compoeSaldoRealizado() {
-		return status == StatusLancamentoFinanceiro.PAGO;
+		return status == StatusLancamentoFinanceiro.PAGO || status == StatusLancamentoFinanceiro.LIQUIDADO;
+	}
+
+	public LocalDate getDataLiquidacao() {
+		return dataPagamento;
+	}
+
+	public boolean estaVencido(LocalDate hoje) {
+		return status == StatusLancamentoFinanceiro.PENDENTE && dataVencimento != null
+				&& dataVencimento.isBefore(Objects.requireNonNull(hoje));
+	}
+
+	private void registrarAlteracao(Usuario autor) {
+		this.atualizadoPor = Objects.requireNonNull(autor, "autor nao pode ser nulo");
+		this.atualizadoEm = OffsetDateTime.now();
 	}
 }

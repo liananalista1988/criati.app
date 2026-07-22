@@ -156,7 +156,8 @@ public class ContaFinanceiraService {
 		ContaFinanceira conta = buscarDaEmpresa(contaId, contexto.empresaId());
 		DadosConta dados = validarDados(nome, titularId, instituicaoId, tipo, moeda, saldoInicial,
 				dataSaldoInicial, permiteConciliacao, contexto, conta);
-		if (lancamentoRepository.existsByContaId(conta.getId()) && dadosFinanceirosAlterados(conta, dados, tipo, dataSaldoInicial)) {
+		if (lancamentoRepository.existsByContaIdAndEmpresaId(conta.getId(), contexto.empresaId())
+				&& dadosFinanceirosAlterados(conta, dados, tipo, dataSaldoInicial)) {
 			throw new ContaFinanceiraComLancamentosException();
 		}
 		conta.atualizarDados(dados.titular(), dados.instituicao(), dados.nome(), tipo,

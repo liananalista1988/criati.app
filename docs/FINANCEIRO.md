@@ -160,3 +160,13 @@ Toda consulta financeira é obrigatoriamente filtrada por `empresa_id` do contex
 ## Limitações desta fase (fora do escopo do MVP)
 
 Registradas como evoluções futuras, não implementadas nesta tarefa: conciliação bancária, integração bancária, OFX, boleto, Pix, contas a pagar recorrentes complexas, cartão de crédito, centro de custo, fluxo de caixa projetado, cobrança, emissão fiscal, importação de planilha, anexos, aprovação em múltiplas etapas.
+
+## Evolução LES-F2-005 — lançamentos financeiros básicos
+
+A LES-F2-005 evolui o lançamento existente sem criar entidade, tabela, rota-base ou página paralela. Os conceitos de competência, vencimento e liquidação permanecem separados; somente lançamentos `LIQUIDADO` (ou `PAGO`, preservado para compatibilidade legada) compõem o saldo derivado. `VENCIDO` é calculado para lançamentos pendentes com vencimento anterior à data atual e não é persistido.
+
+Novos lançamentos vinculam pessoa responsável, admitem parte financeira opcional e têm origem `MANUAL`. A conta permanece obrigatória também no estado pendente, decisão conservadora que mantém o contrato anterior e garante que toda liquidação tenha destino definido. A forma de pagamento é opcional; `CREDITO` existe apenas para leitura de dados legados e não implementa cartão ou fatura.
+
+Além dos endpoints legados de pagamento e reabertura, a API oferece as ações explícitas `liquidar` e `desliquidar` e um resumo da competência com valores liquidados, pendentes, vencidos, saldos por conta e consolidado. Cancelar um lançamento liquidado limpa os dados de liquidação na mesma transação; como o saldo é calculado a partir dos lançamentos efetivos, o impacto é revertido sem saldo mutável ou lançamento contábil paralelo.
+
+O inventário completo, as regras de compatibilidade, a migration `V9` e as limitações estão registrados em `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-005.md`.
