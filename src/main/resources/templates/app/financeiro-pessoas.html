@@ -24,6 +24,7 @@
 					<h1>Pessoas da residencia</h1>
 					<p>Cadastre os integrantes usados na titularidade de contas, cartoes e gastos.</p>
 				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('pessoas')}"></div>
 				<div class="criati-toolbar">
 					<div class="criati-field">
 						<label for="pessoas-filtro-status">Status</label>
@@ -71,7 +72,7 @@
 	<script th:src="@{/js/criati-api.js}"></script><script th:src="@{/js/criati-tema.js}"></script>
 	<script th:src="@{/js/criati-estilo.js}"></script><script th:src="@{/js/criati-ui.js}"></script>
 	<script th:src="@{/js/criati-auth.js}"></script><script th:src="@{/js/criati-contexto.js}"></script>
-	<script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-api.js}"></script><script th:src="@{/js/financeiro-detalhes.js}"></script>
 	<script th:src="@{/js/financeiro-pessoas.js}"></script>
 	<script>document.addEventListener("DOMContentLoaded", function () { CriatiUI.initSidebarToggle(); CriatiUI.initUserMenu(); CriatiAuth.initLogout(); CriatiContexto.iniciar(); CriatiAplicacoes.carregarSidebar(); FinanceiroPessoas.iniciar(); });</script>
 </body>

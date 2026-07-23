@@ -27,6 +27,8 @@
 					<p>Compromissos, ocorrencias de cada competencia e pagamentos integrais ou parciais.</p>
 				</div>
 
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('contas-a-pagar')}"></div>
+
 				<div class="criati-toolbar">
 					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-ocorrencias">Ocorrencias</button>
 					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-compromissos">Compromissos</button>
@@ -289,6 +291,7 @@
 	<script th:src="@{/js/criati-contexto.js}"></script>
 	<script th:src="@{/js/criati-aplicacoes.js}"></script>
 	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-detalhes.js}"></script>
 	<script th:src="@{/js/financeiro-api.js}"></script>
 	<script th:src="@{/js/financeiro-contas-a-pagar.js}"></script>
 	<script th:inline="javascript">

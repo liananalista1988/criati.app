@@ -27,6 +27,8 @@
 					<p>Receitas e despesas da residência, separando competência, vencimento e liquidação.</p>
 				</div>
 
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('lancamentos')}"></div>
+
 				<div class="criati-toolbar">
 					<div class="criati-field">
 						<label for="financeiro-filtro-data-inicial">De</label>
@@ -201,6 +203,7 @@
 	<script th:src="@{/js/criati-contexto.js}"></script>
 	<script th:src="@{/js/criati-aplicacoes.js}"></script>
 	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-detalhes.js}"></script>
 	<script th:src="@{/js/financeiro-api.js}"></script>
 	<script th:src="@{/js/financeiro-lancamentos.js}"></script>
 	<script th:inline="javascript">

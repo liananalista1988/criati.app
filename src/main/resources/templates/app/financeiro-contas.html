@@ -25,6 +25,8 @@
 					<p>Organize individualmente as contas e carteiras da residência.</p>
 				</div>
 
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('contas')}"></div>
+
 				<div class="criati-cards-grid" id="contas-resumo">
 					<div class="criati-card"><p class="criati-card-label">Contas ativas</p><p class="criati-card-value" id="contas-resumo-quantidade">—</p></div>
 					<div class="criati-card"><p class="criati-card-label">Saldo inicial consolidado</p><p class="criati-card-value" id="contas-resumo-saldo">—</p></div>
@@ -77,7 +79,7 @@
 
 	<div th:replace="~{fragments/feedback :: toasts}"></div>
 	<script th:src="@{/js/criati-api.js}"></script><script th:src="@{/js/criati-tema.js}"></script><script th:src="@{/js/criati-estilo.js}"></script><script th:src="@{/js/criati-ui.js}"></script>
-	<script th:src="@{/js/criati-auth.js}"></script><script th:src="@{/js/criati-contexto.js}"></script><script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-formatacao.js}"></script><script th:src="@{/js/financeiro-api.js}"></script><script th:src="@{/js/financeiro-contas.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script><script th:src="@{/js/criati-contexto.js}"></script><script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-formatacao.js}"></script><script th:src="@{/js/financeiro-detalhes.js}"></script><script th:src="@{/js/financeiro-api.js}"></script><script th:src="@{/js/financeiro-contas.js}"></script>
 	<script>document.addEventListener("DOMContentLoaded", function () { CriatiUI.initSidebarToggle(); CriatiUI.initUserMenu(); CriatiAuth.initLogout(); CriatiContexto.iniciar(); CriatiAplicacoes.carregarSidebar(); FinanceiroContas.iniciar(); });</script>
 </body>
 </html>

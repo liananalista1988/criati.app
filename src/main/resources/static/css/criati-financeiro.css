@@ -1,6 +1,69 @@
 /* Criati - componentes reutilizaveis do modulo Financeiro: tabela, badges de
    status, modal de formulario e barras CSS simples (sem biblioteca externa). */
 
+.financeiro-navegacao {
+	display: flex;
+	gap: 6px;
+	overflow-x: auto;
+	padding: 2px 0 12px;
+	margin: -4px 0 20px;
+	scrollbar-width: thin;
+}
+
+.financeiro-navegacao a {
+	flex: 0 0 auto;
+	padding: 8px 11px;
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius);
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-sm);
+	text-decoration: none;
+}
+
+.financeiro-navegacao a:hover,
+.financeiro-navegacao a:focus-visible {
+	color: var(--criati-text);
+	border-color: var(--criati-accent);
+}
+
+.financeiro-navegacao a.is-active {
+	color: var(--criati-accent);
+	border-color: var(--criati-accent);
+	background: var(--criati-surface-alt);
+	font-weight: 600;
+}
+
+.financeiro-campo-condicional[hidden] {
+	display: none;
+}
+
+.financeiro-detalhes-lista {
+	display: grid;
+	grid-template-columns: minmax(120px, 0.7fr) minmax(160px, 1.3fr);
+	gap: 10px 16px;
+	margin: 0;
+}
+
+.financeiro-detalhes-lista dt {
+	color: var(--criati-text-muted);
+}
+
+.financeiro-detalhes-lista dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+	.financeiro-detalhes-lista {
+		grid-template-columns: 1fr;
+		gap: 4px;
+	}
+
+	.financeiro-detalhes-lista dd {
+		margin-bottom: 10px;
+	}
+}
+
 .criati-toolbar {
 	display: flex;
 	flex-wrap: wrap;

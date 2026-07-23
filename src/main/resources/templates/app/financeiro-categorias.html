@@ -27,6 +27,8 @@
 					<p>Organize receitas e despesas por categoria.</p>
 				</div>
 
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('categorias')}"></div>
+
 				<div class="criati-toolbar">
 					<div class="criati-field">
 						<label for="financeiro-categorias-busca">Buscar</label>
@@ -122,6 +124,7 @@
 	<script th:src="@{/js/criati-contexto.js}"></script>
 	<script th:src="@{/js/criati-aplicacoes.js}"></script>
 	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-detalhes.js}"></script>
 	<script th:src="@{/js/financeiro-api.js}"></script>
 	<script th:src="@{/js/financeiro-categorias.js}"></script>
 	<script th:inline="javascript">

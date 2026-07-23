@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Parcelas de cartão · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1>Parcelas de cartão</h1>
+					<p>Acompanhe as parcelas geradas pelas compras. Alterações e cancelamentos são feitos na compra de origem.</p>
+				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('parcelas')}"></div>
+
+				<div id="parcelas-mensagem" class="criati-alert criati-alert-error" role="alert" hidden></div>
+				<div class="criati-toolbar">
+					<div class="criati-field">
+						<label for="parcelas-filtro-competencia">Competência</label>
+						<input class="criati-input" id="parcelas-filtro-competencia" type="month" />
+					</div>
+					<div class="criati-field">
+						<label for="parcelas-filtro-cartao">Cartão</label>
+						<select class="criati-select" id="parcelas-filtro-cartao"><option value="">Todos</option></select>
+					</div>
+					<div class="criati-field">
+						<label for="parcelas-filtro-pessoa">Responsável</label>
+						<select class="criati-select" id="parcelas-filtro-pessoa"><option value="">Todas</option></select>
+					</div>
+					<div class="criati-field">
+						<label for="parcelas-filtro-status">Status</label>
+						<select class="criati-select" id="parcelas-filtro-status">
+							<option value="">Todos</option>
+							<option value="ABERTA">Aberta</option>
+							<option value="CANCELADA">Cancelada</option>
+							<option value="ESTORNADA">Estornada</option>
+						</select>
+					</div>
+					<button class="criati-btn criati-btn-primary" id="parcelas-filtrar" type="button">Filtrar</button>
+				</div>
+
+				<p id="parcelas-carregando">Carregando parcelas...</p>
+				<div id="parcelas-vazio" class="criati-empty-state" hidden>
+					<p>Nenhuma parcela encontrada.</p>
+					<p>Registre uma compra no cartão ou altere os filtros para visualizar o cronograma.</p>
+					<a class="criati-btn criati-btn-primary" href="/app/financeiro/compras-cartao">Registrar compra</a>
+				</div>
+				<div class="criati-table-wrap" id="parcelas-tabela-wrap" hidden>
+					<table class="criati-table">
+						<thead>
+							<tr>
+								<th>Competência</th>
+								<th>Compra</th>
+								<th>Cartão</th>
+								<th>Responsável</th>
+								<th>Parcela</th>
+								<th>Valor</th>
+								<th>Destino</th>
+								<th>Status</th>
+								<th>Ações</th>
+							</tr>
+						</thead>
+						<tbody id="parcelas-tbody"></tbody>
+					</table>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="parcela-detalhes-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="parcela-detalhes-titulo">
+			<h2 id="parcela-detalhes-titulo">Detalhes da parcela</h2>
+			<dl class="financeiro-detalhes-lista" id="parcela-detalhes-lista"></dl>
+			<div class="criati-modal-acoes">
+				<a class="criati-btn criati-btn-ghost" href="/app/financeiro/compras-cartao">Abrir compras</a>
+				<button class="criati-btn criati-btn-primary" id="parcela-detalhes-fechar" type="button">Fechar</button>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-parcelas-cartao.js}"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroParcelasCartao.iniciar();
+		});
+	</script>
+</body>
+</html>

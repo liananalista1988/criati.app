@@ -146,6 +146,21 @@
 
 	function acoes(c) {
 		var td = document.createElement("td"); td.className = "criati-table-acoes";
+		td.appendChild(botao("Detalhes", function () {
+			window.FinanceiroDetalhes.abrir("Detalhes do cartão", [
+				["Nome", c.nome], ["Titular", c.titularNome], ["Instituição", c.instituicaoNome],
+				["Bandeira", c.bandeira], ["Tipo", c.tipo === "FISICO" ? "Físico" : "Virtual"],
+				["Cartão principal", c.cartaoPrincipalNome], ["Final", c.ultimosDigitos],
+				["Limite total", window.FinanceiroFormatacao.moeda(c.limiteTotal)],
+				["Limite saudável", window.FinanceiroFormatacao.moeda(c.limiteSaudavel)],
+				["Limite comprometido", window.FinanceiroFormatacao.moeda(c.limiteComprometido)],
+				["Limite disponível", window.FinanceiroFormatacao.moeda(c.limiteDisponivel)],
+				["Fechamento", c.diaFechamento ? "Dia " + c.diaFechamento : null],
+				["Vencimento", c.diaVencimento ? "Dia " + c.diaVencimento : null],
+				["Bloqueio", c.bloqueado ? "Bloqueado" : "Não bloqueado"],
+				["Motivo do bloqueio", c.motivoBloqueio], ["Status", c.status]
+			]);
+		}));
 		td.appendChild(botao("Editar", function () { abrirEdicao(c); }));
 		if (c.tipo === "FISICO") {
 			td.appendChild(botao("Virtuais (" + c.quantidadeCartoesVirtuais + ")", function () { abrirVirtuais(c); }));

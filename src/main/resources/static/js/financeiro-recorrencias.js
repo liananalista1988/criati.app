@@ -86,6 +86,15 @@
 	function botao(texto, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "criati-btn criati-btn-ghost"; b.textContent = texto; b.addEventListener("click", fn); return b; }
 	function acoes(r) {
 		var td = document.createElement("td"); td.className = "criati-table-acoes";
+		td.appendChild(botao("Detalhes", function () { window.FinanceiroDetalhes.abrir("Detalhes da recorrência", [
+			["Descrição", r.descricao], ["Natureza", r.tipo === "RECEITA" ? "Receita" : "Despesa"],
+			["Valor padrão", window.FinanceiroFormatacao.moeda(r.valorPadrao)],
+			["Periodicidade", PERIODICIDADE_LABEL[r.periodicidade] || r.periodicidade],
+			["Próxima competência", window.FinanceiroFormatacao.competenciaLabel(r.proximaCompetencia)],
+			["Pessoa", r.pessoaFinanceiraNome], ["Categoria", r.categoriaNome], ["Conta", r.contaNome],
+			["Geração automática", r.gerarAutomaticamente ? "Sim" : "Não"], ["Observação", r.observacao],
+			["Status", STATUS_LABEL[r.status] || r.status]
+		]); }));
 		td.appendChild(botao("Ocorrencias", function () { abrirOcorrencias(r); }));
 		if (r.status !== "ENCERRADA") td.appendChild(botao("Editar", function () { abrirEdicao(r); }));
 		if (r.status === "ATIVA") { td.appendChild(botao("Gerar proxima", function () { gerarOcorrencia(r); })); td.appendChild(botao("Pausar", function () { pausar(r); })); }
