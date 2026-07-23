@@ -27,6 +27,8 @@
 					<p>Receitas e despesas que se repetem (salario, condominio, assinaturas) e os lancamentos gerados por elas.</p>
 				</div>
 
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('recorrencias')}"></div>
+
 				<div class="criati-toolbar">
 					<div class="criati-field">
 						<label for="financeiro-recorrencias-filtro-status">Status</label>
@@ -223,6 +225,7 @@
 	<script th:src="@{/js/criati-contexto.js}"></script>
 	<script th:src="@{/js/criati-aplicacoes.js}"></script>
 	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-detalhes.js}"></script>
 	<script th:src="@{/js/financeiro-api.js}"></script>
 	<script th:src="@{/js/financeiro-recorrencias.js}"></script>
 	<script th:inline="javascript">

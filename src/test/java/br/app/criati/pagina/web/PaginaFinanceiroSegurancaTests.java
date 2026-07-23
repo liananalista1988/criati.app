@@ -64,7 +64,9 @@ class PaginaFinanceiroSegurancaTests {
 		String[] rotas = {
 				"/app/financeiro", "/app/financeiro/contas", "/app/financeiro/categorias",
 				"/app/financeiro/lancamentos", "/app/financeiro/pessoas", "/app/financeiro/contatos",
-				"/app/financeiro/recorrencias", "/app/financeiro/contas-a-pagar"
+				"/app/financeiro/recorrencias", "/app/financeiro/contas-a-pagar",
+				"/app/financeiro/cartoes", "/app/financeiro/compras-cartao",
+				"/app/financeiro/parcelas-cartao"
 		};
 		for (String rota : rotas) {
 			mockMvc.perform(get(rota))
@@ -99,6 +101,12 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/recorrencias").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 		mockMvc.perform(get("/app/financeiro/contas-a-pagar").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/cartoes").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/compras-cartao").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/parcelas-cartao").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 	}
 
@@ -142,6 +150,16 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma recorrencia cadastrada")));
 		mockMvc.perform(get("/app/financeiro/contas-a-pagar").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma conta a pagar encontrada")));
+		mockMvc.perform(get("/app/financeiro/cartoes").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Cadastrar cartão")));
+		mockMvc.perform(get("/app/financeiro/compras-cartao").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Compra da residência")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Compra realizada para terceiro")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Pessoa relacionada")));
+		mockMvc.perform(get("/app/financeiro/parcelas-cartao").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Parcelas de cartão")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma parcela encontrada")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Navegação do Financeiro LeS")));
 	}
 
 	@Test

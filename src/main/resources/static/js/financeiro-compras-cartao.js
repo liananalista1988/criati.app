@@ -1,9 +1,270 @@
-(() => { const api=window.CriatiApi; const $=id=>document.getElementById(id); let cartoes=[];
-const moeda=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); const opt=(el,itens,vazio='Selecione')=>{el.innerHTML=`<option value="">${vazio}</option>`+itens.map(i=>`<option value="${i.id}">${i.nome}</option>`).join('')};
-function mensagem(texto,erro=false){const e=$('compras-mensagem');e.hidden=false;e.textContent=texto;e.className=`criati-alert ${erro?'criati-alert-error':'criati-alert-success'}`;}
-async function carregarCadastros(){const [cs,ps,cats,partes]=await Promise.all([api.get('/api/contexto/financeiro/cartoes?status=ATIVO'),api.get('/api/contexto/financeiro/pessoas?status=ATIVO'),api.get('/api/contexto/financeiro/categorias?status=ATIVO&tipo=DESPESA'),api.get('/api/contexto/financeiro/contatos?status=ATIVO')]);cartoes=cs;opt($('compra-cartao'),cs);opt($('compra-pessoa'),ps);opt($('compra-categoria'),cats);opt($('compra-parte'),partes,'Nenhuma');}
-function impacto(){const c=cartoes.find(x=>x.id===$('compra-cartao').value),v=Number($('compra-valor').value||0);$('impacto-limite').textContent=c?`Limite: ${moeda(c.limiteTotal)} · comprometido antes: ${moeda(c.limiteComprometido)} · depois: ${moeda(Number(c.limiteComprometido)+v)} · disponível: ${moeda(Number(c.limiteDisponivel)-v)}`:'';}
-async function listar(){const q=new URLSearchParams();if($('filtro-busca').value)q.set('busca',$('filtro-busca').value);if($('filtro-status').value)q.set('status',$('filtro-status').value);if($('filtro-competencia').value)q.set('competencia',$('filtro-competencia').value+'-01');const dados=await api.get('/api/contexto/financeiro/compras-cartao?'+q);$('compras-vazio').hidden=dados.length>0;$('compras-tbody').innerHTML=dados.map(c=>`<tr><td>${c.dataCompra}</td><td>${c.descricao}<details><summary>Ver parcelas</summary>${c.parcelas.map(p=>`${p.numero}/${p.totalParcelas}: ${moeda(p.valor)} — ${p.competencia} (${p.status})`).join('<br>')}</details></td><td>${c.cartaoNome}</td><td>${c.pessoaResponsavelNome}</td><td>${moeda(c.valorTotal)}</td><td>${c.quantidadeParcelas}</td><td>${c.status}</td><td>${c.status==='ATIVA'?`<button data-acao="cancelar" data-id="${c.id}">Cancelar</button> <button data-acao="estornar" data-id="${c.id}">Estornar</button>`:''}</td></tr>`).join('');atualizarResumo(dados);}
-async function atualizarResumo(){const r=await api.get('/api/contexto/financeiro/compras-cartao/resumo');$('resumo-total').textContent=moeda(r.totalComprado);$('resumo-limite').textContent=moeda(r.limiteTotalConsolidado);$('resumo-disponivel').textContent=moeda(r.limiteDisponivel);$('resumo-comprometido').textContent=moeda(r.limiteComprometido);}
-$('compra-form').addEventListener('submit',async e=>{e.preventDefault();try{const r=await api.post('/api/contexto/financeiro/compras-cartao',{cartaoId:$('compra-cartao').value,pessoaResponsavelId:$('compra-pessoa').value,categoriaId:$('compra-categoria').value,parteFinanceiraId:$('compra-parte').value||null,descricao:$('compra-descricao').value,dataCompra:$('compra-data').value,valorTotal:Number($('compra-valor').value),quantidadeParcelas:Number($('compra-parcelas').value),observacao:$('compra-observacao').value||null});mensagem(r.alertaLimiteSaudavel?'Compra registrada. Atenção: limite saudável ultrapassado.':'Compra registrada.');e.target.reset();$('compra-parcelas').value=1;await carregarCadastros();await listar();}catch(x){mensagem(x.message||'Não foi possível registrar.',true);}});
-$('compras-tbody').addEventListener('click',async e=>{const b=e.target.closest('button[data-acao]');if(!b)return;const motivo=prompt(`Motivo para ${b.dataset.acao}:`);if(!motivo)return;try{await api.post(`/api/contexto/financeiro/compras-cartao/${b.dataset.id}/${b.dataset.acao}`,{motivo});mensagem('Operação registrada.');await carregarCadastros();await listar();}catch(x){mensagem(x.message||'Operação não realizada.',true);}});$('compra-cartao').addEventListener('change',impacto);$('compra-valor').addEventListener('input',impacto);$('filtrar').addEventListener('click',listar);$('compra-data').value=new Date().toISOString().slice(0,10);Promise.all([carregarCadastros(),listar()]).catch(x=>mensagem(x.message||'Falha ao carregar.',true));})();
+(function () {
+	"use strict";
+
+	var api = window.CriatiApi;
+	var formatacao = window.FinanceiroFormatacao;
+	var cartoes = [];
+
+	function el(id) {
+		return document.getElementById(id);
+	}
+
+	function td(texto) {
+		var celula = document.createElement("td");
+		celula.textContent = texto == null || texto === "" ? "—" : texto;
+		return celula;
+	}
+
+	function option(valor, texto) {
+		var item = document.createElement("option");
+		item.value = valor;
+		item.textContent = texto;
+		return item;
+	}
+
+	function preencherSelect(id, itens, rotuloInicial) {
+		var campo = el(id);
+		campo.replaceChildren(option("", rotuloInicial || "Selecione"));
+		itens.forEach(function (item) {
+			campo.appendChild(option(item.id, item.nome));
+		});
+	}
+
+	function statusLabel(status) {
+		return {
+			ATIVA: "Ativa",
+			CANCELADA: "Cancelada",
+			ESTORNADA: "Estornada"
+		}[status] || status;
+	}
+
+	function mensagem(texto, erro) {
+		var aviso = el("compras-mensagem");
+		aviso.hidden = false;
+		aviso.textContent = texto;
+		aviso.className = "criati-alert " + (erro ? "criati-alert-error" : "criati-alert-success");
+	}
+
+	function destinoSelecionado() {
+		return document.querySelector('input[name="destinoCompra"]:checked').value;
+	}
+
+	function atualizarDestino() {
+		var terceiro = destinoSelecionado() === "TERCEIRO";
+		el("compra-parte-campo").hidden = !terceiro;
+		el("compra-parte").required = terceiro;
+		if (!terceiro) {
+			el("compra-parte").value = "";
+		}
+	}
+
+	function carregarCadastros() {
+		return Promise.all([
+			api.get("/api/contexto/financeiro/cartoes?status=ATIVO"),
+			api.get("/api/contexto/financeiro/pessoas?status=ATIVO"),
+			api.get("/api/contexto/financeiro/categorias?status=ATIVO&tipo=DESPESA"),
+			api.get("/api/contexto/financeiro/contatos?status=ATIVO")
+		]).then(function (resultados) {
+			cartoes = resultados[0].data || [];
+			preencherSelect("compra-cartao", cartoes, "Selecione");
+			preencherSelect("compra-pessoa", resultados[1].data || [], "Selecione");
+			preencherSelect("compra-categoria", resultados[2].data || [], "Selecione");
+			preencherSelect("compra-parte", resultados[3].data || [], "Selecione o terceiro");
+		});
+	}
+
+	function mostrarLimiteAtual() {
+		var cartao = cartoes.find(function (item) {
+			return item.id === el("compra-cartao").value;
+		});
+		el("impacto-limite").textContent = cartao
+			? "Limite informado pelo backend: " + formatacao.moeda(cartao.limiteTotal)
+				+ " · comprometido: " + formatacao.moeda(cartao.limiteComprometido)
+				+ " · disponível: " + formatacao.moeda(cartao.limiteDisponivel)
+			: "";
+	}
+
+	function filtros() {
+		var query = new URLSearchParams();
+		if (el("filtro-busca").value) query.set("busca", el("filtro-busca").value);
+		if (el("filtro-status").value) query.set("status", el("filtro-status").value);
+		if (el("filtro-competencia").value) query.set("competencia", el("filtro-competencia").value + "-01");
+		return query.toString();
+	}
+
+	function botao(texto, acao) {
+		var item = document.createElement("button");
+		item.type = "button";
+		item.className = "criati-btn criati-btn-ghost";
+		item.textContent = texto;
+		item.addEventListener("click", acao);
+		return item;
+	}
+
+	function renderizarCompras(compras) {
+		var corpo = el("compras-tbody");
+		corpo.replaceChildren();
+		compras.forEach(function (compra) {
+			var linha = document.createElement("tr");
+			linha.appendChild(td(formatacao.dataBr(compra.dataCompra)));
+			linha.appendChild(td(compra.descricao));
+			linha.appendChild(td(compra.cartaoNome));
+			linha.appendChild(td(compra.pessoaResponsavelNome));
+			linha.appendChild(td(compra.parteFinanceiraNome ? "Terceiro: " + compra.parteFinanceiraNome : "Residência"));
+			linha.appendChild(td(formatacao.moeda(compra.valorTotal)));
+			linha.appendChild(td(String(compra.quantidadeParcelas)));
+			linha.appendChild(td(statusLabel(compra.status)));
+			var acoes = document.createElement("td");
+			acoes.className = "criati-table-acoes";
+			acoes.appendChild(botao("Detalhes", function () { abrirDetalhes(compra); }));
+			if (compra.status === "ATIVA") {
+				acoes.appendChild(botao("Cancelar", function () { alterarStatus(compra, "cancelar"); }));
+				acoes.appendChild(botao("Estornar", function () { alterarStatus(compra, "estornar"); }));
+			}
+			linha.appendChild(acoes);
+			corpo.appendChild(linha);
+		});
+		el("compras-carregando").hidden = true;
+		el("compras-vazio").hidden = compras.length > 0;
+		el("compras-tabela-wrap").hidden = compras.length === 0;
+	}
+
+	function listar() {
+		el("compras-carregando").hidden = false;
+		var query = filtros();
+		return api.get("/api/contexto/financeiro/compras-cartao" + (query ? "?" + query : ""))
+			.then(function (resposta) {
+				renderizarCompras(resposta.data || []);
+				return atualizarResumo();
+			})
+			.catch(function (erro) {
+				el("compras-carregando").hidden = true;
+				mensagem(erro.message || "Não foi possível carregar as compras.", true);
+			});
+	}
+
+	function atualizarResumo() {
+		return api.get("/api/contexto/financeiro/compras-cartao/resumo").then(function (resposta) {
+			var resumo = resposta.data || {};
+			el("resumo-total").textContent = formatacao.moeda(resumo.totalComprado);
+			el("resumo-limite").textContent = formatacao.moeda(resumo.limiteTotalConsolidado);
+			el("resumo-comprometido").textContent = formatacao.moeda(resumo.limiteComprometido);
+			el("resumo-disponivel").textContent = formatacao.moeda(resumo.limiteDisponivel);
+		});
+	}
+
+	function dadosFormulario() {
+		return {
+			cartaoId: el("compra-cartao").value,
+			pessoaResponsavelId: el("compra-pessoa").value,
+			categoriaId: el("compra-categoria").value,
+			parteFinanceiraId: destinoSelecionado() === "TERCEIRO" ? el("compra-parte").value : null,
+			descricao: el("compra-descricao").value,
+			dataCompra: el("compra-data").value,
+			valorTotal: Number(el("compra-valor").value),
+			quantidadeParcelas: Number(el("compra-parcelas").value),
+			observacao: el("compra-observacao").value || null
+		};
+	}
+
+	function salvar(evento) {
+		evento.preventDefault();
+		var botaoSalvar = el("compra-salvar");
+		window.CriatiUI.setButtonLoading(botaoSalvar, true, "Registrando...");
+		api.post("/api/contexto/financeiro/compras-cartao", dadosFormulario())
+			.then(function (resposta) {
+				var resultado = resposta.data || {};
+				mensagem(resultado.alertaLimiteSaudavel
+					? "Compra registrada. Atenção: o limite saudável foi ultrapassado."
+					: "Compra registrada com sucesso.", false);
+				evento.target.reset();
+				el("compra-parcelas").value = "1";
+				el("compra-data").value = new Date().toISOString().slice(0, 10);
+				atualizarDestino();
+				mostrarLimiteAtual();
+				return Promise.all([carregarCadastros(), listar()]);
+			})
+			.catch(function (erro) {
+				mensagem(erro.message || "Não foi possível registrar a compra.", true);
+			})
+			.finally(function () {
+				window.CriatiUI.setButtonLoading(botaoSalvar, false);
+			});
+	}
+
+	function alterarStatus(compra, acao) {
+		var verbo = acao === "cancelar" ? "cancelar" : "estornar";
+		if (!window.confirm("Deseja " + verbo + " a compra “" + compra.descricao + "”? O histórico e as parcelas serão preservados.")) {
+			return;
+		}
+		var motivo = window.prompt("Informe o motivo:");
+		if (motivo == null) return;
+		if (!motivo.trim()) {
+			mensagem("Informe um motivo para concluir a operação.", true);
+			return;
+		}
+		api.post("/api/contexto/financeiro/compras-cartao/" + compra.id + "/" + acao, { motivo: motivo.trim() })
+			.then(function () {
+				mensagem(acao === "cancelar" ? "Compra cancelada." : "Compra estornada.", false);
+				return Promise.all([carregarCadastros(), listar()]);
+			})
+			.catch(function (erro) {
+				mensagem(erro.message || "Não foi possível concluir a operação.", true);
+			});
+	}
+
+	function adicionarDetalhe(lista, rotulo, valor) {
+		var termo = document.createElement("dt");
+		termo.textContent = rotulo;
+		var descricao = document.createElement("dd");
+		descricao.textContent = valor == null || valor === "" ? "—" : valor;
+		lista.append(termo, descricao);
+	}
+
+	function abrirDetalhes(compra) {
+		var lista = el("compra-detalhes-lista");
+		lista.replaceChildren();
+		adicionarDetalhe(lista, "Descrição", compra.descricao);
+		adicionarDetalhe(lista, "Data", formatacao.dataBr(compra.dataCompra));
+		adicionarDetalhe(lista, "Cartão", compra.cartaoNome);
+		adicionarDetalhe(lista, "Responsável", compra.pessoaResponsavelNome);
+		adicionarDetalhe(lista, "Categoria", compra.categoriaNome);
+		adicionarDetalhe(lista, "Destino", compra.parteFinanceiraNome ? "Terceiro: " + compra.parteFinanceiraNome : "Residência");
+		adicionarDetalhe(lista, "Valor total", formatacao.moeda(compra.valorTotal));
+		adicionarDetalhe(lista, "Status", statusLabel(compra.status));
+		adicionarDetalhe(lista, "Observação", compra.observacao);
+		adicionarDetalhe(lista, "Motivo do cancelamento", compra.motivoCancelamento);
+		adicionarDetalhe(lista, "Motivo do estorno", compra.motivoEstorno);
+
+		var corpo = el("compra-detalhes-parcelas");
+		corpo.replaceChildren();
+		compra.parcelas.forEach(function (parcela) {
+			var linha = document.createElement("tr");
+			linha.appendChild(td(parcela.numero + "/" + parcela.totalParcelas));
+			linha.appendChild(td(formatacao.moeda(parcela.valor)));
+			linha.appendChild(td(formatacao.dataBr(parcela.competencia)));
+			linha.appendChild(td(statusLabel(parcela.status)));
+			corpo.appendChild(linha);
+		});
+		el("compra-detalhes-modal").hidden = false;
+	}
+
+	function iniciar() {
+		document.querySelectorAll('input[name="destinoCompra"]').forEach(function (campo) {
+			campo.addEventListener("change", atualizarDestino);
+		});
+		el("compra-form").addEventListener("submit", salvar);
+		el("compra-cartao").addEventListener("change", mostrarLimiteAtual);
+		el("filtrar").addEventListener("click", listar);
+		el("compra-detalhes-fechar").addEventListener("click", function () {
+			el("compra-detalhes-modal").hidden = true;
+		});
+		el("compra-data").value = new Date().toISOString().slice(0, 10);
+		atualizarDestino();
+		Promise.all([carregarCadastros(), listar()]).catch(function (erro) {
+			mensagem(erro.message || "Não foi possível carregar os dados da tela.", true);
+		});
+	}
+
+	window.FinanceiroComprasCartao = { iniciar: iniciar };
+}());

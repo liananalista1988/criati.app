@@ -72,13 +72,28 @@
 		var status = document.createElement("span"); status.className = "criati-badge criati-badge-" + categoria.status.toLowerCase();
 		status.textContent = categoria.status === "ATIVO" ? "Ativa" : "Inativa";
 		var acoes = document.createElement("div"); acoes.className = "criati-table-acoes"; acoes.style.marginTop = "10px";
+		var detalhes = document.createElement("button"); detalhes.type = "button"; detalhes.className = "criati-btn criati-btn-ghost";
+		detalhes.textContent = "Detalhes"; detalhes.addEventListener("click", function () { abrirDetalhes(categoria); });
 		var editar = document.createElement("button"); editar.type = "button"; editar.className = "criati-btn criati-btn-ghost";
 		editar.textContent = "Editar"; editar.addEventListener("click", function () { abrirModal(categoria, categoria.tipo); });
 		var alternar = document.createElement("button"); alternar.type = "button"; alternar.className = "criati-btn criati-btn-ghost";
 		alternar.textContent = categoria.status === "ATIVO" ? "Inativar" : "Reativar";
 		alternar.addEventListener("click", function () { alternarStatus(categoria); });
-		acoes.appendChild(editar); acoes.appendChild(alternar);
+		acoes.appendChild(detalhes); acoes.appendChild(editar); acoes.appendChild(alternar);
 		linha.appendChild(nome); linha.appendChild(detalhe); linha.appendChild(status); linha.appendChild(acoes); return linha;
+	}
+
+	function abrirDetalhes(categoria) {
+		window.FinanceiroDetalhes.abrir("Detalhes da categoria", [
+			["Nome", categoria.nome],
+			["Natureza", categoria.tipo === "RECEITA" ? "Receita" : "Despesa"],
+			["Descrição", categoria.descricao],
+			["Categoria superior", categoria.categoriaPaiNome],
+			["Nível", categoria.nivel],
+			["Ordem", categoria.ordem],
+			["Permite orçamento", categoria.permiteOrcamento ? "Sim" : "Não"],
+			["Status", categoria.status === "ATIVO" ? "Ativa" : "Inativa"]
+		]);
 	}
 
 	function alternarStatus(categoria) {

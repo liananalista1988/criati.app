@@ -86,6 +86,14 @@
 	}
 	function botao(texto, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "criati-btn criati-btn-ghost"; b.textContent = texto; b.addEventListener("click", fn); return b; }
 	function acoes(l) { var td = document.createElement("td"); td.className = "criati-table-acoes";
+		td.appendChild(botao("Detalhes", function () { window.FinanceiroDetalhes.abrir("Detalhes do lançamento", [
+			["Descrição", l.descricao], ["Natureza", l.tipo === "RECEITA" ? "Receita" : "Despesa"],
+			["Valor", window.FinanceiroFormatacao.moeda(l.valor)], ["Competência", window.FinanceiroFormatacao.dataBr(l.dataCompetencia)],
+			["Vencimento", window.FinanceiroFormatacao.dataBr(l.dataVencimento)], ["Liquidação", window.FinanceiroFormatacao.dataBr(l.dataLiquidacao)],
+			["Conta", l.contaNome], ["Categoria", l.categoriaNome], ["Pessoa", l.pessoaFinanceiraNome],
+			["Forma de pagamento", l.formaPagamento], ["Origem", l.origem], ["Observação", l.observacao],
+			["Status", l.vencido ? "Vencido" : (STATUS_LABEL[l.status] || l.status)]
+		]); }));
 		if (l.status === "PENDENTE") { td.appendChild(botao("Editar", function () { abrirEdicao(l); })); td.appendChild(botao("Liquidar", function () { abrirLiquidacao(l); })); }
 		if (l.status === "LIQUIDADO" || l.status === "PAGO") { td.appendChild(botao("Editar", function () { abrirEdicao(l); })); td.appendChild(botao("Desliquidar", function () { desliquidar(l); })); }
 		if (l.status !== "CANCELADO") td.appendChild(botao("Cancelar", function () { cancelar(l); })); return td; }

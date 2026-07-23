@@ -174,6 +174,16 @@
 
 	function acoesOcorrencia(o) {
 		var td = document.createElement("td"); td.className = "criati-table-acoes";
+		td.appendChild(botao("Detalhes", function () { window.FinanceiroDetalhes.abrir("Detalhes da conta a pagar", [
+			["Descrição", o.descricao], ["Competência", window.FinanceiroFormatacao.competenciaLabel(o.competencia)],
+			["Vencimento", window.FinanceiroFormatacao.dataBr(o.vencimento)],
+			["Valor principal", window.FinanceiroFormatacao.moeda(o.valorPrincipal)],
+			["Juros", window.FinanceiroFormatacao.moeda(o.juros)], ["Multa", window.FinanceiroFormatacao.moeda(o.multa)],
+			["Desconto", window.FinanceiroFormatacao.moeda(o.desconto)], ["Valor total", window.FinanceiroFormatacao.moeda(o.valorTotal)],
+			["Valor pago", window.FinanceiroFormatacao.moeda(o.valorPago)], ["Saldo pendente", window.FinanceiroFormatacao.moeda(o.saldoPendente)],
+			["Pessoa", o.pessoaFinanceiraNome], ["Contato", o.parteFinanceiraNome], ["Categoria", o.categoriaNome],
+			["Conta prevista", o.contaPrevistaNome], ["Observação", o.observacao], ["Status", STATUS_LABEL[o.status] || o.status]
+		]); }));
 		if (o.status !== "PAGA" && o.status !== "CANCELADA") {
 			td.appendChild(botao("Pagar", function () { abrirPagamento(o); }));
 		}
@@ -385,6 +395,13 @@
 		tr.appendChild(celula(c.categoriaNome));
 		tr.appendChild(celula(c.ativo ? "Ativo" : "Inativo"));
 		var acoes = document.createElement("td"); acoes.className = "criati-table-acoes";
+		acoes.appendChild(botao("Detalhes", function () { window.FinanceiroDetalhes.abrir("Detalhes do compromisso", [
+			["Descrição", c.descricao], ["Tipo de valor", TIPO_VALOR_LABEL[c.tipoValor] || c.tipoValor],
+			["Valor padrão", window.FinanceiroFormatacao.moeda(c.valorPadrao)], ["Dia de vencimento", c.diaVencimentoPadrao],
+			["Pessoa", c.pessoaFinanceiraNome], ["Contato", c.parteFinanceiraNome], ["Categoria", c.categoriaNome],
+			["Conta padrão", c.contaPadraoNome], ["Recorrência", c.recorrenciaDescricao],
+			["Forma de pagamento", c.formaPagamentoPadrao], ["Observação", c.observacao], ["Situação", c.ativo ? "Ativo" : "Inativo"]
+		]); }));
 		acoes.appendChild(botao("Editar", function () { abrirEdicaoCompromisso(c); }));
 		if (c.recorrenciaId) {
 			acoes.appendChild(botao("Gerar ocorrencia", function () { gerarOcorrenciaPorCompromisso(c); }));

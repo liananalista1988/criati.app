@@ -123,6 +123,14 @@ public class PaginaController {
 		return "app/financeiro-compras-cartao";
 	}
 
+	@GetMapping("/app/financeiro/parcelas-cartao")
+	public String financeiroParcelasCartao(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		return "app/financeiro-parcelas-cartao";
+	}
+
 	@GetMapping("/app/financeiro/contas-a-pagar")
 	public String financeiroContasAPagar(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {

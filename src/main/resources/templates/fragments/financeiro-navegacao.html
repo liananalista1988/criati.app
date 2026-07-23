@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<nav
+		th:fragment="navegacao(paginaAtiva)"
+		class="financeiro-navegacao"
+		aria-label="Navegação do Financeiro LeS">
+		<a th:classappend="${paginaAtiva == 'visao-geral'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'visao-geral'} ? 'page' : null"
+			href="/app/financeiro">Visão geral</a>
+		<a th:classappend="${paginaAtiva == 'pessoas'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'pessoas'} ? 'page' : null"
+			href="/app/financeiro/pessoas">Pessoas</a>
+		<a th:classappend="${paginaAtiva == 'contatos'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'contatos'} ? 'page' : null"
+			href="/app/financeiro/contatos">Contatos</a>
+		<a th:classappend="${paginaAtiva == 'contas'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'contas'} ? 'page' : null"
+			href="/app/financeiro/contas">Contas</a>
+		<a th:classappend="${paginaAtiva == 'categorias'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'categorias'} ? 'page' : null"
+			href="/app/financeiro/categorias">Categorias</a>
+		<a th:classappend="${paginaAtiva == 'lancamentos'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'lancamentos'} ? 'page' : null"
+			href="/app/financeiro/lancamentos">Lançamentos</a>
+		<a th:classappend="${paginaAtiva == 'recorrencias'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'recorrencias'} ? 'page' : null"
+			href="/app/financeiro/recorrencias">Recorrências</a>
+		<a th:classappend="${paginaAtiva == 'contas-a-pagar'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'contas-a-pagar'} ? 'page' : null"
+			href="/app/financeiro/contas-a-pagar">Contas a pagar</a>
+		<a th:classappend="${paginaAtiva == 'cartoes'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'cartoes'} ? 'page' : null"
+			href="/app/financeiro/cartoes">Cartões</a>
+		<a th:classappend="${paginaAtiva == 'compras'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'compras'} ? 'page' : null"
+			href="/app/financeiro/compras-cartao">Compras</a>
+		<a th:classappend="${paginaAtiva == 'parcelas'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'parcelas'} ? 'page' : null"
+			href="/app/financeiro/parcelas-cartao">Parcelas</a>
+	</nav>
+</body>
+</html>
