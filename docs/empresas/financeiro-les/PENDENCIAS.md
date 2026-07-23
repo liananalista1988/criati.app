@@ -171,6 +171,15 @@ pode fornecer, não decisões de arquitetura ou de regra. Mantidas integralmente
   de comprovante foi adicionado ao modelo de dados de `ocorrencia_compromisso`/
   `pagamento_ocorrencia_compromisso` nesta entrega; ver
   `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-007.md`, seção "Comprovantes".
+- **Risco real encontrado na LES-TECH-001: Docker/Docker Desktop indisponível neste ambiente de
+  execução.** A tarefa entregou ambiente Docker Compose, perfil Spring isolado, scripts (`subir.cmd`/
+  `parar.cmd`/`validar.cmd`) e consultas de diagnóstico (`verificacoes.sql`) para validar as migrations
+  `V1`-`V12` contra PostgreSQL real, mas **nenhuma execução real foi possível** (`docker`/`docker compose`
+  ausentes tanto no Git Bash quanto no PowerShell). As migrations continuam validadas apenas indiretamente
+  (schema gerado pelo Hibernate a partir das entidades, usado pelos testes JPA em H2) — nunca contra
+  PostgreSQL real. Isso permanece uma pendência genuína até que alguém rode
+  `scripts\postgresql\validar.cmd` em uma máquina com Docker Desktop instalado e reporte o resultado. Ver
+  `docs/empresas/financeiro-les/VALIDACAO-POSTGRESQL.md` para o procedimento completo.
 
 ## Pendências de navegação e experiência (LES-F1-004)
 
