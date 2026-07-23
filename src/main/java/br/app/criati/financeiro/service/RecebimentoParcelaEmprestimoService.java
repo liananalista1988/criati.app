@@ -14,6 +14,7 @@ import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.ContaFinanceiraInativaException;
 import br.app.criati.exception.ContaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.DadosInvalidosException;
+import br.app.criati.exception.ParcelaEmprestimoNaoEncontradaException;
 import br.app.criati.exception.ParcelaEmprestimoStatusInvalidoException;
 import br.app.criati.exception.RecebimentoParcelaEmprestimoNaoEncontradoException;
 import br.app.criati.exception.RecebimentoParcelaEmprestimoStatusInvalidoException;
@@ -25,6 +26,7 @@ import br.app.criati.financeiro.model.ParcelaEmprestimo;
 import br.app.criati.financeiro.model.RecebimentoParcelaEmprestimo;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
 import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
+import br.app.criati.financeiro.repository.ParcelaEmprestimoRepository;
 import br.app.criati.financeiro.repository.RecebimentoParcelaEmprestimoRepository;
 import br.app.criati.shared.enums.FormaPagamentoLancamento;
 import br.app.criati.shared.enums.PerfilUsuario;
@@ -48,17 +50,19 @@ public class RecebimentoParcelaEmprestimoService {
 
 	private final RecebimentoParcelaEmprestimoRepository recebimentoRepository;
 	private final ParcelaEmprestimoService parcelaEmprestimoService;
+	private final ParcelaEmprestimoRepository parcelaRepository;
 	private final ContaFinanceiraRepository contaRepository;
 	private final LancamentoFinanceiroRepository lancamentoRepository;
 	private final EncargosEmprestimoService encargosService;
 	private final UsuarioRepository usuarioRepository;
 
 	public RecebimentoParcelaEmprestimoService(RecebimentoParcelaEmprestimoRepository recebimentoRepository,
-			ParcelaEmprestimoService parcelaEmprestimoService, ContaFinanceiraRepository contaRepository,
-			LancamentoFinanceiroRepository lancamentoRepository, EncargosEmprestimoService encargosService,
-			UsuarioRepository usuarioRepository) {
+			ParcelaEmprestimoService parcelaEmprestimoService, ParcelaEmprestimoRepository parcelaRepository,
+			ContaFinanceiraRepository contaRepository, LancamentoFinanceiroRepository lancamentoRepository,
+			EncargosEmprestimoService encargosService, UsuarioRepository usuarioRepository) {
 		this.recebimentoRepository = recebimentoRepository;
 		this.parcelaEmprestimoService = parcelaEmprestimoService;
+		this.parcelaRepository = parcelaRepository;
 		this.contaRepository = contaRepository;
 		this.lancamentoRepository = lancamentoRepository;
 		this.encargosService = encargosService;
@@ -124,10 +128,25 @@ public class RecebimentoParcelaEmprestimoService {
 		return recebimento;
 	}
 
+	/**
+	 * Carrega a parcela com PESSIMISTIC_WRITE (findForUpdateByIdAndEmpresaId) —
+	 * unico ponto de leitura da parcela em todo o fluxo de recebimento
+	 * (receberIntegral/receberParcial). A partir daqui, dentro da mesma
+	 * transacao @Transactional do metodo publico chamador, a linha fica
+	 * bloqueada ate o commit: uma segunda requisicao concorrente para a mesma
+	 * parcela (double-click, retry de rede) fica bloqueada nesta mesma leitura
+	 * e, ao ser liberada, ve o saldo ja atualizado pela primeira — nunca gera
+	 * um segundo recebimento/lancamento sobre saldo que ja foi consumido.
+	 * Nao usado por estornar() (fora do escopo desta tarefa).
+	 */
 	private ParcelaEmprestimo prepararParaRecebimento(UUID parcelaId, LocalDate dataRecebimento,
 			ContextoEmpresaAtual contexto) {
 		parcelaEmprestimoService.exigirEscritaEmprestimo(contexto);
-		ParcelaEmprestimo parcela = parcelaEmprestimoService.buscarDaEmpresa(parcelaId, contexto.empresaId());
+		if (parcelaId == null) {
+			throw new ParcelaEmprestimoNaoEncontradaException();
+		}
+		ParcelaEmprestimo parcela = parcelaRepository.findForUpdateByIdAndEmpresaId(parcelaId, contexto.empresaId())
+				.orElseThrow(ParcelaEmprestimoNaoEncontradaException::new);
 		if (parcela.getStatus() == StatusParcelaEmprestimo.CANCELADO) {
 			throw new ParcelaEmprestimoStatusInvalidoException("Parcela cancelada nao pode receber pagamento");
 		}

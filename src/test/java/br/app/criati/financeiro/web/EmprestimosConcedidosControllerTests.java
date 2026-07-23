@@ -1,5 +1,6 @@
 package br.app.criati.financeiro.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -489,6 +490,194 @@ class EmprestimosConcedidosControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.totalPrincipal").value(150.00))
 				.andExpect(jsonPath("$.quantidadePendente").value(2));
+	}
+
+	/* ==================== CRIATI-FIN-010A: CONCORRENCIA E REGRESSAO ==================== */
+
+	@Test
+	void parcelaQuitadaRejeitaNovoRecebimento() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("92222222000601");
+		ContaFinanceira conta = criarConta(empresa);
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Emprestimos", TipoFinanceiro.RECEITA);
+		Usuario admin = criarUsuario("emp.quitada.rejeita@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+		String emprestimoId = criarEmprestimoUnico(session, categoria, parte, "80.00", "2026-08-01");
+		String parcelaId = buscarPrimeiraParcela(session, emprestimoId);
+
+		mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-integral").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","dataRecebimento":"2026-08-20"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get(PARCELAS + "/" + parcelaId).session(session))
+				.andExpect(jsonPath("$.status").value("PAGO"));
+
+		// Parcela ja quitada: nem integral nem parcial podem gerar um novo recebimento.
+		mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-integral").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","dataRecebimento":"2026-08-21"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isConflict());
+
+		mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-parcial").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":1.00,"dataRecebimento":"2026-08-21"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isBadRequest());
+
+		mockMvc.perform(get(PARCELAS + "/" + parcelaId + "/recebimentos").session(session))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+	}
+
+	@Test
+	void segundoRecebimentoRespeitaSaldoAposPrimeiraLiquidacaoParcial() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("92222222000602");
+		ContaFinanceira conta = criarConta(empresa);
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Emprestimos", TipoFinanceiro.RECEITA);
+		Usuario admin = criarUsuario("emp.saldo.pos.parcial@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+		String emprestimoId = criarEmprestimoUnico(session, categoria, parte, "100.00", "2026-08-01");
+		String parcelaId = buscarPrimeiraParcela(session, emprestimoId);
+
+		// Primeira liquidacao parcial consome 60 dos 100: saldo cai para 40.
+		mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-parcial").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":60.00,"dataRecebimento":"2026-08-05"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get(PARCELAS + "/" + parcelaId).session(session))
+				.andExpect(jsonPath("$.saldoPendente").value(40.00));
+
+		// 60.00 cabia no saldo ORIGINAL (100) mas nao cabe mais no saldo ATUAL (40):
+		// a segunda liquidacao deve respeitar o saldo recalculado, nao o original.
+		mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-parcial").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":60.00,"dataRecebimento":"2026-08-10"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isBadRequest());
+
+		// 40.00 cabe exatamente no saldo atual e quita a parcela.
+		mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-parcial").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":40.00,"dataRecebimento":"2026-08-10"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get(PARCELAS + "/" + parcelaId).session(session))
+				.andExpect(jsonPath("$.status").value("PAGO"))
+				.andExpect(jsonPath("$.saldoPendente").value(0.00));
+	}
+
+	@Test
+	void cadaRecebimentoGeraLancamentoFinanceiroDistintoEExclusivo() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("92222222000603");
+		ContaFinanceira conta = criarConta(empresa);
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Emprestimos", TipoFinanceiro.RECEITA);
+		Usuario admin = criarUsuario("emp.lancamento.exclusivo@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+		String emprestimoId = criarEmprestimoUnico(session, categoria, parte, "200.00", "2026-08-01");
+		String parcelaId = buscarPrimeiraParcela(session, emprestimoId);
+
+		MvcResult primeiro = mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-parcial").session(session)
+				.with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":120.00,"dataRecebimento":"2026-08-05"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated()).andReturn();
+		MvcResult segundo = mockMvc.perform(post(PARCELAS + "/" + parcelaId + "/receber-parcial").session(session)
+				.with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":80.00,"dataRecebimento":"2026-08-10"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated()).andReturn();
+
+		String lancamento1 = com.jayway.jsonpath.JsonPath.read(primeiro.getResponse().getContentAsString(),
+				"$.lancamentoFinanceiroId");
+		String lancamento2 = com.jayway.jsonpath.JsonPath.read(segundo.getResponse().getContentAsString(),
+				"$.lancamentoFinanceiroId");
+
+		assertThat(lancamento1).isNotNull();
+		assertThat(lancamento2).isNotNull();
+		assertThat(lancamento1).isNotEqualTo(lancamento2);
+
+		mockMvc.perform(get(PARCELAS + "/" + parcelaId + "/recebimentos").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].lancamentoFinanceiroId").exists())
+				.andExpect(jsonPath("$[1].lancamentoFinanceiroId").exists());
+	}
+
+	@Test
+	void parcelasProximasDoVencimentoSaoListadas() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("92222222000604");
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Emprestimos", TipoFinanceiro.RECEITA);
+		Usuario admin = criarUsuario("emp.proximas.vencimento@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+
+		// Vencimento = dataConcessao + 1 mes. Usa a data real do sistema para que o
+		// teste continue valido independentemente de quando for executado: uma
+		// parcela vencendo daqui a 2 dias (dentro da janela padrao de 3 dias de
+		// antecedencia) e outra vencendo daqui a 20 dias (fora da janela).
+		LocalDate hoje = LocalDate.now();
+		String dataConcessaoProxima = hoje.plusDays(2).minusMonths(1).toString();
+		String dataConcessaoDistante = hoje.plusDays(20).minusMonths(1).toString();
+		String emprestimoProximo = criarEmprestimoUnico(session, categoria, parte, "70.00", dataConcessaoProxima);
+		criarEmprestimoUnico(session, categoria, parte, "90.00", dataConcessaoDistante);
+		String parcelaProximaId = buscarPrimeiraParcela(session, emprestimoProximo);
+
+		mockMvc.perform(get(PARCELAS + "/proximas-vencimento").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].id").value(parcelaProximaId))
+				.andExpect(jsonPath("$[0].valorPrincipal").value(70.00));
+	}
+
+	@Test
+	void resumoRetornaTotalRecebidoESaldoAReceberComValoresConcretos() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("92222222000605");
+		ContaFinanceira conta = criarConta(empresa);
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Emprestimos", TipoFinanceiro.RECEITA);
+		Usuario admin = criarUsuario("emp.resumo.valores@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+		String emprestimo1 = criarEmprestimoUnico(session, categoria, parte, "300.00", "2026-08-01");
+		String emprestimo2 = criarEmprestimoUnico(session, categoria, parte, "100.00", "2026-08-05");
+		String parcela1 = buscarPrimeiraParcela(session, emprestimo1);
+
+		// Recebe 120.00 dos 300.00 do primeiro emprestimo; o segundo (100.00) fica
+		// inteiramente em aberto. Total principal = 400.00, total recebido = 120.00,
+		// saldo a receber = 280.00 (300-120 + 100).
+		mockMvc.perform(post(PARCELAS + "/" + parcela1 + "/receber-parcial").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":120.00,"dataRecebimento":"2026-08-10"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get(PARCELAS + "/resumo").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalPrincipal").value(400.00))
+				.andExpect(jsonPath("$.totalRecebido").value(120.00))
+				.andExpect(jsonPath("$.saldoAReceber").value(280.00))
+				.andExpect(jsonPath("$.quantidadeParcialmentePaga").value(1))
+				.andExpect(jsonPath("$.quantidadePendente").value(1));
 	}
 
 	/* ==================== SEGURANCA / MULTIEMPRESA ==================== */
