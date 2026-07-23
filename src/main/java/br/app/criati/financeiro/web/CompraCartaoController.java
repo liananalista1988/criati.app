@@ -1,0 +1,14 @@
+package br.app.criati.financeiro.web;
+import java.time.LocalDate; import java.util.*; import org.springframework.http.*; import org.springframework.security.core.annotation.AuthenticationPrincipal; import org.springframework.web.bind.annotation.*;
+import br.app.criati.financeiro.service.*; import br.app.criati.security.UsuarioPrincipal; import br.app.criati.shared.enums.StatusCompraCartao; import br.app.criati.tenant.ContextoEmpresaAtual; import jakarta.servlet.http.HttpSession; import jakarta.validation.Valid;
+@RestController @RequestMapping("/api/contexto/financeiro/compras-cartao") public class CompraCartaoController{
+ private final CompraCartaoService service; private final ContextoFinanceiroService contexto;
+ public CompraCartaoController(CompraCartaoService s,ContextoFinanceiroService c){service=s;contexto=c;}
+ @GetMapping public List<CompraCartaoResponse> listar(@RequestParam(required=false)UUID cartaoId,@RequestParam(required=false)UUID titularId,@RequestParam(required=false)UUID categoriaId,@RequestParam(required=false)LocalDate competencia,@RequestParam(required=false)StatusCompraCartao status,@RequestParam(required=false)String busca,HttpSession session,@AuthenticationPrincipal UsuarioPrincipal p){return service.listar(ctx(session,p),cartaoId,titularId,categoriaId,competencia,status,busca).stream().map(CompraCartaoResponse::from).toList();}
+ @GetMapping("/resumo") public ResumoComprasCartaoResponse resumo(HttpSession s,@AuthenticationPrincipal UsuarioPrincipal p){return ResumoComprasCartaoResponse.from(service.resumir(ctx(s,p)));}
+ @GetMapping("/{id}") public CompraCartaoResponse buscar(@PathVariable UUID id,HttpSession s,@AuthenticationPrincipal UsuarioPrincipal p){return CompraCartaoResponse.from(service.buscar(id,ctx(s,p)));}
+ @PostMapping public ResponseEntity<ResultadoCompraCartaoResponse> criar(@Valid @RequestBody CompraCartaoRequest r,HttpSession s,@AuthenticationPrincipal UsuarioPrincipal p){var x=service.criar(r.cartaoId(),r.pessoaResponsavelId(),r.categoriaId(),r.parteFinanceiraId(),r.descricao(),r.dataCompra(),r.valorTotal(),r.quantidadeParcelas(),r.observacao(),ctx(s,p));return ResponseEntity.status(HttpStatus.CREATED).body(ResultadoCompraCartaoResponse.from(x));}
+ @PostMapping("/{id}/cancelar") public CompraCartaoResponse cancelar(@PathVariable UUID id,@Valid @RequestBody MotivoCompraCartaoRequest r,HttpSession s,@AuthenticationPrincipal UsuarioPrincipal p){return CompraCartaoResponse.from(service.cancelar(id,r.motivo(),ctx(s,p)));}
+ @PostMapping("/{id}/estornar") public CompraCartaoResponse estornar(@PathVariable UUID id,@Valid @RequestBody MotivoCompraCartaoRequest r,HttpSession s,@AuthenticationPrincipal UsuarioPrincipal p){return CompraCartaoResponse.from(service.estornar(id,r.motivo(),ctx(s,p)));}
+ private ContextoEmpresaAtual ctx(HttpSession s,UsuarioPrincipal p){return contexto.exigirAcesso(s,p.getUsuario().getId());}
+}

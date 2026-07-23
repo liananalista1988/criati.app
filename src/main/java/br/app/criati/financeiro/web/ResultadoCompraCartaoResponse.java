@@ -1,0 +1,2 @@
+package br.app.criati.financeiro.web; import java.math.BigDecimal; import br.app.criati.financeiro.service.CompraCartaoService.ResultadoCompra;
+public record ResultadoCompraCartaoResponse(CompraCartaoResponse compra,BigDecimal limiteAntes,BigDecimal limiteDepois,BigDecimal limiteDisponivel,boolean alertaLimiteSaudavel){public static ResultadoCompraCartaoResponse from(ResultadoCompra r){return new ResultadoCompraCartaoResponse(CompraCartaoResponse.from(r.compra()),r.limiteAntes(),r.limiteDepois(),r.limiteDisponivel(),r.alertaLimiteSaudavel());}}

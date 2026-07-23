@@ -130,6 +130,7 @@ public class CartaoCreditoController {
 
 	private CartaoCreditoResponse paraResponse(CartaoCredito cartao) {
 		long quantidadeVirtuais = cartao.ehPrincipal() ? cartaoService.contarVirtuais(cartao.getId()) : 0;
-		return CartaoCreditoResponse.from(cartao, quantidadeVirtuais, cartaoService.possuiPossivelDuplicidade(cartao));
+		return CartaoCreditoResponse.from(cartao, quantidadeVirtuais, cartaoService.possuiPossivelDuplicidade(cartao),
+				cartaoService.limiteComprometido(cartao));
 	}
 }
