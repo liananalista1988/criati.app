@@ -25,6 +25,8 @@ import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.financeiro.model.CartaoCredito;
 import br.app.criati.financeiro.model.InstituicaoFinanceira;
 import br.app.criati.financeiro.repository.CartaoCreditoRepository;
+import br.app.criati.financeiro.repository.CompraCartaoRepository;
+import br.app.criati.shared.enums.StatusCompraCartao;
 import br.app.criati.financeiro.shared.model.PessoaFinanceira;
 import br.app.criati.financeiro.shared.repository.PessoaFinanceiraRepository;
 import br.app.criati.shared.enums.Bandeira;
@@ -50,15 +52,17 @@ public class CartaoCreditoService {
 	private final InstituicaoFinanceiraService instituicaoService;
 	private final EmpresaRepository empresaRepository;
 	private final UsuarioRepository usuarioRepository;
+	private final CompraCartaoRepository compraRepository;
 
 	public CartaoCreditoService(CartaoCreditoRepository cartaoRepository, PessoaFinanceiraRepository pessoaRepository,
 			InstituicaoFinanceiraService instituicaoService, EmpresaRepository empresaRepository,
-			UsuarioRepository usuarioRepository) {
+			UsuarioRepository usuarioRepository, CompraCartaoRepository compraRepository) {
 		this.cartaoRepository = cartaoRepository;
 		this.pessoaRepository = pessoaRepository;
 		this.instituicaoService = instituicaoService;
 		this.empresaRepository = empresaRepository;
 		this.usuarioRepository = usuarioRepository;
+		this.compraRepository = compraRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -115,7 +119,9 @@ public class CartaoCreditoService {
 		List<CartaoCredito> principaisAtivos = ativos.stream().filter(CartaoCredito::ehPrincipal).toList();
 		BigDecimal limiteTotal = somar(principaisAtivos, CartaoCredito::getLimiteTotal);
 		BigDecimal limiteSaudavel = somar(principaisAtivos, CartaoCredito::getLimiteSaudavel);
-		BigDecimal limiteDisponivel = somar(principaisAtivos, CartaoCredito::getLimiteDisponivelEfetivo);
+		BigDecimal limiteComprometido = principaisAtivos.stream().map(this::limiteComprometido)
+				.reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
+		BigDecimal limiteDisponivel = limiteTotal.subtract(limiteComprometido);
 		Map<UUID, Long> porTitularQtd = new LinkedHashMap<>();
 		Map<UUID, String> porTitularNome = new LinkedHashMap<>();
 		Map<UUID, Long> porInstituicaoQtd = new LinkedHashMap<>();
@@ -134,6 +140,14 @@ public class CartaoCreditoService {
 				.toList();
 		return new ResumoCartoesCredito(ativos.size(), fisicos, virtuais, bloqueados, limiteTotal, limiteSaudavel,
 				limiteDisponivel, porTitular, porInstituicao);
+	}
+
+	@Transactional(readOnly = true)
+	public BigDecimal limiteComprometido(CartaoCredito cartao) {
+		CartaoCredito principal = cartao.ehVirtual() ? cartao.getCartaoPrincipal() : cartao;
+		BigDecimal valor = compraRepository.somarComprometido(cartao.getEmpresa().getId(), principal.getId(),
+				StatusCompraCartao.ATIVA);
+		return (valor == null ? BigDecimal.ZERO : valor).setScale(2, RoundingMode.HALF_UP);
 	}
 
 	@Transactional

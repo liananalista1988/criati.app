@@ -19,12 +19,18 @@ public record CartaoCreditoResponse(UUID id, String nome, UUID titularId, String
 
 	public static CartaoCreditoResponse from(CartaoCredito c, long quantidadeCartoesVirtuais,
 			boolean possivelDuplicidade) {
+		return from(c, quantidadeCartoesVirtuais, possivelDuplicidade, c.getLimiteComprometidoEfetivo());
+	}
+
+	public static CartaoCreditoResponse from(CartaoCredito c, long quantidadeCartoesVirtuais,
+			boolean possivelDuplicidade, BigDecimal limiteComprometido) {
+		BigDecimal disponivel = c.getLimiteTotalEfetivo() == null ? null : c.getLimiteTotalEfetivo().subtract(limiteComprometido);
 		return new CartaoCreditoResponse(c.getId(), c.getNome(), c.getTitular().getId(), c.getTitular().getNome(),
 				c.getInstituicao().getId(), c.getInstituicao().getNome(), c.getTipo(),
 				c.getCartaoPrincipal() == null ? null : c.getCartaoPrincipal().getId(),
 				c.getCartaoPrincipal() == null ? null : c.getCartaoPrincipal().getNome(), c.getBandeira(),
 				c.getUltimosQuatroDigitos(), c.getLimiteTotalEfetivo(), c.getLimiteSaudavelEfetivo(),
-				c.getLimiteComprometidoEfetivo(), c.getLimiteDisponivelEfetivo(), c.getDiaFechamentoEfetivo(),
+				limiteComprometido, disponivel, c.getDiaFechamentoEfetivo(),
 				c.getDiaVencimentoEfetivo(), c.getStatus(), c.isBloqueado(), c.estaBloqueadoEfetivo(),
 				c.getMotivoBloqueio(), quantidadeCartoesVirtuais, possivelDuplicidade, c.getObservacao(),
 				c.getCriadoEm(), c.getAtualizadoEm(), c.getCriadoPor() == null ? null : c.getCriadoPor().getId(),

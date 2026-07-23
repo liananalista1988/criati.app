@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 import br.app.criati.financeiro.model.CartaoCredito;
 import br.app.criati.shared.enums.StatusCadastro;
@@ -17,6 +19,9 @@ public interface CartaoCreditoRepository extends JpaRepository<CartaoCredito, UU
 	List<CartaoCredito> findAllByEmpresaIdAndStatus(UUID empresaId, StatusCadastro status);
 
 	Optional<CartaoCredito> findByIdAndEmpresaId(UUID id, UUID empresaId);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	Optional<CartaoCredito> findForUpdateByIdAndEmpresaId(UUID id, UUID empresaId);
 
 	List<CartaoCredito> findAllByEmpresaIdAndTitularId(UUID empresaId, UUID titularId);
 
