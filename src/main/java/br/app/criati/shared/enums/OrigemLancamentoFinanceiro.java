@@ -8,5 +8,6 @@ public enum OrigemLancamentoFinanceiro {
 	FATURA,
 	CONCILIACAO,
 	SISTEMA,
-	CONTA_A_PAGAR
+	CONTA_A_PAGAR,
+	EMPRESTIMO_CONCEDIDO
 }

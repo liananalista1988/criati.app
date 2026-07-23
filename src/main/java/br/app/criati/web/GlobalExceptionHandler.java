@@ -33,6 +33,8 @@ import br.app.criati.exception.EmailJaCadastradoException;
 import br.app.criati.exception.EmpresaInativaException;
 import br.app.criati.exception.EmpresaNaoEncontradaException;
 import br.app.criati.exception.EmpresaStatusInvalidoException;
+import br.app.criati.exception.EmprestimoConcedidoNaoEncontradoException;
+import br.app.criati.exception.EmprestimoConcedidoStatusInvalidoException;
 import br.app.criati.exception.FinanceiroStatusInvalidoException;
 import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.LancamentoStatusInvalidoException;
@@ -41,9 +43,13 @@ import br.app.criati.exception.OcorrenciaCompromissoNaoEncontradaException;
 import br.app.criati.exception.OcorrenciaCompromissoStatusInvalidoException;
 import br.app.criati.exception.PagamentoOcorrenciaNaoEncontradoException;
 import br.app.criati.exception.PagamentoOcorrenciaStatusInvalidoException;
+import br.app.criati.exception.ParcelaEmprestimoNaoEncontradaException;
+import br.app.criati.exception.ParcelaEmprestimoStatusInvalidoException;
 import br.app.criati.exception.ParteFinanceiraNaoEncontradaException;
 import br.app.criati.exception.PessoaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.PessoaFinanceiraInativaException;
+import br.app.criati.exception.RecebimentoParcelaEmprestimoNaoEncontradoException;
+import br.app.criati.exception.RecebimentoParcelaEmprestimoStatusInvalidoException;
 import br.app.criati.exception.RecorrenciaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.RecorrenciaFinanceiraStatusInvalidoException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
@@ -114,7 +120,10 @@ public class GlobalExceptionHandler {
 			RecorrenciaFinanceiraStatusInvalidoException.class,
 			OcorrenciaCompromissoStatusInvalidoException.class,
 			PagamentoOcorrenciaStatusInvalidoException.class,
-			CartaoCreditoStatusInvalidoException.class
+			CartaoCreditoStatusInvalidoException.class,
+			EmprestimoConcedidoStatusInvalidoException.class,
+			ParcelaEmprestimoStatusInvalidoException.class,
+			RecebimentoParcelaEmprestimoStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -137,7 +146,10 @@ public class GlobalExceptionHandler {
 			CompromissoFinanceiroNaoEncontradoException.class,
 			OcorrenciaCompromissoNaoEncontradaException.class,
 			PagamentoOcorrenciaNaoEncontradoException.class,
-			CartaoCreditoNaoEncontradoException.class
+			CartaoCreditoNaoEncontradoException.class,
+			EmprestimoConcedidoNaoEncontradoException.class,
+			ParcelaEmprestimoNaoEncontradaException.class,
+			RecebimentoParcelaEmprestimoNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

@@ -203,6 +203,26 @@ public class LancamentoFinanceiro {
 		return lancamento;
 	}
 
+	/**
+	 * Gera o lancamento de receita liquidado que representa o impacto financeiro
+	 * unico de um recebimento (integral ou parcial) de uma parcela de emprestimo
+	 * concedido. Mesma razao de nao referenciar recorrencia_id que
+	 * {@link #gerarDeContaAPagar}: mais de um recebimento parcial da mesma
+	 * parcela geraria mais de um lancamento na mesma data_competencia. A
+	 * rastreabilidade fica a cargo de RecebimentoParcelaEmprestimo e
+	 * ParcelaEmprestimo/EmprestimoConcedido.
+	 */
+	public static LancamentoFinanceiro gerarDeEmprestimoConcedido(Empresa empresa, ContaFinanceira conta,
+			CategoriaFinanceira categoria, ParteFinanceira parteFinanceira, String descricao, BigDecimal valor,
+			LocalDate dataCompetencia, LocalDate dataVencimento, LocalDate dataLiquidacao,
+			FormaPagamentoLancamento formaPagamento, Usuario autor) {
+		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, null, parteFinanceira,
+				TipoFinanceiro.RECEITA, descricao, valor, dataCompetencia, dataVencimento, dataLiquidacao,
+				StatusLancamentoFinanceiro.LIQUIDADO, formaPagamento, null, autor);
+		lancamento.origem = OrigemLancamentoFinanceiro.EMPRESTIMO_CONCEDIDO;
+		return lancamento;
+	}
+
 	public void atualizarDados(
 			ContaFinanceira conta,
 			CategoriaFinanceira categoria,
