@@ -1,0 +1,30 @@
+# LES-TECH-001 — PostgreSQL local exclusivamente para validar as migrations
+# Flyway (V1-V12) fora do H2 usado pelos testes automatizados. Nao e o
+# PostgreSQL de desenvolvimento pessoal do README (porta e banco diferentes,
+# de proposito, para nao colidir com uma instalacao local ja existente).
+#
+# Credenciais abaixo sao valores padrao de DESENVOLVIMENTO LOCAL apenas,
+# usados por um container descartavel. Nunca reutilizar em homologacao ou
+# producao. Sobrescreva via variaveis de ambiente quando necessario.
+services:
+  postgres-validacao:
+    image: postgres:16-alpine
+    container_name: criati-postgres-validacao
+    environment:
+      POSTGRES_DB: ${POSTGRES_VALIDACAO_DB:-criati_validacao}
+      POSTGRES_USER: ${POSTGRES_VALIDACAO_USER:-criati_validacao}
+      POSTGRES_PASSWORD: ${POSTGRES_VALIDACAO_PASSWORD:-senha_apenas_desenvolvimento_local}
+    ports:
+      - "${POSTGRES_VALIDACAO_PORT:-5433}:5432"
+    volumes:
+      - criati_postgres_validacao_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_VALIDACAO_USER:-criati_validacao} -d ${POSTGRES_VALIDACAO_DB:-criati_validacao}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  criati_postgres_validacao_data:
+    name: criati_postgres_validacao_data
