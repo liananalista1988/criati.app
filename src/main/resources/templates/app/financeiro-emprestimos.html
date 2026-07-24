@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Empréstimos concedidos · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<div>
+						<h1>Empréstimos concedidos</h1>
+						<p>Acompanhe valores emprestados, parcelas e recebimentos registrados pelo backend financeiro.</p>
+					</div>
+					<a th:if="${podeGerenciarEmprestimos}" class="criati-btn criati-btn-primary"
+						href="/app/financeiro/emprestimos/novo">Novo empréstimo</a>
+				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('emprestimos')}"></div>
+				<div id="emprestimos-mensagem" class="criati-alert" role="alert" hidden></div>
+
+				<section class="criati-grid criati-grid-4" aria-label="Resumo de empréstimos">
+					<div class="criati-card"><p class="criati-card-sub">Total principal</p><p class="criati-card-value" id="resumo-principal">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Total recebido</p><p class="criati-card-value" id="resumo-recebido">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Saldo a receber</p><p class="criati-card-value" id="resumo-saldo">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Parcelas pendentes</p><p class="criati-card-value" id="resumo-pendentes">0</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Parcelas vencidas</p><p class="criati-card-value" id="resumo-vencidas">0</p></div>
+				</section>
+
+				<section class="criati-card">
+					<div class="criati-toolbar">
+						<div class="criati-field">
+							<label for="emprestimos-filtro-status">Situação</label>
+							<select class="criati-select" id="emprestimos-filtro-status">
+								<option value="">Todas</option>
+								<option value="ATIVO">Ativo</option>
+								<option value="QUITADO">Concluído</option>
+								<option value="CANCELADO">Cancelado</option>
+							</select>
+						</div>
+						<div class="criati-field financeiro-campo-busca">
+							<label for="emprestimos-filtro-busca">Buscar</label>
+							<input class="criati-input" id="emprestimos-filtro-busca" type="search"
+								placeholder="Devedor ou descrição" />
+						</div>
+						<button class="criati-btn" id="emprestimos-filtrar" type="button">Filtrar</button>
+					</div>
+					<p id="emprestimos-carregando" aria-live="polite">Carregando empréstimos...</p>
+					<div id="emprestimos-erro" class="criati-error-state" hidden>
+						<p>Não foi possível carregar os empréstimos.</p>
+						<button class="criati-btn" id="emprestimos-tentar-novamente" type="button">Tentar novamente</button>
+					</div>
+					<div id="emprestimos-vazio" class="criati-empty-state" hidden>
+						<p>Nenhum empréstimo concedido encontrado.</p>
+						<p>Cadastre o primeiro empréstimo ou altere os filtros.</p>
+					</div>
+					<div id="emprestimos-tabela-wrap" class="criati-table-wrap" hidden>
+						<table class="criati-table">
+							<thead>
+								<tr>
+									<th>Devedor</th><th>Valor principal</th><th>Concessão</th><th>Forma</th>
+									<th>Total recebido</th><th>Saldo em aberto</th><th>Situação</th>
+									<th>Próxima parcela</th><th>Atraso</th><th>Ações</th>
+								</tr>
+							</thead>
+							<tbody id="emprestimos-tbody"></tbody>
+						</table>
+					</div>
+					<p class="criati-card-sub">Totais individualizados são apresentados nas parcelas, pois a API atual não fornece agregados por empréstimo.</p>
+				</section>
+
+				<div class="criati-grid criati-grid-2">
+					<section class="criati-card">
+						<h2>Parcelas vencidas</h2>
+						<p id="emprestimos-vencidas-carregando">Carregando...</p>
+						<div id="emprestimos-vencidas-vazio" class="criati-empty-state" hidden><p>Nenhuma parcela vencida.</p></div>
+						<ul id="emprestimos-vencidas-lista" class="financeiro-lista-operacional" hidden></ul>
+					</section>
+					<section class="criati-card">
+						<h2>Próximas do vencimento</h2>
+						<p id="emprestimos-proximas-carregando">Carregando...</p>
+						<div id="emprestimos-proximas-vazio" class="criati-empty-state" hidden><p>Nenhuma parcela próxima do vencimento.</p></div>
+						<ul id="emprestimos-proximas-lista" class="financeiro-lista-operacional" hidden></ul>
+					</section>
+				</div>
+			</main>
+		</div>
+	</div>
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-emprestimos.js}"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroEmprestimos.iniciarLista();
+		});
+	</script>
+</body>
+</html>

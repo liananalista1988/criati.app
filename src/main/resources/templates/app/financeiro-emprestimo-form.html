@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Novo empréstimo · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<div><h1>Novo empréstimo concedido</h1><p>Informe os dados da concessão. Parcelas e encargos serão definidos exclusivamente pelo backend.</p></div>
+					<a class="criati-btn" href="/app/financeiro/emprestimos">Voltar</a>
+				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('emprestimos')}"></div>
+				<div id="emprestimo-form-mensagem" class="criati-alert" role="alert" hidden></div>
+				<section class="criati-card">
+					<form id="emprestimo-form" class="criati-form-grid">
+						<div class="criati-field">
+							<label for="emprestimo-devedor">Devedor</label>
+							<select class="criati-select" id="emprestimo-devedor" required><option value="">Carregando contatos...</option></select>
+							<p class="criati-card-sub">Selecione um contato financeiro ativo.</p>
+						</div>
+						<div class="criati-field">
+							<label for="emprestimo-categoria">Categoria de receita</label>
+							<select class="criati-select" id="emprestimo-categoria" required><option value="">Carregando categorias...</option></select>
+						</div>
+						<div class="criati-field">
+							<label for="emprestimo-valor">Valor principal</label>
+							<input class="criati-input" id="emprestimo-valor" type="number" min="0.01" step="0.01" required />
+						</div>
+						<div class="criati-field">
+							<label for="emprestimo-data">Data da concessão</label>
+							<input class="criati-input" id="emprestimo-data" type="date" required />
+						</div>
+						<div class="criati-field">
+							<label for="emprestimo-forma">Forma de pagamento</label>
+							<select class="criati-select" id="emprestimo-forma" required>
+								<option value="UNICO">Pagamento único</option>
+								<option value="PARCELADO">Parcelado</option>
+							</select>
+						</div>
+						<div class="criati-field" id="emprestimo-parcelas-campo">
+							<label for="emprestimo-parcelas">Quantidade de parcelas</label>
+							<input class="criati-input" id="emprestimo-parcelas" type="number" min="1" value="1" required />
+						</div>
+						<div class="criati-field">
+							<label for="emprestimo-cobranca">Configuração de cobrança</label>
+							<select class="criati-select" id="emprestimo-cobranca" required>
+								<option value="SEM_JUROS">Sem juros</option>
+								<option value="COM_JUROS">Com juros</option>
+								<option value="JUROS_MORA_ATRASO">Juros por atraso</option>
+								<option value="MULTA_ATRASO">Multa por atraso</option>
+								<option value="ALERTA_ATRASO">Somente alerta de atraso</option>
+							</select>
+						</div>
+						<div class="criati-field financeiro-campo-condicional" id="emprestimo-juros-campo" hidden>
+							<label for="emprestimo-juros">Percentual de juros</label>
+							<input class="criati-input" id="emprestimo-juros" type="number" min="0" step="0.0001" />
+						</div>
+						<div class="criati-field financeiro-campo-condicional" id="emprestimo-multa-campo" hidden>
+							<label for="emprestimo-multa">Percentual de multa</label>
+							<input class="criati-input" id="emprestimo-multa" type="number" min="0" step="0.0001" />
+						</div>
+						<div class="criati-field financeiro-campo-largo">
+							<label for="emprestimo-descricao">Descrição</label>
+							<textarea class="criati-input" id="emprestimo-descricao" maxlength="500" rows="3"></textarea>
+						</div>
+						<div class="financeiro-acoes-formulario">
+							<a class="criati-btn" href="/app/financeiro/emprestimos">Cancelar</a>
+							<button class="criati-btn criati-btn-primary" id="emprestimo-salvar" type="submit">Cadastrar empréstimo</button>
+						</div>
+					</form>
+				</section>
+			</main>
+		</div>
+	</div>
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-emprestimos.js}"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroEmprestimos.iniciarFormulario();
+		});
+	</script>
+</body>
+</html>

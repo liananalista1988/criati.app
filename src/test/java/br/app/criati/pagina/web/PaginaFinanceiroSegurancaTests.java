@@ -66,7 +66,7 @@ class PaginaFinanceiroSegurancaTests {
 				"/app/financeiro/lancamentos", "/app/financeiro/pessoas", "/app/financeiro/contatos",
 				"/app/financeiro/recorrencias", "/app/financeiro/contas-a-pagar",
 				"/app/financeiro/cartoes", "/app/financeiro/compras-cartao",
-				"/app/financeiro/parcelas-cartao"
+				"/app/financeiro/parcelas-cartao", "/app/financeiro/emprestimos"
 		};
 		for (String rota : rotas) {
 			mockMvc.perform(get(rota))
@@ -107,6 +107,8 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/compras-cartao").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 		mockMvc.perform(get("/app/financeiro/parcelas-cartao").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/emprestimos").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 	}
 
@@ -160,6 +162,9 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Parcelas de cartão")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma parcela encontrada")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Navegação do Financeiro LeS")));
+		mockMvc.perform(get("/app/financeiro/emprestimos").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Empréstimos concedidos")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhum empréstimo concedido encontrado")));
 	}
 
 	@Test

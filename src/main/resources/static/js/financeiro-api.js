@@ -198,6 +198,58 @@
 		}
 	};
 
+	var EMPRESTIMOS_BASE = BASE + "/emprestimos-concedidos";
+	var PARCELAS_EMPRESTIMO_BASE = BASE + "/parcelas-emprestimo";
+	var emprestimos = {
+		listar: function (filtros) {
+			return window.CriatiApi.get(EMPRESTIMOS_BASE + query(filtros));
+		},
+		criar: function (dados) {
+			return window.CriatiApi.post(EMPRESTIMOS_BASE, dados);
+		},
+		buscar: function (id) {
+			return window.CriatiApi.get(EMPRESTIMOS_BASE + "/" + id);
+		},
+		parcelas: function (id) {
+			return window.CriatiApi.get(EMPRESTIMOS_BASE + "/" + id + "/parcelas");
+		},
+		cancelar: function (id, motivo) {
+			return window.CriatiApi.post(EMPRESTIMOS_BASE + "/" + id + "/cancelar", { motivo: motivo });
+		}
+	};
+	var parcelasEmprestimo = {
+		listar: function (filtros) {
+			return window.CriatiApi.get(PARCELAS_EMPRESTIMO_BASE + query(filtros));
+		},
+		buscar: function (id) {
+			return window.CriatiApi.get(PARCELAS_EMPRESTIMO_BASE + "/" + id);
+		},
+		vencidas: function () {
+			return window.CriatiApi.get(PARCELAS_EMPRESTIMO_BASE + "/vencidas");
+		},
+		proximas: function (dias) {
+			return window.CriatiApi.get(PARCELAS_EMPRESTIMO_BASE + "/proximas-vencimento" + query({ dias: dias }));
+		},
+		resumo: function () {
+			return window.CriatiApi.get(PARCELAS_EMPRESTIMO_BASE + "/resumo");
+		},
+		dataPrometida: function (id, dataPrometida) {
+			return window.CriatiApi.request(PARCELAS_EMPRESTIMO_BASE + "/" + id + "/data-prometida", {
+				method: "PUT",
+				body: { dataPrometida: dataPrometida || null }
+			});
+		},
+		recebimentos: function (id) {
+			return window.CriatiApi.get(PARCELAS_EMPRESTIMO_BASE + "/" + id + "/recebimentos");
+		},
+		receberIntegral: function (id, dados) {
+			return window.CriatiApi.post(PARCELAS_EMPRESTIMO_BASE + "/" + id + "/receber-integral", dados);
+		},
+		receberParcial: function (id, dados) {
+			return window.CriatiApi.post(PARCELAS_EMPRESTIMO_BASE + "/" + id + "/receber-parcial", dados);
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -211,6 +263,8 @@
 		compromissos: compromissos,
 		ocorrenciasCompromisso: ocorrenciasCompromisso,
 		cartoes: cartoes,
+		emprestimos: emprestimos,
+		parcelasEmprestimo: parcelasEmprestimo,
 		dashboard: dashboard
 	};
 })(window);
