@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Detalhes do empréstimo · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<div><h1 id="emprestimo-detalhe-titulo">Detalhes do empréstimo</h1><p>Parcelas, vencimentos e recebimentos do empréstimo selecionado.</p></div>
+					<a class="criati-btn" href="/app/financeiro/emprestimos">Voltar</a>
+				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('emprestimos')}"></div>
+				<div id="emprestimo-detalhe-mensagem" class="criati-alert" role="alert" hidden></div>
+				<p id="emprestimo-detalhe-carregando" aria-live="polite">Carregando detalhes...</p>
+				<div id="emprestimo-detalhe-nao-encontrado" class="criati-empty-state" hidden>
+					<p>Empréstimo não encontrado ou indisponível para a empresa atual.</p>
+					<a class="criati-btn" href="/app/financeiro/emprestimos">Voltar à listagem</a>
+				</div>
+
+				<div id="emprestimo-detalhe-conteudo" hidden>
+					<section class="criati-card">
+						<div class="financeiro-cabecalho-secao">
+							<h2>Dados do empréstimo</h2>
+							<button th:if="${podeGerenciarEmprestimos}" class="criati-btn criati-btn-danger"
+								id="emprestimo-cancelar" type="button">Cancelar empréstimo</button>
+						</div>
+						<dl class="financeiro-detalhes-lista" id="emprestimo-dados"></dl>
+						<p class="criati-card-sub">A API atual não oferece edição geral após a criação. Alterações operacionais disponíveis são registradas diretamente nas parcelas.</p>
+					</section>
+
+					<section class="criati-card">
+						<h2>Parcelas</h2>
+						<div id="emprestimo-parcelas-vazio" class="criati-empty-state" hidden><p>Nenhuma parcela encontrada.</p></div>
+						<div id="emprestimo-parcelas-wrap" class="criati-table-wrap" hidden>
+							<table class="criati-table">
+								<thead>
+									<tr><th>Parcela</th><th>Vencimento</th><th>Data prometida</th><th>Principal</th>
+										<th>Encargos</th><th>Total</th><th>Recebido</th><th>Saldo</th><th>Situação</th><th>Ações</th></tr>
+								</thead>
+								<tbody id="emprestimo-parcelas-tbody"></tbody>
+							</table>
+						</div>
+					</section>
+
+					<section class="criati-card" id="emprestimo-historico-secao" hidden>
+						<h2 id="emprestimo-historico-titulo">Histórico de recebimentos</h2>
+						<p id="emprestimo-historico-carregando" hidden>Carregando recebimentos...</p>
+						<div id="emprestimo-historico-vazio" class="criati-empty-state" hidden><p>Nenhum recebimento registrado para esta parcela.</p></div>
+						<div id="emprestimo-historico-wrap" class="criati-table-wrap" hidden>
+							<table class="criati-table">
+								<thead><tr><th>Data</th><th>Valor</th><th>Conta</th><th>Forma</th><th>Situação</th><th>Lançamento</th><th>Observação</th></tr></thead>
+								<tbody id="emprestimo-historico-tbody"></tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="data-prometida-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="data-prometida-titulo">
+			<h2 id="data-prometida-titulo">Registrar data prometida</h2>
+			<form class="criati-modal-form" id="data-prometida-form">
+				<div class="criati-field"><label for="data-prometida">Data prometida</label><input class="criati-input" id="data-prometida" type="date" /></div>
+				<p class="criati-card-sub">Deixe em branco para remover a data prometida.</p>
+				<div class="criati-modal-acoes">
+					<button class="criati-btn" id="data-prometida-fechar" type="button">Cancelar</button>
+					<button class="criati-btn criati-btn-primary" id="data-prometida-salvar" type="submit">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="recebimento-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="recebimento-titulo">
+			<h2 id="recebimento-titulo">Registrar recebimento</h2>
+			<p class="criati-card-sub" id="recebimento-parcela-resumo"></p>
+			<form class="criati-modal-form" id="recebimento-form">
+				<div class="criati-field">
+					<label for="recebimento-tipo">Tipo</label>
+					<select class="criati-select" id="recebimento-tipo">
+						<option value="INTEGRAL">Integral</option>
+						<option value="PARCIAL">Parcial</option>
+					</select>
+				</div>
+				<div class="criati-field financeiro-campo-condicional" id="recebimento-valor-campo" hidden>
+					<label for="recebimento-valor">Valor recebido</label>
+					<input class="criati-input" id="recebimento-valor" type="number" min="0.01" step="0.01" />
+				</div>
+				<div class="criati-field"><label for="recebimento-conta">Conta de entrada</label><select class="criati-select" id="recebimento-conta" required></select></div>
+				<div class="criati-field"><label for="recebimento-data">Data do recebimento</label><input class="criati-input" id="recebimento-data" type="date" required /></div>
+				<div class="criati-field">
+					<label for="recebimento-forma">Forma de pagamento</label>
+					<select class="criati-select" id="recebimento-forma">
+						<option value="">Não informada</option><option value="PIX">Pix</option>
+						<option value="TRANSFERENCIA">Transferência</option><option value="DINHEIRO">Dinheiro</option>
+						<option value="DEBITO">Débito</option><option value="BOLETO">Boleto</option><option value="OUTRA">Outra</option>
+					</select>
+				</div>
+				<div class="criati-field"><label for="recebimento-observacao">Observação</label><textarea class="criati-input" id="recebimento-observacao" maxlength="500" rows="2"></textarea></div>
+				<div class="criati-modal-acoes">
+					<button class="criati-btn" id="recebimento-fechar" type="button">Cancelar</button>
+					<button class="criati-btn criati-btn-primary" id="recebimento-salvar" type="submit">Confirmar recebimento</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-emprestimos.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroEmprestimos.iniciarDetalhe(/*[[${podeGerenciarEmprestimos}]]*/ false);
+		});
+	</script>
+</body>
+</html>

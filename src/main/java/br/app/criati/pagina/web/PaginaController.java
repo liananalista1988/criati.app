@@ -5,6 +5,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -81,6 +82,51 @@ public class PaginaController {
 			return "redirect:/app/aplicacoes";
 		}
 		return "app/financeiro-contas";
+	}
+
+	@GetMapping("/app/financeiro/emprestimos")
+	public String financeiroEmprestimos(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarEmprestimos", podeEscreverFinanceiro(contexto));
+		return "app/financeiro-emprestimos";
+	}
+
+	@GetMapping("/app/financeiro/emprestimos/novo")
+	public String financeiroEmprestimoNovo(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		if (contexto.perfil() != PerfilUsuario.ADMINISTRADOR && contexto.perfil() != PerfilUsuario.GESTOR) {
+			throw new AcessoNegadoException();
+		}
+		return "app/financeiro-emprestimo-form";
+	}
+
+	@GetMapping("/app/financeiro/emprestimos/{emprestimoId}")
+	public String financeiroEmprestimoDetalhe(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarEmprestimos", podeEscreverFinanceiro(contexto));
+		return "app/financeiro-emprestimo-detalhe";
+	}
+
+	private boolean podeEscreverFinanceiro(ContextoEmpresaAtual contexto) {
+		return contexto.perfil() == PerfilUsuario.ADMINISTRADOR || contexto.perfil() == PerfilUsuario.GESTOR;
 	}
 
 	@GetMapping("/app/financeiro/categorias")

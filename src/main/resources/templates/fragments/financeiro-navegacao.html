@@ -29,6 +29,9 @@
 		<a th:classappend="${paginaAtiva == 'contas-a-pagar'} ? ' is-active' : ''"
 			th:attr="aria-current=${paginaAtiva == 'contas-a-pagar'} ? 'page' : null"
 			href="/app/financeiro/contas-a-pagar">Contas a pagar</a>
+		<a th:classappend="${paginaAtiva == 'emprestimos'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'emprestimos'} ? 'page' : null"
+			href="/app/financeiro/emprestimos">Empréstimos</a>
 		<a th:classappend="${paginaAtiva == 'cartoes'} ? ' is-active' : ''"
 			th:attr="aria-current=${paginaAtiva == 'cartoes'} ? 'page' : null"
 			href="/app/financeiro/cartoes">Cartões</a>
