@@ -1,5 +1,16 @@
 # Implementação CRIATI-FIN-013 — Compras para terceiros, valores a receber e ressarcimentos
 
+> **Nota de revisão (CRIATI-FIN-013A, atualizada em CRIATI-FIN-015).** O desenho original abaixo
+> previa que cada ressarcimento gerasse um `LancamentoFinanceiro` de receita com origem dedicada
+> `RESSARCIMENTO_COMPRA_TERCEIRO`. Esse desenho **foi substituído antes de ir para produção** e
+> **não corresponde ao código atual**: nenhum ressarcimento gera `LancamentoFinanceiro` — o valor
+> entra diretamente no saldo da conta via `SaldoFinanceiroService` (soma dos
+> `RessarcimentoParcelaCartao` com status `ATIVO`), fora da soma de receitas/despesas. O enum
+> `OrigemLancamentoFinanceiro` **não tem** o valor `RESSARCIMENTO_COMPRA_TERCEIRO`. As seções
+> "Regras financeiras", "Limitação patrimonial documentada" e "Impacto no cartão e no caixa"
+> abaixo foram corrigidas para refletir esse comportamento; o restante do documento (diagnóstico,
+> decisão de modelagem, migration, repositories, endpoints, testes) continua válido.
+
 ## Diagnóstico do modelo existente
 
 Antes de criar qualquer estrutura, auditou-se o que já existe:
@@ -69,9 +80,9 @@ Reaproveitamento máximo, responsabilidade nova mínima:
 
 ## Entidades alteradas ou criadas
 
-- **Alterada**: `LancamentoFinanceiro` — novo factory method `gerarDeRessarcimentoCompraTerceiro`
-  (mesmo padrão de `gerarDeEmprestimoConcedido`/`gerarDeContaAPagar`).
-- **Alterada**: `OrigemLancamentoFinanceiro` — novo valor `RESSARCIMENTO_COMPRA_TERCEIRO`.
+- **`LancamentoFinanceiro`/`OrigemLancamentoFinanceiro`: não alterados** (ver nota de revisão no
+  topo deste documento — o desenho original previa alterá-los para o ressarcimento, substituído
+  antes de ir para produção).
 - **Novas**: `ValorAReceberParcelaCartao`, `RessarcimentoParcelaCartao`.
 - **Novos enums**: `StatusValorAReceberCompraCartao`, `SituacaoValorAReceberCompraCartao`,
   `StatusRessarcimentoParcelaCartao`.
@@ -81,10 +92,10 @@ Reaproveitamento máximo, responsabilidade nova mínima:
 
 `V15__criar_ressarcimentos_compras_terceiros.sql` — duas tabelas novas
 (`valor_a_receber_parcela_cartao`, `ressarcimento_parcela_cartao`), seguindo exatamente os padrões
-de auditoria, `CHECK`, `UNIQUE`, FK e índices por empresa já usados em V11/V13/V14. Único ajuste em
-tabela existente: `ck_lancamento_financeiro_origem` recriado (drop + add, mesmo padrão da V11/V14)
-para aceitar `RESSARCIMENTO_COMPRA_TERCEIRO`, preservando todas as origens anteriores. Nenhuma
-migration anterior foi alterada.
+de auditoria, `CHECK`, `UNIQUE`, FK e índices por empresa já usados em V11/V13/V14. Nenhuma tabela
+existente foi alterada (em particular, `ck_lancamento_financeiro_origem` não foi tocado — ver nota
+de revisão no topo: o ressarcimento nunca gera `LancamentoFinanceiro`, então não precisa de uma
+origem própria nesse constraint). Nenhuma migration anterior foi alterada.
 
 ## Repositories
 
@@ -128,13 +139,13 @@ Nenhuma tela, CSS, JavaScript ou fragmento foi tocado.
    compras da residência). Fora do escopo desta tarefa; não inventado aqui.
 4. **Direito a receber do terceiro** — nasce no mesmo instante em que a compra é registrada: um
    `ValorAReceberParcelaCartao` por parcela, status `PENDENTE`, saldo igual ao valor da parcela.
-5. **O ressarcimento gera entrada de caixa** — via `RessarcimentoParcelaCartao`, que cria
-   exatamente um `LancamentoFinanceiro` de receita liquidado.
-6. **O principal ressarcido não é interpretado como receita econômica da residência** — ver
-   limitação abaixo: o lançamento é criado como `RECEITA` (única opção estrutural hoje), mas
-   marcado com uma origem própria (`RESSARCIMENTO_COMPRA_TERCEIRO`) exatamente para permitir excluí-lo
-   de qualquer leitura futura de "receita real"/"resultado econômico" — a mesma abordagem já usada e
-   já auditada em `EMPRESTIMO_CONCEDIDO` (CRIATI-FIN-010).
+5. **O ressarcimento gera entrada de caixa sem passar por `LancamentoFinanceiro`** — via
+   `RessarcimentoParcelaCartao` (registro imutável, conta/data/forma de pagamento escolhidos no
+   momento do recebimento), somado diretamente ao saldo da conta por `SaldoFinanceiroService`
+   (soma dos ressarcimentos com status `ATIVO`), fora da soma de receitas/despesas.
+6. **O principal ressarcido não é interpretado como receita econômica da residência** — porque
+   nunca vira `LancamentoFinanceiro` de tipo `RECEITA`: não há lançamento para excluir de nenhuma
+   métrica futura de "resultado econômico"/"lucro", o valor simplesmente não entra nessa soma.
 7. **Taxas/juros adicionais** — não implementados neste lote (fora do escopo, como o próprio
    enunciado antecipa); `RessarcimentoParcelaCartao.valor` cobre apenas o principal da parcela.
 
@@ -142,36 +153,42 @@ Nenhuma tela, CSS, JavaScript ou fragmento foi tocado.
 
 O modelo atual (`TipoFinanceiro`) só tem `RECEITA` e `DESPESA` — não existe uma natureza neutra de
 "movimentação patrimonial" (nem para a concessão de empréstimos, nem para compras para terceiros).
-Isso foi examinado explicitamente antes de integrar com `LancamentoFinanceiro`:
+Isso foi examinado explicitamente antes de integrar com o restante do módulo financeiro:
 
 - A **compra** em si nunca gera lançamento (nem aqui, nem para compras da residência) — não há
   "despesa" a evitar classificar incorretamente, porque nenhuma é criada.
-- O **ressarcimento** (entrada de caixa real) precisa de algum registro em `LancamentoFinanceiro`
-  para não ficar invisível ao restante do módulo (dashboards, extratos de conta) — a "OBJETIVO DE
-  DOMÍNIO" desta tarefa pede explicitamente um "lançamento financeiro de cada ressarcimento". Entre
-  as duas únicas opções estruturais (`RECEITA` ou `DESPESA`), `RECEITA` é a única não-absurda (é
-  dinheiro entrando). É, ainda assim, uma aproximação: o valor ressarcido **não é lucro/renda** da
-  residência — é a devolução de um valor que ela adiantou.
-- Esse caso é estruturalmente **mais sensível** que o dos empréstimos concedidos: como a compra
-  original nunca contou como despesa (nem quando será paga a fatura, ainda não implementado), tratar
-  o ressarcimento como receita, sem qualificação, criaria um lucro contábil "do nada" em qualquer
-  relatório que apenas somasse `RECEITA` menos `DESPESA`.
-- **Mitigação aplicada agora**: origem dedicada (`RESSARCIMENTO_COMPRA_TERCEIRO`), documentada aqui
-  e em `EMPRESTIMO_CONCEDIDO` como candidatas a exclusão de qualquer futura métrica de "resultado
-  econômico"/"lucro". Nenhum dashboard ou agregação existente foi alterado — a filtragem por origem
-  já é suficiente para qualquer código futuro que precise diferenciar receita real de reembolso.
+- O **ressarcimento** (entrada de caixa real) precisa ficar visível ao restante do módulo
+  (dashboard, saldo de conta) sem ser confundido com receita real da residência — o valor ressarcido
+  **não é lucro/renda**, é a devolução de um valor que ela adiantou.
+- **Decisão final (CRIATI-FIN-013A), mais forte que a mitigação originalmente cogitada**: em vez de
+  criar um `LancamentoFinanceiro` de `RECEITA` com origem dedicada para depois ter que excluí-lo de
+  métricas de resultado, o ressarcimento **nunca entra em `LancamentoFinanceiro`**. Ele é somado
+  diretamente ao saldo da conta por `SaldoFinanceiroService` — a mesma fonte única de verdade usada
+  pelo dashboard (`DashboardFinanceiroService`) e pelo resumo de lançamentos
+  (`LancamentoFinanceiroService.resumir`). Isso elimina por completo o risco de um relatório futuro
+  que apenas some `RECEITA` menos `DESPESA` "inventar" lucro a partir de um reembolso — não há
+  filtro de origem para lembrar de aplicar, porque a fonte de dados errada nunca é alimentada.
+- Como consequência, o `EMPRESTIMO_CONCEDIDO` (`CRIATI-FIN-010`, que ainda gera `LancamentoFinanceiro`
+  de receita com origem dedicada para o recebimento de parcela) **não** é mais o precedente seguido
+  aqui — os dois módulos hoje resolvem o mesmo problema de formas diferentes; unificá-los (por
+  exemplo migrando empréstimos para o mesmo padrão de "soma direta no saldo") é uma evolução futura,
+  não decidida nem implementada nesta tarefa.
 - **Evolução futura recomendada, não implementada aqui** (fora de escopo — "não crie uma
   arquitetura ampla de movimentações patrimoniais sem autorização"): introduzir uma terceira
-  natureza em `TipoFinanceiro` (ex.: `MOVIMENTACAO_PATRIMONIAL`) ou um conceito de lançamento
-  neutro, que moveria tanto a concessão de empréstimos quanto a compra/ressarcimento de terceiros
-  para fora do cálculo de receita/despesa por completo, mantendo apenas o impacto de caixa.
+  natureza em `TipoFinanceiro` (ex.: `MOVIMENTACAO_PATRIMONIAL`) que represente esse tipo de entrada
+  de caixa de forma explícita no próprio modelo de lançamentos, em vez de ficar fora dele.
 
 ## Impacto no cartão e no caixa
 
 - **Cartão**: idêntico ao de uma compra normal (mesmo `criar`, mesmo `comprometido`/limite). Testado.
-- **Caixa**: só é afetado pelo **ressarcimento** (entrada, via `LancamentoFinanceiro` liquidado numa
-  conta escolhida no momento do recebimento — mesmo padrão de `conta`/`categoria` escolhidos por
-  chamada já usado em empréstimos, não fixados no cadastro da compra).
+  A partir da CRIATI-FIN-015, o resumo de compras (`ResumoComprasCartao`) e o resumo de cartões
+  (`ResumoCartoesCredito`) também separam explicitamente quanto do total/limite comprometido vem de
+  compras da residência vs. de terceiros — sem remover terceiros do cálculo em nenhum dos dois.
+- **Caixa**: só é afetado pelo **ressarcimento** (entrada direta no saldo da conta via
+  `RessarcimentoParcelaCartao`/`SaldoFinanceiroService`, nunca via `LancamentoFinanceiro` — ver
+  regra 5 acima). A partir da CRIATI-FIN-015, o dashboard (`DashboardFinanceiroService`) expõe um
+  indicador `totalPendenteReceberTerceiros` (saldo ainda não ressarcido), separado de
+  `totalPendenteReceber`/`receitasPagas`/`resultadoMes`.
 
 ## Proteção de concorrência
 
@@ -201,12 +218,14 @@ Testado em `parteFinanceiraDeOutroTenantERejeitada` e `compraParaTerceiroDeOutro
 - **Concorrência** (`ValorAReceberParcelaCartaoLockPessimistaTests`, 3 testes): existência/uso do
   lock, isolamento por empresa no método com lock, bloqueio real medido entre threads.
 - **JPA** (`RessarcimentosComprasTerceirosJpaTests`, 4 testes): auditoria/UUID, unicidade
-  `(parcela_id)` e `(lancamento_financeiro_id)` bloqueadas pelo banco.
-- **HTTP** (`ComprasTerceirosControllerTests`, 21 testes): cadastro (com e sem terceiro,
-  parcelamento com arredondamento verificado, tenant cruzado), ressarcimento parcial/integral/
-  rejeições, data prometida, vencidas/próximas do vencimento, resumo, cancelamento e estorno
-  preservando histórico, ausência de lançamento de despesa, origem distinta no lançamento de
-  receita, impacto no limite do cartão, segurança (CSRF/autenticação/perfil).
+  `(parcela_id)` bloqueada pelo banco, persistência do ressarcimento sem gerar
+  `LancamentoFinanceiro`, consulta por conta usada pelo cálculo de saldo restrita ao tenant.
+- **HTTP** (`ComprasTerceirosControllerTests`, testes crescentes a cada tarefa — ver arquivo para o
+  total atual): cadastro (com e sem terceiro, parcelamento com arredondamento verificado, tenant
+  cruzado), ressarcimento parcial/integral/rejeições, data prometida, vencidas/próximas do
+  vencimento, resumo, cancelamento e estorno preservando histórico, ausência de lançamento de
+  despesa/receita em nenhum dos dois fluxos, impacto no limite do cartão, segurança
+  (CSRF/autenticação/perfil).
 
 ## Resultado da suíte completa
 

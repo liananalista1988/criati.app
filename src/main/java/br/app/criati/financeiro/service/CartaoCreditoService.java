@@ -122,6 +122,13 @@ public class CartaoCreditoService {
 		BigDecimal limiteComprometido = principaisAtivos.stream().map(this::limiteComprometido)
 				.reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
 		BigDecimal limiteDisponivel = limiteTotal.subtract(limiteComprometido);
+		// CRIATI-FIN-015: quebra informativa de limiteComprometido — compra para
+		// terceiro continua consumindo limite real do cartao normalmente (nao e
+		// removida do calculo acima); residencia e obtida por subtracao para
+		// garantir, por construcao, que a soma das duas partes bate com o total.
+		BigDecimal limiteComprometidoTerceiros = principaisAtivos.stream().map(this::limiteComprometidoTerceiros)
+				.reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
+		BigDecimal limiteComprometidoResidencia = limiteComprometido.subtract(limiteComprometidoTerceiros);
 		Map<UUID, Long> porTitularQtd = new LinkedHashMap<>();
 		Map<UUID, String> porTitularNome = new LinkedHashMap<>();
 		Map<UUID, Long> porInstituicaoQtd = new LinkedHashMap<>();
@@ -139,13 +146,21 @@ public class CartaoCreditoService {
 				.map(e -> new ResumoCartoesCredito.CartoesPorInstituicao(e.getKey(), porInstituicaoNome.get(e.getKey()), e.getValue()))
 				.toList();
 		return new ResumoCartoesCredito(ativos.size(), fisicos, virtuais, bloqueados, limiteTotal, limiteSaudavel,
-				limiteDisponivel, porTitular, porInstituicao);
+				limiteDisponivel, limiteComprometidoResidencia, limiteComprometidoTerceiros, porTitular, porInstituicao);
 	}
 
 	@Transactional(readOnly = true)
 	public BigDecimal limiteComprometido(CartaoCredito cartao) {
 		CartaoCredito principal = cartao.ehVirtual() ? cartao.getCartaoPrincipal() : cartao;
 		BigDecimal valor = compraRepository.somarComprometido(cartao.getEmpresa().getId(), principal.getId(),
+				StatusCompraCartao.ATIVA);
+		return (valor == null ? BigDecimal.ZERO : valor).setScale(2, RoundingMode.HALF_UP);
+	}
+
+	@Transactional(readOnly = true)
+	public BigDecimal limiteComprometidoTerceiros(CartaoCredito cartao) {
+		CartaoCredito principal = cartao.ehVirtual() ? cartao.getCartaoPrincipal() : cartao;
+		BigDecimal valor = compraRepository.somarComprometidoTerceiros(cartao.getEmpresa().getId(), principal.getId(),
 				StatusCompraCartao.ATIVA);
 		return (valor == null ? BigDecimal.ZERO : valor).setScale(2, RoundingMode.HALF_UP);
 	}

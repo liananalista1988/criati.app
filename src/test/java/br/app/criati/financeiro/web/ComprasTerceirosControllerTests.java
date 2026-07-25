@@ -59,6 +59,8 @@ class ComprasTerceirosControllerTests {
 	private static final String VALORES_A_RECEBER = "/api/contexto/financeiro/valores-a-receber-cartao";
 	private static final String LANCAMENTOS = "/api/contexto/financeiro/lancamentos";
 	private static final String CONTAS = "/api/contexto/financeiro/contas";
+	private static final String CARTOES = "/api/contexto/financeiro/cartoes";
+	private static final String DASHBOARD = "/api/contexto/financeiro/dashboard";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -730,6 +732,132 @@ class ComprasTerceirosControllerTests {
 						 "descricao":"Presente","dataCompra":"2026-08-01","valorTotal":100.00,"quantidadeParcelas":1}
 						""".formatted(cartaoId, pessoa.getId(), categoria.getId(), parte.getId())))
 				.andExpect(status().isForbidden());
+	}
+
+	/* ==================== RESUMOS E DASHBOARD SEPARAM RESIDENCIA DE TERCEIROS (CRIATI-FIN-015) ==================== */
+
+	@Test
+	void resumoComprasCartaoSeparaResidenciaDeTerceirosSemAlterarOTotalGeral() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("61111111000523");
+		Usuario admin = criarUsuario("terc.resumo.compras@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		String cartaoId = criarCartao(empresa, admin, "5000.00");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+
+		mockMvc.perform(post(COMPRAS_CARTAO).session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"cartaoId":"%s","pessoaResponsavelId":"%s","categoriaId":"%s","descricao":"Mercado",
+						 "dataCompra":"2026-08-01","valorTotal":100.00,"quantidadeParcelas":1}
+						""".formatted(cartaoId, pessoa.getId(), categoria.getId())))
+				.andExpect(status().isCreated());
+		criarCompraTerceiro(session, cartaoId, pessoa, categoria, parte, "250.00", "2026-08-02", 1);
+
+		mockMvc.perform(get(COMPRAS_CARTAO + "/resumo").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalComprado").value(350.00))
+				.andExpect(jsonPath("$.totalResidencia").value(100.00))
+				.andExpect(jsonPath("$.totalTerceiros").value(250.00))
+				// limite comprometido/disponivel continuam somando as duas — compra
+				// para terceiro nao e removida do consumo real do limite do cartao.
+				.andExpect(jsonPath("$.limiteComprometido").value(350.00))
+				.andExpect(jsonPath("$.limiteDisponivel").value(4650.00));
+	}
+
+	@Test
+	void resumoCartoesSeparaLimiteComprometidoResidenciaDeTerceirosSemAlterarLimiteDisponivel() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("62222222000524");
+		Usuario admin = criarUsuario("terc.resumo.cartoes@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		String cartaoId = criarCartao(empresa, admin, "5000.00");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+
+		mockMvc.perform(post(COMPRAS_CARTAO).session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"cartaoId":"%s","pessoaResponsavelId":"%s","categoriaId":"%s","descricao":"Mercado",
+						 "dataCompra":"2026-08-01","valorTotal":100.00,"quantidadeParcelas":1}
+						""".formatted(cartaoId, pessoa.getId(), categoria.getId())))
+				.andExpect(status().isCreated());
+		criarCompraTerceiro(session, cartaoId, pessoa, categoria, parte, "250.00", "2026-08-02", 1);
+
+		mockMvc.perform(get(CARTOES + "/resumo").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.limiteTotalConsolidado").value(5000.00))
+				.andExpect(jsonPath("$.limiteComprometidoResidencia").value(100.00))
+				.andExpect(jsonPath("$.limiteComprometidoTerceiros").value(250.00))
+				// limite disponivel do consolidado continua descontando as duas parcelas.
+				.andExpect(jsonPath("$.limiteDisponivelConsolidado").value(4650.00));
+	}
+
+	@Test
+	void dashboardSeparaValoresPendentesDeTerceirosSemContarComoReceitaOuDespesaESemDuplaContagemNoEstorno()
+			throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("63333333000525");
+		Usuario admin = criarUsuario("terc.dashboard@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
+		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		ContaFinanceira conta = criarConta(empresa);
+		String cartaoId = criarCartao(empresa, admin, "5000.00");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+		String compraId = criarCompraTerceiro(session, cartaoId, pessoa, categoriaDespesa, parte, "400.00", "2026-08-01", 1);
+		String valorId = buscarPrimeiroValorAReceber(session, compraId);
+
+		// Compra registrada, ainda sem ressarcimento: aparece so no indicador
+		// dedicado, nunca em receita/despesa/resultado/pendente-de-lancamento.
+		mockMvc.perform(get(DASHBOARD).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalPendenteReceberTerceiros").value(400.00))
+				.andExpect(jsonPath("$.receitasPagas").value(0))
+				.andExpect(jsonPath("$.despesasPagas").value(0))
+				.andExpect(jsonPath("$.resultadoMes").value(0))
+				.andExpect(jsonPath("$.totalPendenteReceber").value(0))
+				.andExpect(jsonPath("$.totalPendentePagar").value(0))
+				.andExpect(jsonPath("$.resumoPorCategoria.length()").value(0))
+				.andExpect(jsonPath("$.saldoAtualConsolidado").value(0.00));
+
+		MvcResult resultadoRessarcimento = mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-parcial")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":150.00,"dataRessarcimento":"2026-08-10"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated()).andReturn();
+		String ressarcimentoId = com.jayway.jsonpath.JsonPath.read(
+				resultadoRessarcimento.getResponse().getContentAsString(), "$.id");
+
+		// Ressarcimento parcial: saldo pendente cai, saldo da conta sobe pelo mesmo
+		// valor — e continua fora de receita/despesa/resultado.
+		mockMvc.perform(get(DASHBOARD).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalPendenteReceberTerceiros").value(250.00))
+				.andExpect(jsonPath("$.saldoAtualConsolidado").value(150.00))
+				.andExpect(jsonPath("$.receitasPagas").value(0))
+				.andExpect(jsonPath("$.despesasPagas").value(0))
+				.andExpect(jsonPath("$.resultadoMes").value(0))
+				.andExpect(jsonPath("$.resumoPorCategoria.length()").value(0));
+
+		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/ressarcimentos/" + ressarcimentoId + "/estornar")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"motivo":"Duplicidade"}
+						"""))
+				.andExpect(status().isOk());
+
+		// Estorno: saldo pendente de terceiros volta ao valor original e o saldo da
+		// conta volta a zero — nenhum resquicio do ressarcimento estornado conta em
+		// dobro (nem no saldo, nem no indicador de terceiros).
+		mockMvc.perform(get(DASHBOARD).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalPendenteReceberTerceiros").value(400.00))
+				.andExpect(jsonPath("$.saldoAtualConsolidado").value(0.00))
+				.andExpect(jsonPath("$.receitasPagas").value(0))
+				.andExpect(jsonPath("$.despesasPagas").value(0));
 	}
 
 	/* ==================== HELPERS ==================== */
