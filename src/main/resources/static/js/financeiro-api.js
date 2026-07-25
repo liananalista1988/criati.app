@@ -250,6 +250,60 @@
 		}
 	};
 
+	var COMPRAS_TERCEIROS_BASE = BASE + "/compras-terceiros";
+	var comprasTerceiros = {
+		listar: function (filtros) {
+			return window.CriatiApi.get(COMPRAS_TERCEIROS_BASE + query(filtros));
+		},
+		criar: function (dados) {
+			return window.CriatiApi.post(COMPRAS_TERCEIROS_BASE, dados);
+		},
+		buscar: function (id) {
+			return window.CriatiApi.get(COMPRAS_TERCEIROS_BASE + "/" + id);
+		},
+		cancelar: function (id, motivo) {
+			return window.CriatiApi.post(COMPRAS_TERCEIROS_BASE + "/" + id + "/cancelar", { motivo: motivo });
+		}
+	};
+	var VALORES_A_RECEBER_CARTAO_BASE = BASE + "/valores-a-receber-cartao";
+	var valoresAReceberCartao = {
+		listar: function (filtros) {
+			return window.CriatiApi.get(VALORES_A_RECEBER_CARTAO_BASE + query(filtros));
+		},
+		buscar: function (id) {
+			return window.CriatiApi.get(VALORES_A_RECEBER_CARTAO_BASE + "/" + id);
+		},
+		vencidas: function () {
+			return window.CriatiApi.get(VALORES_A_RECEBER_CARTAO_BASE + "/vencidas");
+		},
+		proximas: function (dias) {
+			return window.CriatiApi.get(VALORES_A_RECEBER_CARTAO_BASE + "/proximas-vencimento" + query({ dias: dias }));
+		},
+		resumo: function () {
+			return window.CriatiApi.get(VALORES_A_RECEBER_CARTAO_BASE + "/resumo");
+		},
+		dataPrometida: function (id, dataPrometida) {
+			return window.CriatiApi.request(VALORES_A_RECEBER_CARTAO_BASE + "/" + id + "/data-prometida", {
+				method: "PUT",
+				body: { dataPrometida: dataPrometida || null }
+			});
+		},
+		ressarcimentos: function (id) {
+			return window.CriatiApi.get(VALORES_A_RECEBER_CARTAO_BASE + "/" + id + "/ressarcimentos");
+		},
+		receberIntegral: function (id, dados) {
+			return window.CriatiApi.post(VALORES_A_RECEBER_CARTAO_BASE + "/" + id + "/receber-integral", dados);
+		},
+		receberParcial: function (id, dados) {
+			return window.CriatiApi.post(VALORES_A_RECEBER_CARTAO_BASE + "/" + id + "/receber-parcial", dados);
+		},
+		estornar: function (id, ressarcimentoId, motivo) {
+			return window.CriatiApi.post(
+				VALORES_A_RECEBER_CARTAO_BASE + "/" + id + "/ressarcimentos/" + ressarcimentoId + "/estornar",
+				{ motivo: motivo });
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -265,6 +319,8 @@
 		cartoes: cartoes,
 		emprestimos: emprestimos,
 		parcelasEmprestimo: parcelasEmprestimo,
+		comprasTerceiros: comprasTerceiros,
+		valoresAReceberCartao: valoresAReceberCartao,
 		dashboard: dashboard
 	};
 })(window);

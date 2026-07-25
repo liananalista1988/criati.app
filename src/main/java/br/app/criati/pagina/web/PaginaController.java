@@ -125,6 +125,47 @@ public class PaginaController {
 		return "app/financeiro-emprestimo-detalhe";
 	}
 
+	@GetMapping("/app/financeiro/compras-terceiros")
+	public String financeiroComprasTerceiros(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarComprasTerceiros", podeEscreverFinanceiro(contexto));
+		return "app/financeiro-compras-terceiros";
+	}
+
+	@GetMapping("/app/financeiro/compras-terceiros/nova")
+	public String financeiroCompraTerceiroNova(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		if (contexto.perfil() != PerfilUsuario.ADMINISTRADOR && contexto.perfil() != PerfilUsuario.GESTOR) {
+			throw new AcessoNegadoException();
+		}
+		return "app/financeiro-compra-terceiro-form";
+	}
+
+	@GetMapping("/app/financeiro/compras-terceiros/{compraId}")
+	public String financeiroCompraTerceiroDetalhe(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarComprasTerceiros", podeEscreverFinanceiro(contexto));
+		return "app/financeiro-compra-terceiro-detalhe";
+	}
+
 	private boolean podeEscreverFinanceiro(ContextoEmpresaAtual contexto) {
 		return contexto.perfil() == PerfilUsuario.ADMINISTRADOR || contexto.perfil() == PerfilUsuario.GESTOR;
 	}

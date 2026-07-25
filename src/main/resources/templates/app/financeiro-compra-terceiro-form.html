@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Nova compra para terceiro · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<div><h1>Nova compra para terceiro</h1><p>A pessoa responsável pelo ressarcimento é obrigatória. Parcelas e limite do cartão seguem as mesmas regras de uma compra comum.</p></div>
+					<a class="criati-btn" href="/app/financeiro/compras-terceiros">Voltar</a>
+				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('compras-terceiros')}"></div>
+				<div id="compra-terceiro-form-mensagem" class="criati-alert" role="alert" hidden></div>
+				<section class="criati-card">
+					<form id="compra-terceiro-form" class="criati-form-grid">
+						<div class="criati-field">
+							<label for="compra-terceiro-cartao">Cartão</label>
+							<select class="criati-select" id="compra-terceiro-cartao" required><option value="">Carregando cartões...</option></select>
+						</div>
+						<div class="criati-field">
+							<label for="compra-terceiro-pessoa">Responsável pela compra</label>
+							<select class="criati-select" id="compra-terceiro-pessoa" required><option value="">Carregando pessoas...</option></select>
+						</div>
+						<div class="criati-field">
+							<label for="compra-terceiro-categoria">Categoria</label>
+							<select class="criati-select" id="compra-terceiro-categoria" required><option value="">Carregando categorias...</option></select>
+						</div>
+						<div class="criati-field">
+							<label for="compra-terceiro-parte">Terceiro a ressarcir</label>
+							<select class="criati-select" id="compra-terceiro-parte" required><option value="">Carregando contatos...</option></select>
+							<p class="criati-card-sub">O terceiro deve estar cadastrado em Contatos financeiros.</p>
+						</div>
+						<div class="criati-field financeiro-campo-largo">
+							<label for="compra-terceiro-descricao">Descrição</label>
+							<input class="criati-input" id="compra-terceiro-descricao" maxlength="200" required />
+						</div>
+						<div class="criati-field">
+							<label for="compra-terceiro-data">Data da compra</label>
+							<input class="criati-input" id="compra-terceiro-data" type="date" required />
+						</div>
+						<div class="criati-field">
+							<label for="compra-terceiro-valor">Valor total</label>
+							<input class="criati-input" id="compra-terceiro-valor" type="number" min="0.01" step="0.01" required />
+						</div>
+						<div class="criati-field">
+							<label for="compra-terceiro-parcelas">Parcelas</label>
+							<input class="criati-input" id="compra-terceiro-parcelas" type="number" min="1" value="1" required />
+						</div>
+						<div class="criati-field financeiro-campo-largo">
+							<label for="compra-terceiro-observacao">Observação</label>
+							<textarea class="criati-input" id="compra-terceiro-observacao" maxlength="500" rows="3"></textarea>
+						</div>
+						<div class="financeiro-acoes-formulario">
+							<a class="criati-btn" href="/app/financeiro/compras-terceiros">Cancelar</a>
+							<button class="criati-btn criati-btn-primary" id="compra-terceiro-salvar" type="submit">Registrar compra</button>
+						</div>
+					</form>
+					<p id="compra-terceiro-impacto-limite" class="criati-card-sub"></p>
+				</section>
+			</main>
+		</div>
+	</div>
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-compras-terceiros.js}"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroComprasTerceiros.iniciarFormulario();
+		});
+	</script>
+</body>
+</html>

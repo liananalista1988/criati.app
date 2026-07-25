@@ -184,21 +184,31 @@
 }
 
 .criati-badge-pendente,
-.criati-badge-ativo {
+.criati-badge-ativo,
+.criati-badge-parcialmente-ressarcida {
 	background: var(--criati-warning-bg);
 	color: var(--criati-warning-fg);
 }
 
 .criati-badge-pago,
-.criati-badge-receita {
+.criati-badge-receita,
+.criati-badge-ressarcida {
 	background: var(--criati-success-bg);
 	color: var(--criati-success-fg);
 }
 
 .criati-badge-cancelado,
-.criati-badge-inativo {
+.criati-badge-inativo,
+.criati-badge-cancelada,
+.criati-badge-estornado,
+.criati-badge-estornada {
 	background: rgba(148, 163, 184, 0.18);
 	color: var(--criati-text-muted);
+}
+
+.criati-badge-atrasada {
+	background: var(--criati-danger-bg);
+	color: var(--criati-danger-fg);
 }
 
 .criati-badge-despesa {

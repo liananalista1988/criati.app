@@ -40,16 +40,6 @@
 						<div class="criati-field"><label for="compra-cartao">Cartão</label><select class="criati-select" id="compra-cartao" required></select></div>
 						<div class="criati-field"><label for="compra-pessoa">Responsável</label><select class="criati-select" id="compra-pessoa" required></select></div>
 						<div class="criati-field"><label for="compra-categoria">Categoria</label><select class="criati-select" id="compra-categoria" required></select></div>
-						<fieldset class="criati-field">
-							<legend>Destino da compra</legend>
-							<label><input type="radio" name="destinoCompra" value="RESIDENCIA" checked /> Compra da residência</label>
-							<label><input type="radio" name="destinoCompra" value="TERCEIRO" /> Compra realizada para terceiro</label>
-						</fieldset>
-						<div class="criati-field financeiro-campo-condicional" id="compra-parte-campo" hidden>
-							<label for="compra-parte">Pessoa relacionada</label>
-							<select class="criati-select" id="compra-parte"></select>
-							<p class="criati-card-sub">O terceiro deve estar cadastrado em Contatos financeiros.</p>
-						</div>
 						<div class="criati-field"><label for="compra-descricao">Descrição</label><input class="criati-input" id="compra-descricao" maxlength="200" required /></div>
 						<div class="criati-field"><label for="compra-data">Data</label><input class="criati-input" type="date" id="compra-data" required /></div>
 						<div class="criati-field"><label for="compra-valor">Valor total</label><input class="criati-input" type="number" min="0.01" step="0.01" id="compra-valor" required /></div>
@@ -58,6 +48,8 @@
 						<div><button class="criati-btn criati-btn-primary" id="compra-salvar" type="submit">Registrar compra</button></div>
 					</form>
 					<p id="impacto-limite" class="criati-card-sub"></p>
+					<p class="criati-card-sub">Para registrar uma compra realizada para outra pessoa, utilize
+						<a href="/app/financeiro/compras-terceiros">Compras para terceiros</a>.</p>
 				</section>
 
 				<section class="criati-card">

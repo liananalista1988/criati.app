@@ -45,31 +45,16 @@
 		aviso.className = "criati-alert " + (erro ? "criati-alert-error" : "criati-alert-success");
 	}
 
-	function destinoSelecionado() {
-		return document.querySelector('input[name="destinoCompra"]:checked').value;
-	}
-
-	function atualizarDestino() {
-		var terceiro = destinoSelecionado() === "TERCEIRO";
-		el("compra-parte-campo").hidden = !terceiro;
-		el("compra-parte").required = terceiro;
-		if (!terceiro) {
-			el("compra-parte").value = "";
-		}
-	}
-
 	function carregarCadastros() {
 		return Promise.all([
 			api.get("/api/contexto/financeiro/cartoes?status=ATIVO"),
 			api.get("/api/contexto/financeiro/pessoas?status=ATIVO"),
-			api.get("/api/contexto/financeiro/categorias?status=ATIVO&tipo=DESPESA"),
-			api.get("/api/contexto/financeiro/contatos?status=ATIVO")
+			api.get("/api/contexto/financeiro/categorias?status=ATIVO&tipo=DESPESA")
 		]).then(function (resultados) {
 			cartoes = resultados[0].data || [];
 			preencherSelect("compra-cartao", cartoes, "Selecione");
 			preencherSelect("compra-pessoa", resultados[1].data || [], "Selecione");
 			preencherSelect("compra-categoria", resultados[2].data || [], "Selecione");
-			preencherSelect("compra-parte", resultados[3].data || [], "Selecione o terceiro");
 		});
 	}
 
@@ -158,7 +143,6 @@
 			cartaoId: el("compra-cartao").value,
 			pessoaResponsavelId: el("compra-pessoa").value,
 			categoriaId: el("compra-categoria").value,
-			parteFinanceiraId: destinoSelecionado() === "TERCEIRO" ? el("compra-parte").value : null,
 			descricao: el("compra-descricao").value,
 			dataCompra: el("compra-data").value,
 			valorTotal: Number(el("compra-valor").value),
@@ -180,7 +164,6 @@
 				evento.target.reset();
 				el("compra-parcelas").value = "1";
 				el("compra-data").value = new Date().toISOString().slice(0, 10);
-				atualizarDestino();
 				mostrarLimiteAtual();
 				return Promise.all([carregarCadastros(), listar()]);
 			})
@@ -250,9 +233,6 @@
 	}
 
 	function iniciar() {
-		document.querySelectorAll('input[name="destinoCompra"]').forEach(function (campo) {
-			campo.addEventListener("change", atualizarDestino);
-		});
 		el("compra-form").addEventListener("submit", salvar);
 		el("compra-cartao").addEventListener("change", mostrarLimiteAtual);
 		el("filtrar").addEventListener("click", listar);
@@ -260,7 +240,6 @@
 			el("compra-detalhes-modal").hidden = true;
 		});
 		el("compra-data").value = new Date().toISOString().slice(0, 10);
-		atualizarDestino();
 		Promise.all([carregarCadastros(), listar()]).catch(function (erro) {
 			mensagem(erro.message || "Não foi possível carregar os dados da tela.", true);
 		});
