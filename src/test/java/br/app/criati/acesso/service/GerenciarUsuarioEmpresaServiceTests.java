@@ -16,9 +16,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import br.app.criati.acesso.model.RedefinicaoSenhaAuditoria;
 import br.app.criati.acesso.model.UsuarioEmpresa;
+import br.app.criati.acesso.repository.RedefinicaoSenhaAuditoriaRepository;
 import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.exception.AcessoNegadoException;
@@ -28,14 +31,28 @@ import br.app.criati.exception.UltimoAdministradorAtivoException;
 import br.app.criati.exception.VinculoStatusInvalidoException;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
+import br.app.criati.shared.validacao.SenhaValidador;
 import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.usuario.model.Usuario;
+import br.app.criati.usuario.repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
 class GerenciarUsuarioEmpresaServiceTests {
 
 	@Mock
 	private UsuarioEmpresaRepository usuarioEmpresaRepository;
+
+	@Mock
+	private UsuarioRepository usuarioRepository;
+
+	@Mock
+	private RedefinicaoSenhaAuditoriaRepository redefinicaoSenhaAuditoriaRepository;
+
+	@Mock
+	private PasswordEncoder passwordEncoder;
+
+	@Mock
+	private SenhaValidador senhaValidador;
 
 	@InjectMocks
 	private GerenciarUsuarioEmpresaService service;
@@ -359,6 +376,125 @@ class GerenciarUsuarioEmpresaServiceTests {
 
 		assertThatThrownBy(() -> service.remover(idAlvo, contextoAdministrador()))
 				.isInstanceOf(AcessoNegadoException.class);
+	}
+
+	// --- redefinirSenha (CRIATI-SEG-001) ------------------------------------
+
+	@Test
+	void deveRedefinirSenhaDeUsuarioComumECriarEventoDeAuditoria() {
+		Usuario administrador = criarUsuario("Admin Um", "admin.redefinir@criati.test");
+		UsuarioEmpresa vinculoAdmin = criarVinculo(administrador, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("Alvo Redefinir", "alvo.redefinir@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+		ContextoEmpresaAtual contexto =
+				new ContextoEmpresaAtual(administrador.getId(), empresaAtivaId, vinculoAdmin.getId(), PerfilUsuario.ADMINISTRADOR);
+		mockarBusca(vinculoAlvo);
+		when(usuarioRepository.findById(administrador.getId())).thenReturn(Optional.of(administrador));
+		when(passwordEncoder.encode("senha-nova-123456")).thenReturn("hash-codificado");
+
+		service.redefinirSenha(vinculoAlvo.getId(), "senha-nova-123456", "senha-nova-123456", contexto);
+
+		verify(senhaValidador).validar("senha-nova-123456", "senha-nova-123456");
+		assertThat(alvo.getSenha()).isEqualTo("hash-codificado");
+		verify(usuarioRepository).save(alvo);
+
+		org.mockito.ArgumentCaptor<RedefinicaoSenhaAuditoria> captor =
+				org.mockito.ArgumentCaptor.forClass(RedefinicaoSenhaAuditoria.class);
+		verify(redefinicaoSenhaAuditoriaRepository).save(captor.capture());
+		RedefinicaoSenhaAuditoria evento = captor.getValue();
+		assertThat(evento.getEmpresa()).isEqualTo(empresaAtiva);
+		assertThat(evento.getAdministrador()).isEqualTo(administrador);
+		assertThat(evento.getUsuarioAfetado()).isEqualTo(alvo);
+		assertThat(evento.getAcao()).isEqualTo(br.app.criati.shared.enums.AcaoAuditoriaSeguranca.REDEFINICAO_ADMINISTRATIVA_SENHA);
+	}
+
+	@Test
+	void deveRejeitarRedefinicaoQuandoChamadorNaoEhAdministrador() {
+		assertThatThrownBy(() -> service.redefinirSenha(UUID.randomUUID(), "x", "x", contextoGestor()))
+				.isInstanceOf(AcessoNegadoException.class);
+
+		verify(usuarioRepository, never()).save(any());
+		verify(redefinicaoSenhaAuditoriaRepository, never()).save(any());
+	}
+
+	@Test
+	void deveRejeitarAutoRedefinicaoDeSenha() {
+		UsuarioEmpresa vinculoDoChamador =
+				criarVinculo(criarUsuario("proprio@criati.test"), PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		ContextoEmpresaAtual contexto = contextoAdministradorComVinculo(vinculoDoChamador.getId());
+		when(usuarioEmpresaRepository.findByIdAndEmpresaId(vinculoDoChamador.getId(), empresaAtivaId))
+				.thenReturn(Optional.of(vinculoDoChamador));
+
+		assertThatThrownBy(() -> service.redefinirSenha(vinculoDoChamador.getId(), "x", "x", contexto))
+				.isInstanceOf(AutoAlteracaoNaoPermitidaException.class);
+
+		verify(usuarioRepository, never()).save(any());
+		verify(redefinicaoSenhaAuditoriaRepository, never()).save(any());
+	}
+
+	@Test
+	void deveRejeitarRedefinicaoDeVinculoDeOutraEmpresa() {
+		UUID idAlvo = UUID.randomUUID();
+		when(usuarioEmpresaRepository.findByIdAndEmpresaId(idAlvo, empresaAtivaId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> service.redefinirSenha(idAlvo, "x", "x", contextoAdministrador()))
+				.isInstanceOf(AcessoNegadoException.class);
+
+		verify(redefinicaoSenhaAuditoriaRepository, never()).save(any());
+	}
+
+	@Test
+	void deveRejeitarRedefinicaoDeVinculoInativo() {
+		UsuarioEmpresa vinculo = criarVinculo(criarUsuario("inativo.senha@criati.test"), PerfilUsuario.USUARIO, StatusCadastro.INATIVO);
+		mockarBusca(vinculo);
+
+		assertThatThrownBy(() -> service.redefinirSenha(vinculo.getId(), "x", "x", contextoAdministrador()))
+				.isInstanceOf(VinculoStatusInvalidoException.class);
+
+		verify(redefinicaoSenhaAuditoriaRepository, never()).save(any());
+	}
+
+	@Test
+	void deveRejeitarQuandoSenhaNaoAtendePoliticaOuConfirmacaoDivergeSemCriarAuditoria() {
+		UsuarioEmpresa vinculo = criarVinculo(criarUsuario("politica.senha@criati.test"), PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+		mockarBusca(vinculo);
+		org.mockito.Mockito.doThrow(new DadosInvalidosException("Senha deve possuir no minimo 15 caracteres"))
+				.when(senhaValidador).validar("curta", "curta");
+
+		assertThatThrownBy(() -> service.redefinirSenha(vinculo.getId(), "curta", "curta", contextoAdministrador()))
+				.isInstanceOf(DadosInvalidosException.class);
+
+		verify(usuarioRepository, never()).save(any());
+		verify(redefinicaoSenhaAuditoriaRepository, never()).save(any());
+	}
+
+	// Nao ha, nesta suite unitaria, como observar um rollback real de banco:
+	// o proprio Spring Test (MockMvc dentro de @Transactional) compartilha a
+	// mesma transacao do metodo de teste, entao um rollback so acontece de
+	// fato ao final do teste (ver ContextoUsuarioEmpresaControllerTests para
+	// o cenario HTTP). O que este teste prova, e que e a garantia realmente
+	// verificavel aqui, e que o metodo NAO engole a falha do repositorio de
+	// auditoria: a excecao propaga para fora do metodo @Transactional, que e
+	// exatamente o mecanismo que faz o proxy do Spring marcar a transacao
+	// para rollback em producao (revertendo tambem o usuarioRepository.save
+	// ja executado, pois esta na mesma transacao).
+	@Test
+	void falhaAoSalvarAuditoriaPropagaExcecaoSemEngolir() {
+		Usuario administrador = criarUsuario("Admin Dois", "admin.auditoriafalha@criati.test");
+		UsuarioEmpresa vinculoAdmin = criarVinculo(administrador, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("Alvo Falha", "alvo.auditoriafalha@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+		ContextoEmpresaAtual contexto =
+				new ContextoEmpresaAtual(administrador.getId(), empresaAtivaId, vinculoAdmin.getId(), PerfilUsuario.ADMINISTRADOR);
+		mockarBusca(vinculoAlvo);
+		when(usuarioRepository.findById(administrador.getId())).thenReturn(Optional.of(administrador));
+		when(passwordEncoder.encode(any())).thenReturn("hash-codificado");
+		org.mockito.Mockito.doThrow(new RuntimeException("falha simulada ao gravar auditoria"))
+				.when(redefinicaoSenhaAuditoriaRepository).save(any());
+
+		assertThatThrownBy(() -> service.redefinirSenha(vinculoAlvo.getId(), "senha-nova-123456", "senha-nova-123456", contexto))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("falha simulada ao gravar auditoria");
 	}
 
 	// --- auxiliares ------------------------------------------------------

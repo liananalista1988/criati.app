@@ -9,6 +9,7 @@
 	var PERFIL_LABEL = { ADMINISTRADOR: "Administrador", GESTOR: "Gestor", USUARIO: "Usuario" };
 
 	var usuarioEmEdicaoPerfilId = null;
+	var usuarioEmRedefinicaoSenhaId = null;
 
 	function el(id) {
 		return document.getElementById(id);
@@ -36,6 +37,7 @@
 	var modalDetalhe;
 	var modalPerfil;
 	var modalConfirmar;
+	var modalRedefinirSenha;
 
 	function iniciar() {
 		var tbody = el("criati-usuarios-tbody");
@@ -46,10 +48,13 @@
 		modalDetalhe = window.CriatiUI.criarModal(el("criati-usuario-detalhe-modal"));
 		modalPerfil = window.CriatiUI.criarModal(el("criati-perfil-modal"));
 		modalConfirmar = window.CriatiUI.criarModal(el("criati-confirmar-modal"));
+		modalRedefinirSenha = window.CriatiUI.criarModal(el("criati-redefinir-senha-modal"));
 
 		el("criati-usuario-detalhe-fechar").addEventListener("click", modalDetalhe.fechar);
 		el("criati-perfil-cancelar").addEventListener("click", modalPerfil.fechar);
 		el("criati-perfil-form").addEventListener("submit", salvarPerfil);
+		el("criati-redefinir-senha-cancelar").addEventListener("click", modalRedefinirSenha.fechar);
+		el("criati-redefinir-senha-form").addEventListener("submit", salvarRedefinicaoSenha);
 
 		el("criati-usuarios-busca").addEventListener("input", debounce(carregar, 350));
 		el("criati-usuarios-filtro-perfil").addEventListener("change", carregar);
@@ -240,6 +245,15 @@
 				abrirPerfilModal(usuario);
 			}));
 
+			var botaoRedefinirSenha = criarBotao("Redefinir senha", function () {
+				abrirRedefinirSenhaModal(usuario);
+			});
+			if (usuario.proprioUsuario) {
+				botaoRedefinirSenha.disabled = true;
+				botaoRedefinirSenha.title = "Voce nao pode redefinir a propria senha por este fluxo.";
+			}
+			container.appendChild(botaoRedefinirSenha);
+
 			var botaoSuspender = criarBotao("Suspender", function () {
 				confirmarSuspender(usuario);
 			});
@@ -354,6 +368,43 @@
 			})
 			.catch(function (erro) {
 				window.CriatiUI.showToast("erro", (erro && erro.message) || "Nao foi possivel alterar o perfil agora.");
+			})
+			.finally(function () {
+				window.CriatiUI.setButtonLoading(botao, false);
+			});
+	}
+
+	function abrirRedefinirSenhaModal(usuario) {
+		usuarioEmRedefinicaoSenhaId = usuario.usuarioEmpresaId;
+		el("criati-redefinir-senha-usuario").textContent = "Usuario: " + usuario.nome + " (" + usuario.email + ")";
+		el("criati-redefinir-senha-form").reset();
+		var mensagem = el("criati-redefinir-senha-mensagem");
+		mensagem.hidden = true;
+		modalRedefinirSenha.abrir(el("criati-redefinir-senha-nova"));
+	}
+
+	function salvarRedefinicaoSenha(evento) {
+		evento.preventDefault();
+		var mensagem = el("criati-redefinir-senha-mensagem");
+		mensagem.hidden = true;
+		var botao = el("criati-redefinir-senha-salvar");
+		var novaSenha = el("criati-redefinir-senha-nova").value;
+		var confirmacaoSenha = el("criati-redefinir-senha-confirmacao").value;
+
+		window.CriatiUI.setButtonLoading(botao, true, "Redefinindo...");
+		window.CriatiApi
+			.post("/api/contexto/usuarios/" + usuarioEmRedefinicaoSenhaId + "/redefinir-senha", {
+				novaSenha: novaSenha,
+				confirmacaoSenha: confirmacaoSenha
+			})
+			.then(function () {
+				window.CriatiUI.showToast("sucesso", "Senha redefinida com sucesso.");
+				modalRedefinirSenha.fechar();
+			})
+			.catch(function (erro) {
+				mensagem.textContent = (erro && erro.message) || "Nao foi possivel redefinir a senha agora.";
+				mensagem.className = "criati-alert criati-alert-erro";
+				mensagem.hidden = false;
 			})
 			.finally(function () {
 				window.CriatiUI.setButtonLoading(botao, false);

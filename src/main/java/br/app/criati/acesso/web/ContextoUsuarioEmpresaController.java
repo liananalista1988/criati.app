@@ -102,6 +102,22 @@ public class ContextoUsuarioEmpresaController {
 		return ResponseEntity.ok(paraResponse(vinculo, contexto));
 	}
 
+	// CRIATI-SEG-001: contrato proprio (RedefinirSenhaRequest/Response), nunca
+	// reaproveita IntegranteEmpresaResponse/AlterarPerfilRequest — a senha e o
+	// evento de auditoria criado nunca aparecem na resposta.
+	@PostMapping("/{usuarioEmpresaId}/redefinir-senha")
+	public ResponseEntity<RedefinirSenhaResponse> redefinirSenha(
+			@PathVariable UUID usuarioEmpresaId,
+			@Valid @RequestBody RedefinirSenhaRequest request,
+			HttpSession session,
+			@AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		gerenciarUsuarioEmpresaService.redefinirSenha(
+				usuarioEmpresaId, request.novaSenha(), request.confirmacaoSenha(), contexto);
+		return ResponseEntity.ok(RedefinirSenhaResponse.sucesso());
+	}
+
 	@DeleteMapping("/{usuarioEmpresaId}")
 	public ResponseEntity<Void> remover(
 			@PathVariable UUID usuarioEmpresaId,

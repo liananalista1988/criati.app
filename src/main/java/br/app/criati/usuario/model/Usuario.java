@@ -72,4 +72,12 @@ public class Usuario {
 		usuario.superAdministrador = true;
 		return usuario;
 	}
+
+	// Recebe sempre o hash ja codificado pelo PasswordEncoder do chamador
+	// (CRIATI-SEG-001) — esta entidade nunca codifica senha por conta propria,
+	// mesmo padrao ja usado no cadastro (CadastrarUsuarioService) e no aceite
+	// de convite (AceitarConviteService).
+	public void redefinirSenha(String senhaCodificada) {
+		this.senha = Objects.requireNonNull(senhaCodificada, "senhaCodificada nao pode ser nula");
+	}
 }

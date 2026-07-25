@@ -121,6 +121,33 @@
 		</div>
 	</div>
 
+	<!-- Redefinir senha (apenas ADMINISTRADOR, nunca do proprio usuario) -->
+	<div class="criati-modal-overlay" id="criati-redefinir-senha-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-redefinir-senha-titulo">
+			<h2 id="criati-redefinir-senha-titulo">Redefinir senha</h2>
+			<p id="criati-redefinir-senha-usuario"></p>
+			<form class="criati-modal-form" id="criati-redefinir-senha-form">
+				<div id="criati-redefinir-senha-mensagem" class="criati-alert" role="alert" hidden></div>
+				<div class="criati-field">
+					<label for="criati-redefinir-senha-nova">Nova senha</label>
+					<input class="criati-input" type="password" id="criati-redefinir-senha-nova"
+						autocomplete="new-password" required />
+				</div>
+				<div class="criati-field">
+					<label for="criati-redefinir-senha-confirmacao">Confirmar nova senha</label>
+					<input class="criati-input" type="password" id="criati-redefinir-senha-confirmacao"
+						autocomplete="new-password" required />
+				</div>
+				<p class="criati-texto-ajuda">A senha nunca e exibida novamente apos definida; anote-a em local
+					seguro antes de fechar esta janela.</p>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="criati-redefinir-senha-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="criati-redefinir-senha-salvar">Redefinir senha</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 	<!-- Confirmacao generica (suspender/remover) -->
 	<div class="criati-modal-overlay" id="criati-confirmar-modal" hidden>
 		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-confirmar-titulo">

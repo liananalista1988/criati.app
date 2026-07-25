@@ -5,27 +5,45 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.app.criati.acesso.model.RedefinicaoSenhaAuditoria;
 import br.app.criati.acesso.model.UsuarioEmpresa;
+import br.app.criati.acesso.repository.RedefinicaoSenhaAuditoriaRepository;
 import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
 import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.AutoAlteracaoNaoPermitidaException;
 import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
+import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.exception.VinculoStatusInvalidoException;
+import br.app.criati.shared.enums.AcaoAuditoriaSeguranca;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
+import br.app.criati.shared.validacao.SenhaValidador;
 import br.app.criati.tenant.ContextoEmpresaAtual;
+import br.app.criati.usuario.model.Usuario;
+import br.app.criati.usuario.repository.UsuarioRepository;
 
 @Service
 public class GerenciarUsuarioEmpresaService {
 
 	private final UsuarioEmpresaRepository usuarioEmpresaRepository;
+	private final UsuarioRepository usuarioRepository;
+	private final RedefinicaoSenhaAuditoriaRepository redefinicaoSenhaAuditoriaRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final SenhaValidador senhaValidador;
 
-	public GerenciarUsuarioEmpresaService(UsuarioEmpresaRepository usuarioEmpresaRepository) {
+	public GerenciarUsuarioEmpresaService(UsuarioEmpresaRepository usuarioEmpresaRepository,
+			UsuarioRepository usuarioRepository, RedefinicaoSenhaAuditoriaRepository redefinicaoSenhaAuditoriaRepository,
+			PasswordEncoder passwordEncoder, SenhaValidador senhaValidador) {
 		this.usuarioEmpresaRepository = usuarioEmpresaRepository;
+		this.usuarioRepository = usuarioRepository;
+		this.redefinicaoSenhaAuditoriaRepository = redefinicaoSenhaAuditoriaRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.senhaValidador = senhaValidador;
 	}
 
 	@Transactional(readOnly = true)
@@ -126,6 +144,39 @@ public class GerenciarUsuarioEmpresaService {
 
 		vinculo.removerLogicamente();
 		usuarioEmpresaRepository.save(vinculo);
+	}
+
+	// CRIATI-SEG-001: redefinicao administrativa de senha. Reaproveita
+	// SenhaValidador (mesma politica minima ja usada em AceitarConviteService)
+	// e PasswordEncoder (mesmo bean BCrypt de todo o sistema) — nunca codifica
+	// nem valida senha por conta propria. Tudo numa unica transacao: se o
+	// registro de auditoria falhar ao salvar, a excecao propaga e o proxy
+	// @Transactional reverte tambem a troca de senha (nao ha commit parcial).
+	@Transactional
+	public void redefinirSenha(
+			UUID usuarioEmpresaId, String novaSenha, String confirmacaoSenha, ContextoEmpresaAtual contextoChamador) {
+		exigirAdministrador(contextoChamador);
+
+		UsuarioEmpresa vinculo = buscarVinculoDaEmpresaAtiva(usuarioEmpresaId, contextoChamador);
+		if (ehProprioVinculo(vinculo, contextoChamador)) {
+			throw new AutoAlteracaoNaoPermitidaException();
+		}
+		if (vinculo.getStatus() != StatusCadastro.ATIVO) {
+			throw new VinculoStatusInvalidoException("Vinculo inativo nao pode ter a senha redefinida");
+		}
+
+		senhaValidador.validar(novaSenha, confirmacaoSenha);
+
+		Usuario administrador = usuarioRepository.findById(contextoChamador.usuarioId())
+				.orElseThrow(UsuarioNaoEncontradoException::new);
+		Usuario usuarioAfetado = vinculo.getUsuario();
+
+		usuarioAfetado.redefinirSenha(passwordEncoder.encode(novaSenha));
+		usuarioRepository.save(usuarioAfetado);
+
+		RedefinicaoSenhaAuditoria evento = new RedefinicaoSenhaAuditoria(
+				vinculo.getEmpresa(), administrador, usuarioAfetado, AcaoAuditoriaSeguranca.REDEFINICAO_ADMINISTRATIVA_SENHA);
+		redefinicaoSenhaAuditoriaRepository.save(evento);
 	}
 
 	// O vinculo do proprio chamador e identificado pelo usuarioEmpresaId

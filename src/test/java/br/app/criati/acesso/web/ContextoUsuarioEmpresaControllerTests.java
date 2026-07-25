@@ -24,10 +24,13 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.app.criati.acesso.model.RedefinicaoSenhaAuditoria;
 import br.app.criati.acesso.model.UsuarioEmpresa;
+import br.app.criati.acesso.repository.RedefinicaoSenhaAuditoriaRepository;
 import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
+import br.app.criati.shared.enums.AcaoAuditoriaSeguranca;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.usuario.model.Usuario;
@@ -55,6 +58,9 @@ class ContextoUsuarioEmpresaControllerTests {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private RedefinicaoSenhaAuditoriaRepository redefinicaoSenhaAuditoriaRepository;
 
 	// --- listagem ----------------------------------------------------------
 
@@ -617,6 +623,210 @@ class ContextoUsuarioEmpresaControllerTests {
 
 		assertThat(usuarioEmpresaRepository.findById(vinculoB.getId()).orElseThrow().getStatus())
 				.isEqualTo(StatusCadastro.ATIVO);
+	}
+
+	// --- redefinicao administrativa de senha (CRIATI-SEG-001) --------------
+
+	private static final String SENHA_NOVA = "senha-nova-com-quinze-mais";
+
+	@Test
+	void administradorRedefineSenhaDeUsuarioDaPropriaEmpresaENovaSenhaPermiteLogin() throws Exception {
+		Usuario administrador = criarUsuario("admin.redefine@criati.test");
+		Empresa empresa = criarEmpresa("31111111100001");
+		criarVinculo(administrador, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("alvo.redefine@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, empresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(administrador.getEmail());
+		selecionarEmpresa(session, empresa.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAlvo.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "%s" }
+						""".formatted(SENHA_NOVA, SENHA_NOVA)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.mensagem").exists())
+				// resposta nunca contem a senha, o hash ou o registro de auditoria.
+				.andExpect(jsonPath("$.novaSenha").doesNotExist())
+				.andExpect(jsonPath("$.senha").doesNotExist())
+				.andExpect(jsonPath("$.hash").doesNotExist())
+				.andExpect(jsonPath("$.auditoria").doesNotExist());
+
+		// nova senha permite login.
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "email": "%s", "senha": "%s" }
+						""".formatted(alvo.getEmail(), SENHA_NOVA)))
+				.andExpect(status().isOk());
+
+		// senha antiga deixa de funcionar.
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "email": "%s", "senha": "%s" }
+						""".formatted(alvo.getEmail(), SENHA)))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void usuarioComumRecebe403AoTentarRedefinirSenha() throws Exception {
+		Usuario comum = criarUsuario("usuario.redefine@criati.test");
+		Empresa empresa = criarEmpresa("31111111100101");
+		criarVinculo(comum, empresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("alvo.redefine2@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, empresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(comum.getEmail());
+		selecionarEmpresa(session, empresa.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAlvo.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "%s" }
+						""".formatted(SENHA_NOVA, SENHA_NOVA)))
+				.andExpect(status().isForbidden());
+
+		assertThat(redefinicaoSenhaAuditoriaRepository.findAll()).isEmpty();
+		assertThat(passwordEncoder.matches(SENHA, usuarioRepository.findById(alvo.getId()).orElseThrow().getSenha()))
+				.isTrue();
+	}
+
+	@Test
+	void naoPodeRedefinirSenhaDeUsuarioDeOutraEmpresaENaoCriaAuditoria() throws Exception {
+		Usuario administrador = criarUsuario("admin.redefineoutra@criati.test");
+		Empresa empresaA = criarEmpresa("31111111100201");
+		Empresa empresaB = criarEmpresa("32222222100202");
+		criarVinculo(administrador, empresaA, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario membroB = criarUsuario("membro.redefineoutra@criati.test");
+		UsuarioEmpresa vinculoB = criarVinculo(membroB, empresaB, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(administrador.getEmail());
+		selecionarEmpresa(session, empresaA.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoB.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "%s" }
+						""".formatted(SENHA_NOVA, SENHA_NOVA)))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("Acesso negado"));
+
+		assertThat(redefinicaoSenhaAuditoriaRepository.findAll()).isEmpty();
+		assertThat(passwordEncoder.matches(SENHA, usuarioRepository.findById(membroB.getId()).orElseThrow().getSenha()))
+				.isTrue();
+	}
+
+	@Test
+	void confirmacaoDivergenteERejeitadaSemCriarAuditoria() throws Exception {
+		Usuario administrador = criarUsuario("admin.divergente@criati.test");
+		Empresa empresa = criarEmpresa("31111111100301");
+		criarVinculo(administrador, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("alvo.divergente@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, empresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(administrador.getEmail());
+		selecionarEmpresa(session, empresa.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAlvo.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "outra-senha-bem-diferente" }
+						""".formatted(SENHA_NOVA)))
+				.andExpect(status().isBadRequest());
+
+		assertThat(redefinicaoSenhaAuditoriaRepository.findAll()).isEmpty();
+	}
+
+	@Test
+	void senhaAbaixoDoTamanhoMinimoERejeitadaSemCriarAuditoria() throws Exception {
+		Usuario administrador = criarUsuario("admin.curta@criati.test");
+		Empresa empresa = criarEmpresa("31111111100401");
+		criarVinculo(administrador, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("alvo.curta@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, empresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(administrador.getEmail());
+		selecionarEmpresa(session, empresa.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAlvo.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "curta123", "confirmacaoSenha": "curta123" }
+						"""))
+				.andExpect(status().isBadRequest());
+
+		assertThat(redefinicaoSenhaAuditoriaRepository.findAll()).isEmpty();
+	}
+
+	@Test
+	void administradorNaoPodeRedefinirAPropriaSenha() throws Exception {
+		Usuario administrador = criarUsuario("admin.autoredefine@criati.test");
+		Empresa empresa = criarEmpresa("31111111100501");
+		UsuarioEmpresa vinculoAdmin = criarVinculo(administrador, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(administrador.getEmail());
+		selecionarEmpresa(session, empresa.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAdmin.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "%s" }
+						""".formatted(SENHA_NOVA, SENHA_NOVA)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value("Operacao nao pode ser realizada sobre o proprio vinculo"));
+
+		assertThat(redefinicaoSenhaAuditoriaRepository.findAll()).isEmpty();
+	}
+
+	@Test
+	void anonimoRecebe401AoRedefinirSenha() throws Exception {
+		mockMvc.perform(post("/api/contexto/usuarios/" + UUID.randomUUID() + "/redefinir-senha")
+				.with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "%s" }
+						""".formatted(SENHA_NOVA, SENHA_NOVA)))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void cadaRedefinicaoDeSenhaCriaUmEventoDeAuditoriaSeparadoComDadosCorretosSemSenha() throws Exception {
+		Usuario administrador = criarUsuario("admin.auditoria@criati.test");
+		Empresa empresa = criarEmpresa("31111111100601");
+		criarVinculo(administrador, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
+		Usuario alvo = criarUsuario("alvo.auditoria@criati.test");
+		UsuarioEmpresa vinculoAlvo = criarVinculo(alvo, empresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+
+		MockHttpSession session = login(administrador.getEmail());
+		selecionarEmpresa(session, empresa.getId()).andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAlvo.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "%s" }
+						""".formatted(SENHA_NOVA, SENHA_NOVA)))
+				.andExpect(status().isOk());
+		mockMvc.perform(post("/api/contexto/usuarios/" + vinculoAlvo.getId() + "/redefinir-senha")
+				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "outra-senha-com-quinze-mais", "confirmacaoSenha": "outra-senha-com-quinze-mais" }
+						"""))
+				.andExpect(status().isOk());
+
+		// duas redefinicoes preservam dois registros distintos, nenhum sobrescrito.
+		java.util.List<RedefinicaoSenhaAuditoria> eventos = redefinicaoSenhaAuditoriaRepository.findAll();
+		assertThat(eventos).hasSize(2);
+		eventos.forEach(evento -> {
+			assertThat(evento.getEmpresa().getId()).isEqualTo(empresa.getId());
+			assertThat(evento.getAdministrador().getId()).isEqualTo(administrador.getId());
+			assertThat(evento.getUsuarioAfetado().getId()).isEqualTo(alvo.getId());
+			assertThat(evento.getAcao()).isEqualTo(AcaoAuditoriaSeguranca.REDEFINICAO_ADMINISTRATIVA_SENHA);
+			assertThat(evento.getCriadoEm()).isNotNull();
+		});
+
+		// o evento de auditoria nunca guarda senha nem hash - so as colunas
+		// modeladas na migration V16 (id, empresa, administrador, usuario
+		// afetado, acao, data). Nao ha campo de senha para checar em runtime;
+		// a garantia aqui e estrutural (ver RedefinicaoSenhaAuditoria.java).
 	}
 
 	// --- auxiliares --------------------------------------------------------
