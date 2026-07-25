@@ -107,6 +107,35 @@ class ComprasTerceirosControllerTests {
 	}
 
 	@Test
+	void compraGenericaRejeitaParteFinanceiraId() throws Exception {
+		// CRIATI-FIN-014: o endpoint generico de compras nunca cria
+		// ValorAReceberParcelaCartao, entao aceitar parteFinanceiraId aqui geraria
+		// uma compra marcada como "para terceiro" sem nenhum jeito de ser
+		// ressarcida. So o endpoint dedicado (/compras-terceiros) pode receber
+		// esse campo — ver compraParaTerceiroImpactaLimiteDoCartaoNormalmente.
+		Empresa empresa = criarEmpresaComFinanceiro("31212121000501");
+		Usuario admin = criarUsuario("terc.rejeita.generico@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
+		CategoriaFinanceira categoria = criarCategoria(empresa, "Mercado", TipoFinanceiro.DESPESA);
+		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
+		String cartaoId = criarCartao(empresa, admin, "5000.00");
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+
+		mockMvc.perform(post(COMPRAS_CARTAO).session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"cartaoId":"%s","pessoaResponsavelId":"%s","categoriaId":"%s","parteFinanceiraId":"%s",
+						 "descricao":"Presente","dataCompra":"2026-08-01","valorTotal":150.00,"quantidadeParcelas":1}
+						""".formatted(cartaoId, pessoa.getId(), categoria.getId(), parte.getId())))
+				.andExpect(status().isBadRequest());
+
+		// nenhuma compra foi criada — nem sequer uma compra "orfa" sem valor a receber.
+		mockMvc.perform(get(COMPRAS_CARTAO).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
 	void compraParaTerceiroExigeParteFinanceira() throws Exception {
 		Empresa empresa = criarEmpresaComFinanceiro("32222222000502");
 		Usuario admin = criarUsuario("terc.exige.parte@criati.test");

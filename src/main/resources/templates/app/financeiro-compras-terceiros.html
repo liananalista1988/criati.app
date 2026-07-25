@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Compras para terceiros · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<div>
+						<h1>Compras para terceiros</h1>
+						<p>Compras feitas no cartão da residência para outra pessoa, com controle de ressarcimento.</p>
+					</div>
+					<a th:if="${podeGerenciarComprasTerceiros}" class="criati-btn criati-btn-primary"
+						href="/app/financeiro/compras-terceiros/nova">Nova compra para terceiro</a>
+				</div>
+				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('compras-terceiros')}"></div>
+				<div id="compras-terceiros-mensagem" class="criati-alert" role="alert" hidden></div>
+
+				<section class="criati-grid criati-grid-4" aria-label="Resumo de compras para terceiros">
+					<div class="criati-card"><p class="criati-card-sub">Total principal</p><p class="criati-card-value" id="resumo-principal">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Total ressarcido</p><p class="criati-card-value" id="resumo-ressarcido">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Saldo a receber</p><p class="criati-card-value" id="resumo-saldo">R$ 0,00</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Pendentes</p><p class="criati-card-value" id="resumo-pendentes">0</p></div>
+					<div class="criati-card"><p class="criati-card-sub">Vencidas</p><p class="criati-card-value" id="resumo-vencidas">0</p></div>
+				</section>
+
+				<section class="criati-card">
+					<div class="criati-toolbar">
+						<div class="criati-field">
+							<label for="compras-terceiros-filtro-parte">Terceiro</label>
+							<select class="criati-select" id="compras-terceiros-filtro-parte"><option value="">Todos</option></select>
+						</div>
+						<div class="criati-field financeiro-campo-busca">
+							<label for="compras-terceiros-filtro-busca">Buscar</label>
+							<input class="criati-input" id="compras-terceiros-filtro-busca" type="search" placeholder="Descrição" />
+						</div>
+						<button class="criati-btn" id="compras-terceiros-filtrar" type="button">Filtrar</button>
+					</div>
+					<p id="compras-terceiros-carregando" aria-live="polite">Carregando compras...</p>
+					<div id="compras-terceiros-erro" class="criati-error-state" hidden>
+						<p>Não foi possível carregar as compras para terceiros.</p>
+						<button class="criati-btn" id="compras-terceiros-tentar-novamente" type="button">Tentar novamente</button>
+					</div>
+					<div id="compras-terceiros-vazio" class="criati-empty-state" hidden>
+						<p>Nenhuma compra para terceiro encontrada.</p>
+						<p>Cadastre a primeira compra ou altere os filtros.</p>
+					</div>
+					<div id="compras-terceiros-tabela-wrap" class="criati-table-wrap" hidden>
+						<table class="criati-table">
+							<thead>
+								<tr>
+									<th>Terceiro</th><th>Descrição</th><th>Cartão</th><th>Valor total</th>
+									<th>Data da compra</th><th>Parcelas</th><th>Status</th><th>Ações</th>
+								</tr>
+							</thead>
+							<tbody id="compras-terceiros-tbody"></tbody>
+						</table>
+					</div>
+					<p class="criati-card-sub">Valor ressarcido e saldo pendente são exibidos por parcela nos detalhes de cada compra.</p>
+				</section>
+			</main>
+		</div>
+	</div>
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-compras-terceiros.js}"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroComprasTerceiros.iniciarLista();
+		});
+	</script>
+</body>
+</html>

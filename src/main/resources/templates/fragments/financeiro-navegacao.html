@@ -41,6 +41,9 @@
 		<a th:classappend="${paginaAtiva == 'parcelas'} ? ' is-active' : ''"
 			th:attr="aria-current=${paginaAtiva == 'parcelas'} ? 'page' : null"
 			href="/app/financeiro/parcelas-cartao">Parcelas</a>
+		<a th:classappend="${paginaAtiva == 'compras-terceiros'} ? ' is-active' : ''"
+			th:attr="aria-current=${paginaAtiva == 'compras-terceiros'} ? 'page' : null"
+			href="/app/financeiro/compras-terceiros">Compras para terceiros</a>
 	</nav>
 </body>
 </html>

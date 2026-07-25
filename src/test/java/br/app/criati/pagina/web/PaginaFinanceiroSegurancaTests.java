@@ -155,9 +155,10 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/cartoes").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Cadastrar cartão")));
 		mockMvc.perform(get("/app/financeiro/compras-cartao").session(session)).andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Compra da residência")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Compra realizada para terceiro")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Pessoa relacionada")));
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("Compra realizada para terceiro"))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Pessoa relacionada"))))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Compras para terceiros")));
 		mockMvc.perform(get("/app/financeiro/parcelas-cartao").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Parcelas de cartão")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma parcela encontrada")))
@@ -165,6 +166,9 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/emprestimos").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Empréstimos concedidos")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhum empréstimo concedido encontrado")));
+		mockMvc.perform(get("/app/financeiro/compras-terceiros").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Compras para terceiros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma compra para terceiro encontrada")));
 	}
 
 	@Test
