@@ -52,10 +52,14 @@ import br.app.criati.exception.RecebimentoParcelaEmprestimoNaoEncontradoExceptio
 import br.app.criati.exception.RecebimentoParcelaEmprestimoStatusInvalidoException;
 import br.app.criati.exception.RecorrenciaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.RecorrenciaFinanceiraStatusInvalidoException;
+import br.app.criati.exception.RessarcimentoParcelaCartaoNaoEncontradoException;
+import br.app.criati.exception.RessarcimentoParcelaCartaoStatusInvalidoException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
 import br.app.criati.exception.UsuarioJaVinculadoPessoaFinanceiraException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
+import br.app.criati.exception.ValorAReceberParcelaCartaoNaoEncontradoException;
+import br.app.criati.exception.ValorAReceberParcelaCartaoStatusInvalidoException;
 import br.app.criati.exception.VinculoStatusInvalidoException;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -123,7 +127,9 @@ public class GlobalExceptionHandler {
 			CartaoCreditoStatusInvalidoException.class,
 			EmprestimoConcedidoStatusInvalidoException.class,
 			ParcelaEmprestimoStatusInvalidoException.class,
-			RecebimentoParcelaEmprestimoStatusInvalidoException.class
+			RecebimentoParcelaEmprestimoStatusInvalidoException.class,
+			ValorAReceberParcelaCartaoStatusInvalidoException.class,
+			RessarcimentoParcelaCartaoStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -149,7 +155,9 @@ public class GlobalExceptionHandler {
 			CartaoCreditoNaoEncontradoException.class,
 			EmprestimoConcedidoNaoEncontradoException.class,
 			ParcelaEmprestimoNaoEncontradaException.class,
-			RecebimentoParcelaEmprestimoNaoEncontradoException.class
+			RecebimentoParcelaEmprestimoNaoEncontradoException.class,
+			ValorAReceberParcelaCartaoNaoEncontradoException.class,
+			RessarcimentoParcelaCartaoNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,
