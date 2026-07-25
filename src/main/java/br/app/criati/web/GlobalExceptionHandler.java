@@ -15,6 +15,7 @@ import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.exception.AplicacaoInativaException;
 import br.app.criati.exception.AplicacaoNaoEncontradaException;
 import br.app.criati.exception.AutoAlteracaoNaoPermitidaException;
+import br.app.criati.exception.AutoRedefinicaoSenhaNaoPermitidaException;
 import br.app.criati.exception.CategoriaFinanceiraComLancamentosException;
 import br.app.criati.exception.CategoriaFinanceiraInativaException;
 import br.app.criati.exception.CategoriaFinanceiraNaoEncontradaException;
@@ -58,6 +59,7 @@ import br.app.criati.exception.UltimoAdministradorAtivoException;
 import br.app.criati.exception.UsuarioJaVinculadoPessoaFinanceiraException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
+import br.app.criati.exception.UsuarioStatusInvalidoException;
 import br.app.criati.exception.ValorAReceberParcelaCartaoNaoEncontradoException;
 import br.app.criati.exception.ValorAReceberParcelaCartaoStatusInvalidoException;
 import br.app.criati.exception.VinculoStatusInvalidoException;
@@ -129,7 +131,9 @@ public class GlobalExceptionHandler {
 			ParcelaEmprestimoStatusInvalidoException.class,
 			RecebimentoParcelaEmprestimoStatusInvalidoException.class,
 			ValorAReceberParcelaCartaoStatusInvalidoException.class,
-			RessarcimentoParcelaCartaoStatusInvalidoException.class
+			RessarcimentoParcelaCartaoStatusInvalidoException.class,
+			AutoRedefinicaoSenhaNaoPermitidaException.class,
+			UsuarioStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
