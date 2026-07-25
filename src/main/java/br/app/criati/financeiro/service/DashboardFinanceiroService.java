@@ -31,16 +31,19 @@ public class DashboardFinanceiroService {
 	private final LancamentoFinanceiroRepository lancamentoFinanceiroRepository;
 	private final RessarcimentoParcelaCartaoRepository ressarcimentoParcelaCartaoRepository;
 	private final SaldoFinanceiroService saldoFinanceiroService;
+	private final ValorAReceberParcelaCartaoService valorAReceberParcelaCartaoService;
 
 	public DashboardFinanceiroService(
 			ContaFinanceiraRepository contaFinanceiraRepository,
 			LancamentoFinanceiroRepository lancamentoFinanceiroRepository,
 			RessarcimentoParcelaCartaoRepository ressarcimentoParcelaCartaoRepository,
-			SaldoFinanceiroService saldoFinanceiroService) {
+			SaldoFinanceiroService saldoFinanceiroService,
+			ValorAReceberParcelaCartaoService valorAReceberParcelaCartaoService) {
 		this.contaFinanceiraRepository = contaFinanceiraRepository;
 		this.lancamentoFinanceiroRepository = lancamentoFinanceiroRepository;
 		this.ressarcimentoParcelaCartaoRepository = ressarcimentoParcelaCartaoRepository;
 		this.saldoFinanceiroService = saldoFinanceiroService;
+		this.valorAReceberParcelaCartaoService = valorAReceberParcelaCartaoService;
 	}
 
 	@Transactional(readOnly = true)
@@ -68,6 +71,12 @@ public class DashboardFinanceiroService {
 		// anterior ainda esta em aberto e deve aparecer aqui.
 		BigDecimal totalPendenteReceber = somar(lancamentos, TipoFinanceiro.RECEITA, StatusLancamentoFinanceiro.PENDENTE);
 		BigDecimal totalPendentePagar = somar(lancamentos, TipoFinanceiro.DESPESA, StatusLancamentoFinanceiro.PENDENTE);
+
+		// CRIATI-FIN-015: indicador separado, nunca somado a totalPendenteReceber
+		// (que so soma LancamentoFinanceiro) — reaproveita o resumo ja isolado de
+		// ValorAReceberParcelaCartaoService, mesma fonte usada pela tela dedicada
+		// de compras para terceiros, evitando calcular esse valor duas vezes.
+		BigDecimal totalPendenteReceberTerceiros = valorAReceberParcelaCartaoService.resumir(contexto).saldoAReceber();
 
 		Map<UUID, List<LancamentoFinanceiro>> porConta = new LinkedHashMap<>();
 		for (LancamentoFinanceiro lancamento : lancamentos) {
@@ -106,6 +115,7 @@ public class DashboardFinanceiroService {
 				resultadoMes,
 				totalPendenteReceber,
 				totalPendentePagar,
+				totalPendenteReceberTerceiros,
 				saldoAtualConsolidado,
 				quantidadeContasAtivas,
 				quantidadeLancamentosPeriodo,

@@ -14,6 +14,11 @@ public record DashboardFinanceiro(
 		BigDecimal resultadoMes,
 		BigDecimal totalPendenteReceber,
 		BigDecimal totalPendentePagar,
+		// CRIATI-FIN-015: valor pendente de ressarcimento de compras para terceiros
+		// (ValorAReceberParcelaCartaoService.resumir().saldoAReceber()) — exibido
+		// separadamente, nunca somado a totalPendenteReceber/receitasPagas/resultadoMes:
+		// nao e receita da residencia, e devolucao de um valor que ela adiantou.
+		BigDecimal totalPendenteReceberTerceiros,
 		BigDecimal saldoAtualConsolidado,
 		long quantidadeContasAtivas,
 		long quantidadeLancamentosPeriodo,

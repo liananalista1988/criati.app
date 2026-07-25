@@ -8,7 +8,8 @@ import br.app.criati.financeiro.service.ResumoCartoesCredito;
 
 public record ResumoCartoesCreditoResponse(long quantidadeAtivos, long quantidadeFisicos, long quantidadeVirtuais,
 		long quantidadeBloqueados, BigDecimal limiteTotalConsolidado, BigDecimal limiteSaudavelConsolidado,
-		BigDecimal limiteDisponivelConsolidado, List<CartoesPorTitularResponse> porTitular,
+		BigDecimal limiteDisponivelConsolidado, BigDecimal limiteComprometidoResidencia,
+		BigDecimal limiteComprometidoTerceiros, List<CartoesPorTitularResponse> porTitular,
 		List<CartoesPorInstituicaoResponse> porInstituicao) {
 
 	public record CartoesPorTitularResponse(UUID titularId, String titularNome, long quantidade) {
@@ -20,7 +21,7 @@ public record ResumoCartoesCreditoResponse(long quantidadeAtivos, long quantidad
 	public static ResumoCartoesCreditoResponse from(ResumoCartoesCredito r) {
 		return new ResumoCartoesCreditoResponse(r.quantidadeAtivos(), r.quantidadeFisicos(), r.quantidadeVirtuais(),
 				r.quantidadeBloqueados(), r.limiteTotalConsolidado(), r.limiteSaudavelConsolidado(),
-				r.limiteDisponivelConsolidado(),
+				r.limiteDisponivelConsolidado(), r.limiteComprometidoResidencia(), r.limiteComprometidoTerceiros(),
 				r.porTitular().stream()
 						.map(t -> new CartoesPorTitularResponse(t.titularId(), t.titularNome(), t.quantidade()))
 						.toList(),
