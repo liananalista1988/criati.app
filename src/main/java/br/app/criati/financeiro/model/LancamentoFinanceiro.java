@@ -223,31 +223,6 @@ public class LancamentoFinanceiro {
 		return lancamento;
 	}
 
-	/**
-	 * Gera o lancamento de receita liquidado que representa o impacto financeiro
-	 * unico de um ressarcimento (integral ou parcial) de uma compra feita no
-	 * cartao da residencia para um terceiro. Mesma limitacao ja documentada em
-	 * {@link #gerarDeEmprestimoConcedido}: o modelo hoje so tem RECEITA/DESPESA,
-	 * sem uma natureza neutra de movimentacao patrimonial — classificar como
-	 * RECEITA e uma aproximacao deliberada, nao a representacao economicamente
-	 * exata (o principal ressarcido nao e renda da residencia; ver
-	 * docs/empresas/financeiro-les/IMPLEMENTACAO-CRIATI-FIN-013.md). Mesma razao
-	 * de nao referenciar recorrencia_id que {@link #gerarDeContaAPagar}: mais de
-	 * um ressarcimento parcial da mesma parcela geraria mais de um lancamento na
-	 * mesma data_competencia. A rastreabilidade fica a cargo de
-	 * RessarcimentoParcelaCartao/ValorAReceberParcelaCartao.
-	 */
-	public static LancamentoFinanceiro gerarDeRessarcimentoCompraTerceiro(Empresa empresa, ContaFinanceira conta,
-			CategoriaFinanceira categoria, ParteFinanceira parteFinanceira, String descricao, BigDecimal valor,
-			LocalDate dataCompetencia, LocalDate dataVencimento, LocalDate dataLiquidacao,
-			FormaPagamentoLancamento formaPagamento, Usuario autor) {
-		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, null, parteFinanceira,
-				TipoFinanceiro.RECEITA, descricao, valor, dataCompetencia, dataVencimento, dataLiquidacao,
-				StatusLancamentoFinanceiro.LIQUIDADO, formaPagamento, null, autor);
-		lancamento.origem = OrigemLancamentoFinanceiro.RESSARCIMENTO_COMPRA_TERCEIRO;
-		return lancamento;
-	}
-
 	public void atualizarDados(
 			ContaFinanceira conta,
 			CategoriaFinanceira categoria,

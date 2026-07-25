@@ -30,7 +30,6 @@ import br.app.criati.financeiro.shared.repository.ParteFinanceiraRepository;
 import br.app.criati.financeiro.shared.repository.PessoaFinanceiraRepository;
 import br.app.criati.shared.enums.Bandeira;
 import br.app.criati.shared.enums.FormaPagamentoLancamento;
-import br.app.criati.shared.enums.OrigemLancamentoFinanceiro;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.shared.enums.TipoCartao;
 import br.app.criati.shared.enums.TipoContaFinanceira;
@@ -97,55 +96,48 @@ class RessarcimentosComprasTerceirosJpaTests {
 	}
 
 	@Test
-	void devePersistirRessarcimentoEVincularUmUnicoLancamento() {
+	void devePersistirRessarcimentoSemGerarLancamentoFinanceiro() {
 		Empresa empresa = criarEmpresa("63333333000203");
 		Usuario autor = criarUsuario("jpa.ressarcimento@criati.test");
 		ContaFinanceira conta = criarConta(empresa);
-		CategoriaFinanceira categoriaReceita = criarCategoriaReceita(empresa, "Ressarcimentos");
 		ParcelaCompraCartao parcela = criarParcela(empresa, autor);
-		ParteFinanceira terceiro = parcela.getCompra().getParteFinanceira();
 		ValorAReceberParcelaCartao valor = valorARepository.saveAndFlush(
 				new ValorAReceberParcelaCartao(empresa, parcela, autor));
-
-		LancamentoFinanceiro lancamento = lancamentoRepository.saveAndFlush(
-				LancamentoFinanceiro.gerarDeRessarcimentoCompraTerceiro(empresa, conta, categoriaReceita, terceiro,
-						"Ressarcimento parcela 1/1", parcela.getValor(), valor.getVencimento().withDayOfMonth(1),
-						valor.getVencimento(), LocalDate.of(2026, 8, 28), FormaPagamentoLancamento.PIX, autor));
-
-		assertThat(lancamento.getOrigem()).isEqualTo(OrigemLancamentoFinanceiro.RESSARCIMENTO_COMPRA_TERCEIRO);
-		assertThat(lancamento.getTipo()).isEqualTo(TipoFinanceiro.RECEITA);
-		assertThat(lancamento.compoeSaldoRealizado()).isTrue();
 
 		RessarcimentoParcelaCartao ressarcimento = ressarcimentoRepository.saveAndFlush(new RessarcimentoParcelaCartao(
 				empresa, valor, conta, parcela.getValor(), LocalDate.of(2026, 8, 28), FormaPagamentoLancamento.PIX,
-				null, lancamento, autor));
+				null, autor));
 
 		assertThat(ressarcimento.getId()).isNotNull();
 		assertThat(ressarcimento.estaAtivo()).isTrue();
-		assertThat(ressarcimentoRepository.existsByLancamentoFinanceiroId(lancamento.getId())).isTrue();
+		assertThat(ressarcimento.getValor()).isEqualByComparingTo(parcela.getValor());
+		assertThat(ressarcimento.getConta().getId()).isEqualTo(conta.getId());
+		// nenhum LancamentoFinanceiro (RECEITA ou DESPESA) e criado pelo ressarcimento — CRIATI-FIN-013A.
+		assertThat(lancamentoRepository.findAllByEmpresaId(empresa.getId())).isEmpty();
 	}
 
 	@Test
-	void unicidadeDeRessarcimentoPorLancamentoEBloqueadaPeloBanco() {
-		Empresa empresa = criarEmpresa("64444444000204");
-		Usuario autor = criarUsuario("jpa.ressarcimento.duplicado@criati.test");
-		ContaFinanceira conta = criarConta(empresa);
-		CategoriaFinanceira categoriaReceita = criarCategoriaReceita(empresa, "Ressarcimentos");
-		ParcelaCompraCartao parcela = criarParcela(empresa, autor);
-		ParteFinanceira terceiro = parcela.getCompra().getParteFinanceira();
-		ValorAReceberParcelaCartao valor = valorARepository.saveAndFlush(
-				new ValorAReceberParcelaCartao(empresa, parcela, autor));
-		LancamentoFinanceiro lancamento = lancamentoRepository.saveAndFlush(
-				LancamentoFinanceiro.gerarDeRessarcimentoCompraTerceiro(empresa, conta, categoriaReceita, terceiro,
-						"Ressarcimento parcela 1/1", parcela.getValor(), valor.getVencimento().withDayOfMonth(1),
-						valor.getVencimento(), LocalDate.of(2026, 8, 28), FormaPagamentoLancamento.PIX, autor));
+	void findAllPorContaERestritoAoTenantEUsadoPeloCalculoDeSaldo() {
+		Empresa empresaA = criarEmpresa("64444444000204");
+		Empresa empresaB = criarEmpresa("65555555000205");
+		Usuario autorA = criarUsuario("jpa.ressarcimento.conta.a@criati.test");
+		Usuario autorB = criarUsuario("jpa.ressarcimento.conta.b@criati.test");
+		ContaFinanceira contaA = criarConta(empresaA);
+		ContaFinanceira contaB = criarConta(empresaB);
+		ParcelaCompraCartao parcelaA = criarParcela(empresaA, autorA);
+		ParcelaCompraCartao parcelaB = criarParcela(empresaB, autorB);
+		ValorAReceberParcelaCartao valorA = valorARepository.saveAndFlush(
+				new ValorAReceberParcelaCartao(empresaA, parcelaA, autorA));
+		ValorAReceberParcelaCartao valorB = valorARepository.saveAndFlush(
+				new ValorAReceberParcelaCartao(empresaB, parcelaB, autorB));
+		ressarcimentoRepository.saveAndFlush(new RessarcimentoParcelaCartao(empresaA, valorA, contaA,
+				parcelaA.getValor(), LocalDate.of(2026, 8, 28), FormaPagamentoLancamento.PIX, null, autorA));
+		ressarcimentoRepository.saveAndFlush(new RessarcimentoParcelaCartao(empresaB, valorB, contaB,
+				parcelaB.getValor(), LocalDate.of(2026, 8, 28), FormaPagamentoLancamento.PIX, null, autorB));
 
-		ressarcimentoRepository.saveAndFlush(new RessarcimentoParcelaCartao(empresa, valor, conta, parcela.getValor(),
-				LocalDate.of(2026, 8, 28), FormaPagamentoLancamento.PIX, null, lancamento, autor));
-
-		assertThrows(DataIntegrityViolationException.class, () -> ressarcimentoRepository.saveAndFlush(
-				new RessarcimentoParcelaCartao(empresa, valor, conta, parcela.getValor(), LocalDate.of(2026, 8, 28),
-						FormaPagamentoLancamento.PIX, null, lancamento, autor)));
+		assertThat(ressarcimentoRepository.findAllByEmpresaIdAndContaId(empresaA.getId(), contaA.getId())).hasSize(1);
+		assertThat(ressarcimentoRepository.findAllByEmpresaIdAndContaId(empresaA.getId(), contaB.getId())).isEmpty();
+		assertThat(ressarcimentoRepository.findAllByEmpresaId(empresaA.getId())).hasSize(1);
 	}
 
 	private ParcelaCompraCartao criarParcela(Empresa empresa, Usuario autor) {
@@ -176,9 +168,5 @@ class RessarcimentosComprasTerceirosJpaTests {
 	private ContaFinanceira criarConta(Empresa empresa) {
 		return contaRepository.saveAndFlush(
 				new ContaFinanceira(empresa, "Conta", TipoContaFinanceira.CAIXA, BigDecimal.ZERO, StatusCadastro.ATIVO));
-	}
-
-	private CategoriaFinanceira criarCategoriaReceita(Empresa empresa, String nome) {
-		return categoriaRepository.saveAndFlush(new CategoriaFinanceira(empresa, nome, TipoFinanceiro.RECEITA, StatusCadastro.ATIVO));
 	}
 }

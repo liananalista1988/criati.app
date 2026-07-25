@@ -58,6 +58,7 @@ class ComprasTerceirosControllerTests {
 	private static final String COMPRAS_TERCEIROS = "/api/contexto/financeiro/compras-terceiros";
 	private static final String VALORES_A_RECEBER = "/api/contexto/financeiro/valores-a-receber-cartao";
 	private static final String LANCAMENTOS = "/api/contexto/financeiro/lancamentos";
+	private static final String CONTAS = "/api/contexto/financeiro/contas";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -217,13 +218,12 @@ class ComprasTerceirosControllerTests {
 	/* ==================== RESSARCIMENTO ==================== */
 
 	@Test
-	void ressarcimentoIntegralGeraLancamentoDeReceitaEQuitaOValor() throws Exception {
+	void ressarcimentoIntegralQuitaOValorAtualizaSaldoESemGerarLancamento() throws Exception {
 		Empresa empresa = criarEmpresaComFinanceiro("38888888000508");
 		Usuario admin = criarUsuario("terc.ressarc.integral@criati.test");
 		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
 		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
 		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
-		CategoriaFinanceira categoriaReceita = criarCategoria(empresa, "Ressarcimentos", TipoFinanceiro.RECEITA);
 		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
 		ContaFinanceira conta = criarConta(empresa);
 		String cartaoId = criarCartao(empresa, admin, "5000.00");
@@ -231,22 +231,29 @@ class ComprasTerceirosControllerTests {
 		String compraId = criarCompraTerceiro(session, cartaoId, pessoa, categoriaDespesa, parte, "300.00", "2026-08-01", 1);
 		String valorId = buscarPrimeiroValorAReceber(session, compraId);
 
-		MvcResult resultado = mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-integral")
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(0.00));
+
+		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-integral")
 				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","dataRessarcimento":"2026-08-25","formaPagamento":"PIX"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","dataRessarcimento":"2026-08-25","formaPagamento":"PIX"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.valor").value(300.00))
-				.andReturn();
-		String lancamentoId = com.jayway.jsonpath.JsonPath.read(resultado.getResponse().getContentAsString(),
-				"$.lancamentoFinanceiroId");
-		assertThatLancamentoNaoENulo(lancamentoId);
+				.andExpect(jsonPath("$.lancamentoFinanceiroId").doesNotExist());
 
 		mockMvc.perform(get(VALORES_A_RECEBER + "/" + valorId).session(session))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("RESSARCIDA"))
 				.andExpect(jsonPath("$.saldoPendente").value(0.00));
+
+		// dinheiro entrou de fato na conta, mas nao como LancamentoFinanceiro/RECEITA.
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(300.00));
+		mockMvc.perform(get(LANCAMENTOS).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
 	}
 
 	@Test
@@ -256,7 +263,6 @@ class ComprasTerceirosControllerTests {
 		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
 		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
 		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
-		CategoriaFinanceira categoriaReceita = criarCategoria(empresa, "Ressarcimentos", TipoFinanceiro.RECEITA);
 		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
 		ContaFinanceira conta = criarConta(empresa);
 		String cartaoId = criarCartao(empresa, admin, "5000.00");
@@ -267,49 +273,60 @@ class ComprasTerceirosControllerTests {
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-parcial").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","valor":600.00,"dataRessarcimento":"2026-08-05"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","valor":600.00,"dataRessarcimento":"2026-08-05"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isBadRequest());
 
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-parcial").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","valor":0,"dataRessarcimento":"2026-08-05"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","valor":0,"dataRessarcimento":"2026-08-05"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isBadRequest());
 
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-parcial").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","valor":200.00,"dataRessarcimento":"2026-08-05"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
-				.andExpect(status().isCreated());
+						{"contaId":"%s","valor":200.00,"dataRessarcimento":"2026-08-05"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lancamentoFinanceiroId").doesNotExist());
 
 		mockMvc.perform(get(VALORES_A_RECEBER + "/" + valorId).session(session))
 				.andExpect(jsonPath("$.status").value("PARCIALMENTE_RESSARCIDA"))
 				.andExpect(jsonPath("$.saldoPendente").value(300.00));
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(200.00));
 
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-parcial").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","valor":300.00,"dataRessarcimento":"2026-08-10"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
-				.andExpect(status().isCreated());
+						{"contaId":"%s","valor":300.00,"dataRessarcimento":"2026-08-10"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lancamentoFinanceiroId").doesNotExist());
 
 		mockMvc.perform(get(VALORES_A_RECEBER + "/" + valorId).session(session))
 				.andExpect(jsonPath("$.status").value("RESSARCIDA"))
 				.andExpect(jsonPath("$.saldoPendente").value(0.00));
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(500.00));
 
 		// segundo ressarcimento apos quitacao e rejeitado.
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-integral").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","dataRessarcimento":"2026-08-11"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","dataRessarcimento":"2026-08-11"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isConflict());
 
 		mockMvc.perform(get(VALORES_A_RECEBER + "/" + valorId + "/ressarcimentos").session(session))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+
+		// nenhum LancamentoFinanceiro (RECEITA ou DESPESA) foi criado por nenhum dos ressarcimentos.
+		mockMvc.perform(get(LANCAMENTOS).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
 	}
 
 	@Test
@@ -401,7 +418,6 @@ class ComprasTerceirosControllerTests {
 		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
 		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
 		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
-		CategoriaFinanceira categoriaReceita = criarCategoria(empresa, "Ressarcimentos", TipoFinanceiro.RECEITA);
 		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
 		ContaFinanceira conta = criarConta(empresa);
 		String cartaoId = criarCartao(empresa, admin, "5000.00");
@@ -413,8 +429,8 @@ class ComprasTerceirosControllerTests {
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valor1 + "/receber-parcial").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","valor":120.00,"dataRessarcimento":"2026-08-10"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","valor":120.00,"dataRessarcimento":"2026-08-10"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isCreated());
 
 		mockMvc.perform(get(VALORES_A_RECEBER + "/resumo").session(session))
@@ -433,7 +449,6 @@ class ComprasTerceirosControllerTests {
 		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
 		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
 		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
-		CategoriaFinanceira categoriaReceita = criarCategoria(empresa, "Ressarcimentos", TipoFinanceiro.RECEITA);
 		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
 		ContaFinanceira conta = criarConta(empresa);
 		String cartaoId = criarCartao(empresa, admin, "5000.00");
@@ -444,10 +459,13 @@ class ComprasTerceirosControllerTests {
 		MvcResult resultado = mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-integral")
 				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","dataRessarcimento":"2026-08-20"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","dataRessarcimento":"2026-08-20"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isCreated()).andReturn();
 		String ressarcimentoId = com.jayway.jsonpath.JsonPath.read(resultado.getResponse().getContentAsString(), "$.id");
+
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(120.00));
 
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/ressarcimentos/" + ressarcimentoId + "/estornar")
 				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
@@ -461,11 +479,20 @@ class ComprasTerceirosControllerTests {
 				.andExpect(jsonPath("$.status").value("PENDENTE"))
 				.andExpect(jsonPath("$.saldoPendente").value(120.00));
 
+		// o estorno restaura o saldo da conta ao valor anterior ao ressarcimento.
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(0.00));
+
 		// registro do ressarcimento estornado continua visivel no historico, nao foi excluido.
 		mockMvc.perform(get(VALORES_A_RECEBER + "/" + valorId + "/ressarcimentos").session(session))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(1))
 				.andExpect(jsonPath("$[0].status").value("ESTORNADO"));
+
+		// nem o ressarcimento nem o estorno passaram por LancamentoFinanceiro em nenhum momento.
+		mockMvc.perform(get(LANCAMENTOS).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
 
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/ressarcimentos/" + ressarcimentoId + "/estornar")
 				.session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
@@ -481,7 +508,6 @@ class ComprasTerceirosControllerTests {
 		criarVinculo(gestor, empresa, PerfilUsuario.GESTOR);
 		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
 		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
-		CategoriaFinanceira categoriaReceita = criarCategoria(empresa, "Ressarcimentos", TipoFinanceiro.RECEITA);
 		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
 		ContaFinanceira conta = criarConta(empresa);
 		String cartaoId = criarCartao(empresa, admin, "5000.00");
@@ -493,8 +519,8 @@ class ComprasTerceirosControllerTests {
 		MvcResult resultado = mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-integral")
 				.session(sessionAdmin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","dataRessarcimento":"2026-08-20"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","dataRessarcimento":"2026-08-20"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isCreated()).andReturn();
 		String ressarcimentoId = com.jayway.jsonpath.JsonPath.read(resultado.getResponse().getContentAsString(), "$.id");
 
@@ -523,14 +549,22 @@ class ComprasTerceirosControllerTests {
 				.andExpect(jsonPath("$.length()").value(0));
 	}
 
+	/**
+	 * CRIATI-FIN-013A: o principal ressarcido nao e receita da residencia (apenas
+	 * a devolucao de um valor que ela adiantou), entao o ressarcimento nunca gera
+	 * LancamentoFinanceiro — nem RECEITA, nem DESPESA — em nenhum dos dois fluxos
+	 * (parcial e integral). O impacto de caixa e reconhecido apenas no saldo da
+	 * conta (ver ressarcimentoIntegralQuitaOValorAtualizaSaldoESemGerarLancamento
+	 * e ressarcimentosParciaisMultiplosAteQuitarERejeitaExcedente para as
+	 * asercoes de saldo).
+	 */
 	@Test
-	void ressarcimentoGeraLancamentoDeReceitaComOrigemDistinta() throws Exception {
+	void ressarcimentoParcialNemIntegralGeramReceitaOuDespesa() throws Exception {
 		Empresa empresa = criarEmpresaComFinanceiro("48888888000517");
-		Usuario admin = criarUsuario("terc.origem.distinta@criati.test");
+		Usuario admin = criarUsuario("terc.sem.receita@criati.test");
 		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
 		PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Morador");
 		CategoriaFinanceira categoriaDespesa = criarCategoria(empresa, "Presentes", TipoFinanceiro.DESPESA);
-		CategoriaFinanceira categoriaReceita = criarCategoria(empresa, "Ressarcimentos", TipoFinanceiro.RECEITA);
 		ParteFinanceira parte = criarParte(empresa, admin, "Amigo");
 		ContaFinanceira conta = criarConta(empresa);
 		String cartaoId = criarCartao(empresa, admin, "5000.00");
@@ -538,17 +572,32 @@ class ComprasTerceirosControllerTests {
 		String compraId = criarCompraTerceiro(session, cartaoId, pessoa, categoriaDespesa, parte, "150.00", "2026-08-01", 1);
 		String valorId = buscarPrimeiroValorAReceber(session, compraId);
 
+		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-parcial").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"contaId":"%s","valor":50.00,"dataRessarcimento":"2026-08-15"}
+						""".formatted(conta.getId())))
+				.andExpect(status().isCreated());
+		mockMvc.perform(get(LANCAMENTOS).session(session).param("tipo", "RECEITA"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+		mockMvc.perform(get(LANCAMENTOS).session(session).param("tipo", "DESPESA"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+
 		mockMvc.perform(post(VALORES_A_RECEBER + "/" + valorId + "/receber-integral").session(session).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"contaId":"%s","categoriaId":"%s","dataRessarcimento":"2026-08-20"}
-						""".formatted(conta.getId(), categoriaReceita.getId())))
+						{"contaId":"%s","dataRessarcimento":"2026-08-20"}
+						""".formatted(conta.getId())))
 				.andExpect(status().isCreated());
 
 		mockMvc.perform(get(LANCAMENTOS).session(session).param("tipo", "RECEITA"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1))
-				.andExpect(jsonPath("$[0].origem").value("RESSARCIMENTO_COMPRA_TERCEIRO"));
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+		mockMvc.perform(get(LANCAMENTOS).session(session).param("tipo", "DESPESA"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+		mockMvc.perform(get(LANCAMENTOS).session(session))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+		mockMvc.perform(get(CONTAS + "/" + conta.getId()).session(session))
+				.andExpect(jsonPath("$.saldoAtual").value(150.00));
 	}
 
 	@Test
@@ -675,10 +724,6 @@ class ComprasTerceirosControllerTests {
 		MvcResult resultado = mockMvc.perform(get(COMPRAS_TERCEIROS + "/" + compraId).session(session))
 				.andExpect(status().isOk()).andReturn();
 		return com.jayway.jsonpath.JsonPath.read(resultado.getResponse().getContentAsString(), "$.valoresAReceber[0].id");
-	}
-
-	private void assertThatLancamentoNaoENulo(String lancamentoId) {
-		org.assertj.core.api.Assertions.assertThat(lancamentoId).isNotNull();
 	}
 
 	private String criarCartao(Empresa empresa, Usuario autor, String limiteTotal) {

@@ -22,24 +22,26 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
  * Liquidacao (integral ou parcial) de um {@link ValorAReceberParcelaCartao}.
- * Cada ressarcimento gera exatamente um LancamentoFinanceiro de receita
- * liquidado (origem RESSARCIMENTO_COMPRA_TERCEIRO, referencia unica via
- * lancamento_financeiro_id) — mesmo padrao ja usado por
- * RecebimentoParcelaEmprestimo para emprestimos concedidos. Exclusao fisica
- * nao e permitida: o estorno preserva o registro e marca status ESTORNADO.
+ * Nao gera LancamentoFinanceiro: o principal ressarcido nao e receita nem
+ * despesa da residencia (o modelo hoje so tem TipoFinanceiro RECEITA/DESPESA,
+ * nenhum dos dois representa corretamente a devolucao de um valor que a
+ * residencia apenas adiantou para um terceiro — ver CRIATI-FIN-013A). O
+ * impacto de caixa na {@link ContaFinanceira} e reconhecido diretamente por
+ * {@link br.app.criati.financeiro.service.SaldoFinanceiroService}, que soma
+ * os ressarcimentos ATIVOs desta conta ao saldo, sem passar por
+ * receita/despesa. Exclusao fisica nao e permitida: o estorno preserva o
+ * registro e marca status ESTORNADO.
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "ressarcimento_parcela_cartao", uniqueConstraints = @UniqueConstraint(
-		name = "uq_ressarcimento_parcela_cartao_lancamento", columnNames = "lancamento_financeiro_id"))
+@Table(name = "ressarcimento_parcela_cartao")
 public class RessarcimentoParcelaCartao {
 
 	@Id
@@ -72,10 +74,6 @@ public class RessarcimentoParcelaCartao {
 	@Column(name = "observacao", length = 500, updatable = false)
 	private String observacao;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "lancamento_financeiro_id", nullable = false, updatable = false)
-	private LancamentoFinanceiro lancamentoFinanceiro;
-
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false, length = 20)
 	private StatusRessarcimentoParcelaCartao status;
@@ -99,7 +97,7 @@ public class RessarcimentoParcelaCartao {
 
 	public RessarcimentoParcelaCartao(Empresa empresa, ValorAReceberParcelaCartao valorAReceber, ContaFinanceira conta,
 			BigDecimal valor, LocalDate dataRessarcimento, FormaPagamentoLancamento formaPagamento, String observacao,
-			LancamentoFinanceiro lancamentoFinanceiro, Usuario autor) {
+			Usuario autor) {
 		this.empresa = Objects.requireNonNull(empresa, "empresa nao pode ser nula");
 		this.valorAReceber = Objects.requireNonNull(valorAReceber, "valorAReceber nao pode ser nulo");
 		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
@@ -107,7 +105,6 @@ public class RessarcimentoParcelaCartao {
 		this.dataRessarcimento = Objects.requireNonNull(dataRessarcimento, "dataRessarcimento nao pode ser nula");
 		this.formaPagamento = formaPagamento;
 		this.observacao = observacao;
-		this.lancamentoFinanceiro = Objects.requireNonNull(lancamentoFinanceiro, "lancamentoFinanceiro nao pode ser nulo");
 		this.status = StatusRessarcimentoParcelaCartao.ATIVO;
 		this.criadoEm = OffsetDateTime.now();
 		this.criadoPor = Objects.requireNonNull(autor, "autor nao pode ser nulo");

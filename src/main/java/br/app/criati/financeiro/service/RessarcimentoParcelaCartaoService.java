@@ -11,8 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.app.criati.exception.AcessoNegadoException;
-import br.app.criati.exception.CategoriaFinanceiraInativaException;
-import br.app.criati.exception.CategoriaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.ContaFinanceiraInativaException;
 import br.app.criati.exception.ContaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.DadosInvalidosException;
@@ -21,33 +19,30 @@ import br.app.criati.exception.RessarcimentoParcelaCartaoStatusInvalidoException
 import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.exception.ValorAReceberParcelaCartaoNaoEncontradoException;
 import br.app.criati.exception.ValorAReceberParcelaCartaoStatusInvalidoException;
-import br.app.criati.financeiro.model.CategoriaFinanceira;
 import br.app.criati.financeiro.model.CompraCartao;
 import br.app.criati.financeiro.model.ContaFinanceira;
-import br.app.criati.financeiro.model.LancamentoFinanceiro;
 import br.app.criati.financeiro.model.RessarcimentoParcelaCartao;
 import br.app.criati.financeiro.model.ValorAReceberParcelaCartao;
-import br.app.criati.financeiro.repository.CategoriaFinanceiraRepository;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
-import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
 import br.app.criati.financeiro.repository.RessarcimentoParcelaCartaoRepository;
 import br.app.criati.financeiro.repository.ValorAReceberParcelaCartaoRepository;
 import br.app.criati.shared.enums.FormaPagamentoLancamento;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusValorAReceberCompraCartao;
-import br.app.criati.shared.enums.TipoFinanceiro;
 import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.usuario.model.Usuario;
 import br.app.criati.usuario.repository.UsuarioRepository;
 
 /**
  * Liquidacao (integral ou parcial) e estorno de ressarcimentos de compras
- * para terceiros. Regra central: cada ressarcimento gera exatamente um
- * LancamentoFinanceiro de receita liquidado (origem
- * RESSARCIMENTO_COMPRA_TERCEIRO) — ver a limitacao patrimonial documentada em
- * docs/empresas/financeiro-les/IMPLEMENTACAO-CRIATI-FIN-013.md. O estorno
- * cancela esse mesmo lancamento em vez de criar um mecanismo de reversao
- * paralelo, mesmo desenho ja usado por RecebimentoParcelaEmprestimoService.
+ * para terceiros. Regra central (CRIATI-FIN-013A): nenhum ressarcimento gera
+ * LancamentoFinanceiro — o principal ressarcido nao e receita nem despesa da
+ * residencia, apenas a devolucao de um valor que ela adiantou. O impacto de
+ * caixa fica inteiramente a cargo de {@link RessarcimentoParcelaCartao} e e
+ * reconhecido no saldo da conta por SaldoFinanceiroService (soma dos
+ * ressarcimentos ATIVOs), nunca via TipoFinanceiro RECEITA/DESPESA. O estorno
+ * marca o proprio registro como ESTORNADO — sem lancamento para cancelar —
+ * removendo-o automaticamente do saldo.
  */
 @Service
 public class RessarcimentoParcelaCartaoService {
@@ -55,19 +50,14 @@ public class RessarcimentoParcelaCartaoService {
 	private final RessarcimentoParcelaCartaoRepository ressarcimentoRepository;
 	private final ValorAReceberParcelaCartaoRepository valorARepository;
 	private final ContaFinanceiraRepository contaRepository;
-	private final CategoriaFinanceiraRepository categoriaRepository;
-	private final LancamentoFinanceiroRepository lancamentoRepository;
 	private final UsuarioRepository usuarioRepository;
 
 	public RessarcimentoParcelaCartaoService(RessarcimentoParcelaCartaoRepository ressarcimentoRepository,
 			ValorAReceberParcelaCartaoRepository valorARepository, ContaFinanceiraRepository contaRepository,
-			CategoriaFinanceiraRepository categoriaRepository, LancamentoFinanceiroRepository lancamentoRepository,
 			UsuarioRepository usuarioRepository) {
 		this.ressarcimentoRepository = ressarcimentoRepository;
 		this.valorARepository = valorARepository;
 		this.contaRepository = contaRepository;
-		this.categoriaRepository = categoriaRepository;
-		this.lancamentoRepository = lancamentoRepository;
 		this.usuarioRepository = usuarioRepository;
 	}
 
@@ -79,22 +69,20 @@ public class RessarcimentoParcelaCartaoService {
 	}
 
 	@Transactional
-	public RessarcimentoParcelaCartao receberIntegral(UUID valorAReceberId, UUID contaId, UUID categoriaId,
-			LocalDate dataRessarcimento, FormaPagamentoLancamento formaPagamento, String observacao,
-			ContextoEmpresaAtual contexto) {
+	public RessarcimentoParcelaCartao receberIntegral(UUID valorAReceberId, UUID contaId, LocalDate dataRessarcimento,
+			FormaPagamentoLancamento formaPagamento, String observacao, ContextoEmpresaAtual contexto) {
 		ValorAReceberParcelaCartao valor = prepararParaRecebimento(valorAReceberId, dataRessarcimento, contexto);
 		BigDecimal saldo = valor.getSaldoPendente();
 		if (saldo.signum() <= 0) {
 			throw new ValorAReceberParcelaCartaoStatusInvalidoException("Valor a receber nao possui saldo pendente");
 		}
-		return registrarRecebimento(valor, contaId, categoriaId, saldo, dataRessarcimento, formaPagamento, observacao,
-				contexto);
+		return registrarRecebimento(valor, contaId, saldo, dataRessarcimento, formaPagamento, observacao, contexto);
 	}
 
 	@Transactional
-	public RessarcimentoParcelaCartao receberParcial(UUID valorAReceberId, UUID contaId, UUID categoriaId,
-			BigDecimal valorInformado, LocalDate dataRessarcimento, FormaPagamentoLancamento formaPagamento,
-			String observacao, ContextoEmpresaAtual contexto) {
+	public RessarcimentoParcelaCartao receberParcial(UUID valorAReceberId, UUID contaId, BigDecimal valorInformado,
+			LocalDate dataRessarcimento, FormaPagamentoLancamento formaPagamento, String observacao,
+			ContextoEmpresaAtual contexto) {
 		ValorAReceberParcelaCartao valor = prepararParaRecebimento(valorAReceberId, dataRessarcimento, contexto);
 		if (valorInformado == null || valorInformado.signum() <= 0) {
 			throw new DadosInvalidosException("Valor do ressarcimento deve ser maior que zero");
@@ -103,8 +91,8 @@ public class RessarcimentoParcelaCartaoService {
 		if (valorNormalizado.compareTo(valor.getSaldoPendente()) > 0) {
 			throw new DadosInvalidosException("Valor do ressarcimento nao pode exceder o saldo pendente");
 		}
-		return registrarRecebimento(valor, contaId, categoriaId, valorNormalizado, dataRessarcimento, formaPagamento,
-				observacao, contexto);
+		return registrarRecebimento(valor, contaId, valorNormalizado, dataRessarcimento, formaPagamento, observacao,
+				contexto);
 	}
 
 	@Transactional
@@ -119,9 +107,6 @@ public class RessarcimentoParcelaCartaoService {
 			throw new RessarcimentoParcelaCartaoStatusInvalidoException("Ressarcimento ja esta estornado");
 		}
 		Usuario autor = buscarAutor(contexto);
-		LancamentoFinanceiro lancamento = ressarcimento.getLancamentoFinanceiro();
-		lancamento.cancelar(autor);
-		lancamentoRepository.save(lancamento);
 		ressarcimento.estornar(motivo, autor);
 		ressarcimentoRepository.save(ressarcimento);
 		valor.estornarRecebimento(ressarcimento.getValor(), autor);
@@ -158,30 +143,16 @@ public class RessarcimentoParcelaCartaoService {
 	}
 
 	private RessarcimentoParcelaCartao registrarRecebimento(ValorAReceberParcelaCartao valor, UUID contaId,
-			UUID categoriaId, BigDecimal valorRessarcido, LocalDate dataRessarcimento,
-			FormaPagamentoLancamento formaPagamento, String observacao, ContextoEmpresaAtual contexto) {
+			BigDecimal valorRessarcido, LocalDate dataRessarcimento, FormaPagamentoLancamento formaPagamento,
+			String observacao, ContextoEmpresaAtual contexto) {
 		ContaFinanceira conta = buscarConta(contaId, contexto.empresaId());
-		CategoriaFinanceira categoria = buscarCategoriaReceita(categoriaId, contexto.empresaId());
 		Usuario autor = buscarAutor(contexto);
 		CompraCartao compra = valor.getParcela().getCompra();
-		String descricao = descricaoRessarcimento(compra, valor);
-		LancamentoFinanceiro lancamento = LancamentoFinanceiro.gerarDeRessarcimentoCompraTerceiro(compra.getEmpresa(),
-				conta, categoria, compra.getParteFinanceira(), descricao, valorRessarcido,
-				valor.getVencimento().withDayOfMonth(1), valor.getVencimento(), dataRessarcimento, formaPagamento,
-				autor);
-		LancamentoFinanceiro lancamentoSalvo = lancamentoRepository.save(lancamento);
 		RessarcimentoParcelaCartao ressarcimento = new RessarcimentoParcelaCartao(compra.getEmpresa(), valor, conta,
-				valorRessarcido, dataRessarcimento, formaPagamento, normalizarOpcional(observacao), lancamentoSalvo,
-				autor);
+				valorRessarcido, dataRessarcimento, formaPagamento, normalizarOpcional(observacao), autor);
 		RessarcimentoParcelaCartao ressarcimentoSalvo = ressarcimentoRepository.save(ressarcimento);
 		valor.registrarRecebimento(valorRessarcido, dataRessarcimento, autor);
 		return ressarcimentoSalvo;
-	}
-
-	private String descricaoRessarcimento(CompraCartao compra, ValorAReceberParcelaCartao valor) {
-		String descricao = "Ressarcimento parcela " + valor.getParcela().getNumero() + "/"
-				+ valor.getParcela().getTotalParcelas() + " - " + compra.getDescricao();
-		return descricao.length() > 200 ? descricao.substring(0, 200) : descricao;
 	}
 
 	private ValorAReceberParcelaCartao buscarSemLock(UUID id, UUID empresaId) {
@@ -202,21 +173,6 @@ public class RessarcimentoParcelaCartaoService {
 			throw new ContaFinanceiraInativaException();
 		}
 		return conta;
-	}
-
-	private CategoriaFinanceira buscarCategoriaReceita(UUID id, UUID empresaId) {
-		if (id == null) {
-			throw new DadosInvalidosException("Categoria e obrigatoria");
-		}
-		CategoriaFinanceira categoria = categoriaRepository.findByIdAndEmpresaId(id, empresaId)
-				.orElseThrow(CategoriaFinanceiraNaoEncontradaException::new);
-		if (!categoria.estaAtiva()) {
-			throw new CategoriaFinanceiraInativaException();
-		}
-		if (categoria.getTipo() != TipoFinanceiro.RECEITA) {
-			throw new DadosInvalidosException("Ressarcimento exige categoria do tipo RECEITA");
-		}
-		return categoria;
 	}
 
 	private Usuario buscarAutor(ContextoEmpresaAtual contexto) {

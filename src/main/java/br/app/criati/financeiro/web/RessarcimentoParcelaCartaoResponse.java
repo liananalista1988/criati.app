@@ -11,13 +11,13 @@ import br.app.criati.shared.enums.StatusRessarcimentoParcelaCartao;
 
 public record RessarcimentoParcelaCartaoResponse(UUID id, UUID valorAReceberId, UUID contaId, String contaNome,
 		BigDecimal valor, LocalDate dataRessarcimento, FormaPagamentoLancamento formaPagamento, String observacao,
-		UUID lancamentoFinanceiroId, StatusRessarcimentoParcelaCartao status, OffsetDateTime estornadoEm,
+		StatusRessarcimentoParcelaCartao status, OffsetDateTime estornadoEm,
 		UUID estornadoPorUsuarioId, String motivoEstorno, OffsetDateTime criadoEm, UUID criadoPorUsuarioId) {
 
 	public static RessarcimentoParcelaCartaoResponse from(RessarcimentoParcelaCartao r) {
 		return new RessarcimentoParcelaCartaoResponse(r.getId(), r.getValorAReceber().getId(), r.getConta().getId(),
 				r.getConta().getNome(), r.getValor(), r.getDataRessarcimento(), r.getFormaPagamento(), r.getObservacao(),
-				r.getLancamentoFinanceiro().getId(), r.getStatus(), r.getEstornadoEm(),
+				r.getStatus(), r.getEstornadoEm(),
 				r.getEstornadoPor() == null ? null : r.getEstornadoPor().getId(), r.getMotivoEstorno(), r.getCriadoEm(),
 				r.getCriadoPor().getId());
 	}

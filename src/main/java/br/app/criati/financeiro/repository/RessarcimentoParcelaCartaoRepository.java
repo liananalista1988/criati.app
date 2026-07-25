@@ -16,5 +16,18 @@ public interface RessarcimentoParcelaCartaoRepository extends JpaRepository<Ress
 	Optional<RessarcimentoParcelaCartao> findByIdAndValorAReceberIdAndEmpresaId(UUID id, UUID valorAReceberId,
 			UUID empresaId);
 
-	boolean existsByLancamentoFinanceiroId(UUID lancamentoFinanceiroId);
+	/**
+	 * Usado por SaldoFinanceiroService para reconhecer, sem passar por
+	 * LancamentoFinanceiro, o impacto de caixa dos ressarcimentos (ATIVOs) de
+	 * compras para terceiros sobre o saldo de uma conta especifica — ver
+	 * CRIATI-FIN-013A.
+	 */
+	List<RessarcimentoParcelaCartao> findAllByEmpresaIdAndContaId(UUID empresaId, UUID contaId);
+
+	/**
+	 * Variante em lote de {@link #findAllByEmpresaIdAndContaId}, usada por
+	 * DashboardFinanceiroService para computar o saldo consolidado de todas as
+	 * contas com uma unica consulta (evita N+1 por conta).
+	 */
+	List<RessarcimentoParcelaCartao> findAllByEmpresaId(UUID empresaId);
 }

@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record ReceberParcialCompraTerceiroRequest(
 		@NotNull(message = "Conta e obrigatoria") UUID contaId,
-		@NotNull(message = "Categoria e obrigatoria") UUID categoriaId,
 		@NotNull(message = "Valor e obrigatorio") BigDecimal valor,
 		@NotNull(message = "Data de ressarcimento e obrigatoria") LocalDate dataRessarcimento,
 		FormaPagamentoLancamento formaPagamento,

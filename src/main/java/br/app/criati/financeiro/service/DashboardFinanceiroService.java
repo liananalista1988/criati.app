@@ -14,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import br.app.criati.financeiro.model.CategoriaFinanceira;
 import br.app.criati.financeiro.model.ContaFinanceira;
 import br.app.criati.financeiro.model.LancamentoFinanceiro;
+import br.app.criati.financeiro.model.RessarcimentoParcelaCartao;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
 import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
+import br.app.criati.financeiro.repository.RessarcimentoParcelaCartaoRepository;
 import br.app.criati.shared.enums.StatusLancamentoFinanceiro;
 import br.app.criati.shared.enums.TipoFinanceiro;
 import br.app.criati.tenant.ContextoEmpresaAtual;
@@ -27,14 +29,17 @@ public class DashboardFinanceiroService {
 
 	private final ContaFinanceiraRepository contaFinanceiraRepository;
 	private final LancamentoFinanceiroRepository lancamentoFinanceiroRepository;
+	private final RessarcimentoParcelaCartaoRepository ressarcimentoParcelaCartaoRepository;
 	private final SaldoFinanceiroService saldoFinanceiroService;
 
 	public DashboardFinanceiroService(
 			ContaFinanceiraRepository contaFinanceiraRepository,
 			LancamentoFinanceiroRepository lancamentoFinanceiroRepository,
+			RessarcimentoParcelaCartaoRepository ressarcimentoParcelaCartaoRepository,
 			SaldoFinanceiroService saldoFinanceiroService) {
 		this.contaFinanceiraRepository = contaFinanceiraRepository;
 		this.lancamentoFinanceiroRepository = lancamentoFinanceiroRepository;
+		this.ressarcimentoParcelaCartaoRepository = ressarcimentoParcelaCartaoRepository;
 		this.saldoFinanceiroService = saldoFinanceiroService;
 	}
 
@@ -68,9 +73,17 @@ public class DashboardFinanceiroService {
 		for (LancamentoFinanceiro lancamento : lancamentos) {
 			porConta.computeIfAbsent(lancamento.getConta().getId(), k -> new java.util.ArrayList<>()).add(lancamento);
 		}
+		List<RessarcimentoParcelaCartao> ressarcimentos = ressarcimentoParcelaCartaoRepository
+				.findAllByEmpresaId(empresaId);
+		Map<UUID, List<RessarcimentoParcelaCartao>> ressarcimentosPorConta = new LinkedHashMap<>();
+		for (RessarcimentoParcelaCartao ressarcimento : ressarcimentos) {
+			ressarcimentosPorConta.computeIfAbsent(ressarcimento.getConta().getId(), k -> new java.util.ArrayList<>())
+					.add(ressarcimento);
+		}
 		BigDecimal saldoAtualConsolidado = contas.stream()
-				.map(conta -> saldoFinanceiroService.calcularSaldoAtual(
-						conta, porConta.getOrDefault(conta.getId(), List.of())))
+				.map(conta -> saldoFinanceiroService.calcularSaldoAtual(conta,
+						porConta.getOrDefault(conta.getId(), List.of()),
+						ressarcimentosPorConta.getOrDefault(conta.getId(), List.of())))
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		long quantidadeContasAtivas = contas.stream().filter(ContaFinanceira::estaAtiva).count();

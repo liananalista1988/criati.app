@@ -118,7 +118,7 @@ public class ValorAReceberParcelaCartaoController {
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
-		var ressarcimento = ressarcimentoService.receberIntegral(id, request.contaId(), request.categoriaId(),
+		var ressarcimento = ressarcimentoService.receberIntegral(id, request.contaId(),
 				request.dataRessarcimento(), request.formaPagamento(), request.observacao(), contexto);
 		return ResponseEntity.status(HttpStatus.CREATED).body(RessarcimentoParcelaCartaoResponse.from(ressarcimento));
 	}
@@ -130,7 +130,7 @@ public class ValorAReceberParcelaCartaoController {
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
-		var ressarcimento = ressarcimentoService.receberParcial(id, request.contaId(), request.categoriaId(),
+		var ressarcimento = ressarcimentoService.receberParcial(id, request.contaId(),
 				request.valor(), request.dataRessarcimento(), request.formaPagamento(), request.observacao(), contexto);
 		return ResponseEntity.status(HttpStatus.CREATED).body(RessarcimentoParcelaCartaoResponse.from(ressarcimento));
 	}
