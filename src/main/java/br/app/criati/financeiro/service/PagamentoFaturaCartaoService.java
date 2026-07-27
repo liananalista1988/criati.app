@@ -7,8 +7,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.exception.AcessoNegadoException;
@@ -30,7 +34,6 @@ import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
 import br.app.criati.financeiro.repository.PagamentoFaturaCartaoRepository;
 import br.app.criati.shared.enums.FormaPagamentoLancamento;
 import br.app.criati.shared.enums.PerfilUsuario;
-import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.shared.enums.TipoFinanceiro;
 import br.app.criati.shared.enums.TipoPagamentoFaturaCartao;
 import br.app.criati.tenant.ContextoEmpresaAtual;
@@ -52,6 +55,7 @@ import br.app.criati.usuario.repository.UsuarioRepository;
 @Service
 public class PagamentoFaturaCartaoService {
 
+	private static final String CODIGO_CATEGORIA_TECNICA = "PAGAMENTO_FATURA_CARTAO";
 	private static final String NOME_CATEGORIA_TECNICA = "Pagamento de fatura de cartao";
 
 	private final FaturaCartaoRepository faturas;
@@ -60,16 +64,20 @@ public class PagamentoFaturaCartaoService {
 	private final LancamentoFinanceiroRepository lancamentos;
 	private final CategoriaFinanceiraRepository categorias;
 	private final UsuarioRepository usuarios;
+	private final TransactionTemplate transacaoCategoriaTecnica;
 
 	public PagamentoFaturaCartaoService(FaturaCartaoRepository faturas, PagamentoFaturaCartaoRepository pagamentos,
 			ContaFinanceiraRepository contas, LancamentoFinanceiroRepository lancamentos,
-			CategoriaFinanceiraRepository categorias, UsuarioRepository usuarios) {
+			CategoriaFinanceiraRepository categorias, UsuarioRepository usuarios,
+			PlatformTransactionManager transactionManager) {
 		this.faturas = faturas;
 		this.pagamentos = pagamentos;
 		this.contas = contas;
 		this.lancamentos = lancamentos;
 		this.categorias = categorias;
 		this.usuarios = usuarios;
+		this.transacaoCategoriaTecnica = new TransactionTemplate(transactionManager);
+		this.transacaoCategoriaTecnica.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	}
 
 	@Transactional(readOnly = true)
@@ -168,23 +176,23 @@ public class PagamentoFaturaCartaoService {
 		return conta;
 	}
 
-	/**
-	 * Find-or-create da categoria tecnica reservada de pagamento de fatura.
-	 * CategoriaFinanceira nao tem hoje nenhum campo de codigo/reservada/sistema
-	 * e nao ha seed de categorias na criacao da empresa (LancamentoFinanceiro
-	 * exige categoria nao-nula em todas as fabricas) - por isso a primeira
-	 * chamada por empresa cria a categoria sob demanda, usando o construtor
-	 * simples (sem autor: e uma categoria de sistema, nao uma acao humana).
-	 * Risco aceito e documentado: sem lock/constraint unica dedicados, duas
-	 * primeiras chamadas verdadeiramente concorrentes na mesma empresa
-	 * poderiam criar duas linhas com o mesmo nome - mitigacao futura, se
-	 * necessario, seria uma constraint unica (empresa_id, nome, tipo).
-	 */
 	private CategoriaFinanceira categoriaTecnica(Empresa empresa) {
 		return categorias
-				.findByEmpresaIdAndNomeIgnoreCaseAndTipo(empresa.getId(), NOME_CATEGORIA_TECNICA, TipoFinanceiro.DESPESA)
-				.orElseGet(() -> categorias.saveAndFlush(
-						new CategoriaFinanceira(empresa, NOME_CATEGORIA_TECNICA, TipoFinanceiro.DESPESA, StatusCadastro.ATIVO)));
+				.findByEmpresaIdAndCodigoSistema(empresa.getId(), CODIGO_CATEGORIA_TECNICA)
+				.orElseGet(() -> criarCategoriaTecnica(empresa));
+	}
+
+	private CategoriaFinanceira criarCategoriaTecnica(Empresa empresa) {
+		try {
+			transacaoCategoriaTecnica.executeWithoutResult(status -> categorias.saveAndFlush(
+					CategoriaFinanceira.criarTecnica(empresa, CODIGO_CATEGORIA_TECNICA,
+							NOME_CATEGORIA_TECNICA, TipoFinanceiro.DESPESA)));
+		} catch (DataIntegrityViolationException disputaConcorrente) {
+			return categorias.findByEmpresaIdAndCodigoSistema(empresa.getId(), CODIGO_CATEGORIA_TECNICA)
+					.orElseThrow(() -> disputaConcorrente);
+		}
+		return categorias.findByEmpresaIdAndCodigoSistema(empresa.getId(), CODIGO_CATEGORIA_TECNICA)
+				.orElseThrow(() -> new IllegalStateException("Categoria tecnica nao foi criada"));
 	}
 
 	private String descricaoPagamento(FaturaCartao fatura) {

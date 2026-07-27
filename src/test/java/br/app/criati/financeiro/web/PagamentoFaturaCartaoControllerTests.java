@@ -15,6 +15,7 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -343,6 +344,41 @@ class PagamentoFaturaCartaoControllerTests {
 	}
 
 	@Test
+	void pagamentosConcorrentesCriamUmaUnicaCategoriaTecnicaPorEmpresa() throws Exception {
+		Fixture f = fixture("62121212000514");
+		criarCompraComParcela(f, new BigDecimal("50.00"), LocalDate.of(2026, 1, 12));
+		var janeiro = faturaService.abrir(f.principal().getId(), LocalDate.of(2026, 1, 12), f.contexto());
+		faturaService.fechar(janeiro.fatura().getId(), f.contexto());
+		criarCompraComParcela(f, new BigDecimal("50.00"), LocalDate.of(2026, 2, 12));
+		var fevereiro = faturaService.abrir(f.principal().getId(), LocalDate.of(2026, 2, 12), f.contexto());
+		faturaService.fechar(fevereiro.fatura().getId(), f.contexto());
+
+		CountDownLatch prontas = new CountDownLatch(2);
+		CountDownLatch iniciar = new CountDownLatch(1);
+		List<Throwable> erros = new CopyOnWriteArrayList<>();
+		Thread primeira = pagamentoConcorrente(janeiro.fatura().getId(), f, prontas, iniciar, erros, "categoria-1");
+		Thread segunda = pagamentoConcorrente(fevereiro.fatura().getId(), f, prontas, iniciar, erros, "categoria-2");
+
+		primeira.start();
+		segunda.start();
+		assertThat(prontas.await(5, TimeUnit.SECONDS)).isTrue();
+		iniciar.countDown();
+		primeira.join(Duration.ofSeconds(10).toMillis());
+		segunda.join(Duration.ofSeconds(10).toMillis());
+
+		assertThat(primeira.isAlive()).isFalse();
+		assertThat(segunda.isAlive()).isFalse();
+		assertThat(erros).isEmpty();
+		assertThat(categorias.findAllByEmpresaId(f.empresa().getId()).stream()
+				.filter(categoria -> "PAGAMENTO_FATURA_CARTAO".equals(categoria.getCodigoSistema())))
+				.hasSize(1);
+		assertThat(pagamentos.findAllByEmpresaIdAndFaturaIdOrderByDataPagamentoDescCriadoEmDesc(
+				f.empresa().getId(), janeiro.fatura().getId())).hasSize(1);
+		assertThat(pagamentos.findAllByEmpresaIdAndFaturaIdOrderByDataPagamentoDescCriadoEmDesc(
+				f.empresa().getId(), fevereiro.fatura().getId())).hasSize(1);
+	}
+
+	@Test
 	void apiRegistraEListaPagamentoExigindoAdministradorECsrf() throws Exception {
 		Fixture f = fixture("63030303000513");
 		criarCompraComParcela(f, new BigDecimal("80.00"), LocalDate.of(2026, 6, 12));
@@ -444,6 +480,20 @@ class PagamentoFaturaCartaoControllerTests {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+	}
+
+	private Thread pagamentoConcorrente(UUID faturaId, Fixture fixture, CountDownLatch prontas,
+			CountDownLatch iniciar, List<Throwable> erros, String nome) {
+		return new Thread(() -> {
+			prontas.countDown();
+			aguardar(iniciar);
+			try {
+				pagamentoService.registrarPagamento(faturaId, fixture.conta().getId(), LocalDate.of(2026, 2, 20),
+						new BigDecimal("10.00"), TipoPagamentoFaturaCartao.PARCIAL, null, fixture.contexto());
+			} catch (Throwable erro) {
+				erros.add(erro);
+			}
+		}, nome);
 	}
 
 	private record Fixture(Empresa empresa, Usuario usuario, PessoaFinanceira pessoa,

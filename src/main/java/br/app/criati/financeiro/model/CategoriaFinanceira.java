@@ -23,6 +23,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "categoria_financeira")
+@Table(name = "categoria_financeira", uniqueConstraints = @UniqueConstraint(
+		name = "uq_categoria_financeira_empresa_codigo_sistema",
+		columnNames = {"empresa_id", "codigo_sistema"}))
 public class CategoriaFinanceira {
 
 	@Id
@@ -44,6 +47,9 @@ public class CategoriaFinanceira {
 
 	@Column(name = "nome", nullable = false, length = 150)
 	private String nome;
+
+	@Column(name = "codigo_sistema", length = 80, updatable = false)
+	private String codigoSistema;
 
 	@Column(name = "descricao", length = 500)
 	private String descricao;
@@ -91,6 +97,13 @@ public class CategoriaFinanceira {
 		this.ordemExibicao = 0;
 		this.permiteOrcamento = tipo == TipoFinanceiro.DESPESA;
 		this.status = Objects.requireNonNull(status, "status nao pode ser nulo");
+	}
+
+	public static CategoriaFinanceira criarTecnica(Empresa empresa, String codigoSistema, String nome,
+			TipoFinanceiro tipo) {
+		CategoriaFinanceira categoria = new CategoriaFinanceira(empresa, nome, tipo, StatusCadastro.ATIVO);
+		categoria.codigoSistema = Objects.requireNonNull(codigoSistema, "codigoSistema nao pode ser nulo");
+		return categoria;
 	}
 
 	public CategoriaFinanceira(Empresa empresa, String nome, String descricao, CategoriaFinanceira categoriaPai,

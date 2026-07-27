@@ -1,6 +1,29 @@
 -- LES-F3-005: estados de pagamento da fatura (PARCIALMENTE_PAGA, PAGA, ATRASADA)
 -- e saldo financiado/encargos manuais, ambos derivados de compras/parcelas ja
 -- existentes (V13) mais o novo componente carregado do ciclo anterior.
+
+-- Identificacao estavel da categoria tecnica usada pelo pagamento da fatura.
+-- O codigo e opcional para categorias criadas pelo usuario, mas unico por
+-- empresa quando preenchido. O backfill preserva eventual categoria criada
+-- por uma execucao anterior desta funcionalidade antes da correcao.
+ALTER TABLE categoria_financeira
+    ADD COLUMN codigo_sistema VARCHAR(80);
+
+WITH categorias_existentes AS (
+    SELECT DISTINCT ON (empresa_id) id
+    FROM categoria_financeira
+    WHERE tipo = 'DESPESA'
+      AND UPPER(BTRIM(nome)) = UPPER('Pagamento de fatura de cartao')
+    ORDER BY empresa_id, (status = 'ATIVO') DESC, criado_em, id
+)
+UPDATE categoria_financeira
+SET codigo_sistema = 'PAGAMENTO_FATURA_CARTAO'
+WHERE id IN (SELECT id FROM categorias_existentes);
+
+ALTER TABLE categoria_financeira
+    ADD CONSTRAINT uq_categoria_financeira_empresa_codigo_sistema
+    UNIQUE (empresa_id, codigo_sistema);
+
 ALTER TABLE fatura_cartao
     DROP CONSTRAINT ck_fatura_cartao_status;
 ALTER TABLE fatura_cartao
