@@ -37,6 +37,8 @@ import br.app.criati.exception.EmpresaStatusInvalidoException;
 import br.app.criati.exception.EmprestimoConcedidoNaoEncontradoException;
 import br.app.criati.exception.EmprestimoConcedidoStatusInvalidoException;
 import br.app.criati.exception.FinanceiroStatusInvalidoException;
+import br.app.criati.exception.FaturaCartaoNaoEncontradaException;
+import br.app.criati.exception.FaturaCartaoStatusInvalidoException;
 import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.LancamentoStatusInvalidoException;
 import br.app.criati.exception.InstituicaoFinanceiraNaoEncontradaException;
@@ -119,6 +121,7 @@ public class GlobalExceptionHandler {
 			CategoriaFinanceiraComLancamentosException.class,
 			LancamentoStatusInvalidoException.class,
 			FinanceiroStatusInvalidoException.class,
+			FaturaCartaoStatusInvalidoException.class,
 			ContaFinanceiraNomeDuplicadoException.class,
 			CategoriaFinanceiraNomeDuplicadaException.class,
 			UsuarioJaVinculadoPessoaFinanceiraException.class,
@@ -161,7 +164,8 @@ public class GlobalExceptionHandler {
 			ParcelaEmprestimoNaoEncontradaException.class,
 			RecebimentoParcelaEmprestimoNaoEncontradoException.class,
 			ValorAReceberParcelaCartaoNaoEncontradoException.class,
-			RessarcimentoParcelaCartaoNaoEncontradoException.class
+			RessarcimentoParcelaCartaoNaoEncontradoException.class,
+			FaturaCartaoNaoEncontradaException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

@@ -170,3 +170,13 @@ Novos lançamentos vinculam pessoa responsável, admitem parte financeira opcion
 Além dos endpoints legados de pagamento e reabertura, a API oferece as ações explícitas `liquidar` e `desliquidar` e um resumo da competência com valores liquidados, pendentes, vencidos, saldos por conta e consolidado. Cancelar um lançamento liquidado limpa os dados de liquidação na mesma transação; como o saldo é calculado a partir dos lançamentos efetivos, o impacto é revertido sem saldo mutável ou lançamento contábil paralelo.
 
 O inventário completo, as regras de compatibilidade, a migration `V9` e as limitações estão registrados em `docs/empresas/financeiro-les/IMPLEMENTACAO-F2-005.md`.
+
+## Evolução LES-F3-004 — faturas de cartão
+
+Faturas são únicas por empresa, cartão físico principal e competência. Parcelas de compras feitas
+no principal ou em seus cartões virtuais são associadas idempotentemente à mesma fatura e somadas
+com `BigDecimal`. Abertura, recomposição e fechamento usam locks pessimistas; fatura fechada é
+imutável. Pagamentos, estornos, cancelamentos e tela permanecem fora desta entrega.
+
+O contrato completo e a migration `V18` estão registrados em
+`docs/empresas/financeiro-les/IMPLEMENTACAO-F3-004.md`.
