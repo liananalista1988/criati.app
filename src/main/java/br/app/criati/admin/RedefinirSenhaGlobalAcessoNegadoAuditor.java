@@ -5,6 +5,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,9 +40,18 @@ import jakarta.servlet.http.HttpServletResponse;
  * recebe apenas o 403 padrao, sem auditoria - a acao de auditoria disponivel
  * ({@link br.app.criati.shared.enums.AcaoAuditoriaSegurancaGlobal}) e
  * exclusiva dessa operacao.
+ *
+ * <p>A gravacao da auditoria nunca pode degradar a resposta de seguranca: se
+ * {@link RedefinicaoSenhaGlobalAuditoriaService#registrarFalha} lancar (banco
+ * indisponivel, etc.), a falha e apenas registrada em log (sem senha nem
+ * corpo da requisicao) e o fluxo sempre chega ao {@link JsonAccessDeniedHandler},
+ * mantendo o 403 - o {@link AccessDeniedException} original nunca e engolido
+ * nem substituido por essa falha tecnica.
  */
 @Component
 public class RedefinirSenhaGlobalAcessoNegadoAuditor implements AccessDeniedHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(RedefinirSenhaGlobalAcessoNegadoAuditor.class);
 
 	private static final Pattern REDEFINIR_SENHA_PATH =
 			Pattern.compile("^/api/admin/usuarios/([^/]+)/redefinir-senha$");
@@ -79,9 +90,20 @@ public class RedefinirSenhaGlobalAcessoNegadoAuditor implements AccessDeniedHand
 		if (chamador == null) {
 			return;
 		}
-		auditoriaFalhaService.registrarFalha(chamador.getUsuario(), usuarioAlvoId,
-				ResultadoAuditoriaSeguranca.NEGADO, MotivoAuditoriaSeguranca.SEM_PERMISSAO,
-				ipOrigemResolver.resolver(request));
+		try {
+			auditoriaFalhaService.registrarFalha(chamador.getUsuario(), usuarioAlvoId,
+					ResultadoAuditoriaSeguranca.NEGADO, MotivoAuditoriaSeguranca.SEM_PERMISSAO,
+					ipOrigemResolver.resolver(request));
+		} catch (RuntimeException excecaoAuditoria) {
+			// Falha tecnica (banco indisponivel, etc.) na escrita da auditoria nunca
+			// pode degradar a resposta de seguranca: o 403 real (AccessDeniedException,
+			// tratado em handle()) segue seu curso normal, sem ser engolido nem
+			// substituido. So identificadores nao sensiveis vao para o log - nunca
+			// senha ou corpo da requisicao (nenhum dos dois esta disponivel aqui).
+			log.warn("Falha ao registrar auditoria de acesso negado (SEM_PERMISSAO) na redefinicao global de "
+							+ "senha - chamadorId={}, usuarioAlvoId={}",
+					chamador.getUsuario().getId(), usuarioAlvoId, excecaoAuditoria);
+		}
 	}
 
 	private static UUID extrairUuid(String valor) {
