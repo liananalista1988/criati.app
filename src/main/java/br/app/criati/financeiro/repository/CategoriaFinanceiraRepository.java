@@ -26,6 +26,13 @@ public interface CategoriaFinanceiraRepository extends JpaRepository<CategoriaFi
 
 	Optional<CategoriaFinanceira> findByIdAndEmpresaId(UUID id, UUID empresaId);
 
+	// LES-F3-005: usada para localizar (find-or-create) a categoria tecnica
+	// reservada de pagamento de fatura de cartao - nao ha campo de
+	// codigo/slug/reservada em CategoriaFinanceira, entao a busca e por nome
+	// exato (case-insensitive) + tipo.
+	Optional<CategoriaFinanceira> findByEmpresaIdAndNomeIgnoreCaseAndTipo(
+			UUID empresaId, String nome, TipoFinanceiro tipo);
+
 	@Query("""
 			select (count(c) > 0) from CategoriaFinanceira c
 			where c.empresa.id = :empresaId and c.tipo = :tipo and c.status = :status

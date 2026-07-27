@@ -18,6 +18,7 @@ import br.app.criati.financeiro.model.RessarcimentoParcelaCartao;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
 import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
 import br.app.criati.financeiro.repository.RessarcimentoParcelaCartaoRepository;
+import br.app.criati.shared.enums.OrigemLancamentoFinanceiro;
 import br.app.criati.shared.enums.StatusLancamentoFinanceiro;
 import br.app.criati.shared.enums.TipoFinanceiro;
 import br.app.criati.tenant.ContextoEmpresaAtual;
@@ -134,7 +135,7 @@ public class DashboardFinanceiroService {
 	private List<ResumoCategoriaFinanceira> resumoPorCategoria(List<LancamentoFinanceiro> doMes) {
 		Map<UUID, ResumoAcumulado> acumulado = new LinkedHashMap<>();
 		for (LancamentoFinanceiro lancamento : doMes) {
-			if (!lancamento.compoeSaldoRealizado()) {
+			if (!lancamento.compoeSaldoRealizado() || ehPagamentoDeFatura(lancamento)) {
 				continue;
 			}
 			CategoriaFinanceira categoria = lancamento.getCategoria();
@@ -149,8 +150,18 @@ public class DashboardFinanceiroService {
 	}
 
 	private BigDecimal somarLiquidados(List<LancamentoFinanceiro> lancamentos, TipoFinanceiro tipo) {
-		return lancamentos.stream().filter(l -> l.getTipo() == tipo && l.compoeSaldoRealizado())
+		return lancamentos.stream()
+				.filter(l -> l.getTipo() == tipo && l.compoeSaldoRealizado() && !ehPagamentoDeFatura(l))
 				.map(LancamentoFinanceiro::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
+	}
+
+	// LES-F3-005: pagamento de fatura e saida de caixa real (conta pela soma de
+	// contas/saldoAtualConsolidado normalmente), mas nunca e gasto real -
+	// o consumo ja foi reconhecido em cada CompraCredito no momento da compra;
+	// contar de novo aqui duplicaria o mesmo gasto (ver docs/empresas/
+	// financeiro-les/PROCESSOS.md, secao 4, "compra x pagamento da fatura").
+	private boolean ehPagamentoDeFatura(LancamentoFinanceiro lancamento) {
+		return lancamento.getOrigem() == OrigemLancamentoFinanceiro.FATURA;
 	}
 
 	private static final class ResumoAcumulado {

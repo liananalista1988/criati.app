@@ -19,17 +19,30 @@ public record FaturaCartaoResponse(
 		LocalDate dataFechamento,
 		LocalDate dataVencimento,
 		BigDecimal valorTotal,
+		BigDecimal saldoFinanciadoAnterior,
+		BigDecimal juros,
+		BigDecimal multa,
+		BigDecimal valorDevido,
+		BigDecimal valorPago,
+		BigDecimal saldoDevido,
 		StatusFaturaCartao status,
 		OffsetDateTime fechadoEm,
 		long versao,
 		List<ParcelaFaturaCartaoResponse> parcelas) {
 
-	public static FaturaCartaoResponse from(ResultadoFatura resultado) {
+	// LES-F3-005: valorPago vem sempre de uma consulta a parte (soma de
+	// PagamentoFaturaCartao ativos), nunca de um campo persistido em
+	// FaturaCartao - por isso todo chamador precisa informa-lo explicitamente
+	// (nunca zero por omissao, sob risco de exibir saldo devido incorreto).
+	public static FaturaCartaoResponse from(ResultadoFatura resultado, BigDecimal valorPago) {
 		FaturaCartao fatura = resultado.fatura();
+		BigDecimal valorDevido = fatura.getValorDevido();
+		BigDecimal saldoDevido = valorDevido.subtract(valorPago);
 		return new FaturaCartaoResponse(fatura.getId(), fatura.getCartaoPrincipal().getId(),
 				fatura.getCompetencia(), fatura.getPeriodoInicial(), fatura.getPeriodoFinal(),
 				fatura.getDataFechamento(), fatura.getDataVencimento(), fatura.getValorTotal(),
-				fatura.getStatus(), fatura.getFechadoEm(), fatura.getVersao(),
+				fatura.getSaldoFinanciadoAnterior(), fatura.getJuros(), fatura.getMulta(), valorDevido, valorPago,
+				saldoDevido, fatura.getStatus(), fatura.getFechadoEm(), fatura.getVersao(),
 				resultado.parcelas().stream().map(ParcelaFaturaCartaoResponse::from).toList());
 	}
 }

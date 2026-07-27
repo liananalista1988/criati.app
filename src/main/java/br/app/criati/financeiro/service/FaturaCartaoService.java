@@ -25,6 +25,7 @@ import br.app.criati.financeiro.model.FaturaCartao;
 import br.app.criati.financeiro.model.ParcelaCompraCartao;
 import br.app.criati.financeiro.repository.CartaoCreditoRepository;
 import br.app.criati.financeiro.repository.FaturaCartaoRepository;
+import br.app.criati.financeiro.repository.PagamentoFaturaCartaoRepository;
 import br.app.criati.financeiro.repository.ParcelaCompraCartaoRepository;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusFaturaCartao;
@@ -41,14 +42,17 @@ public class FaturaCartaoService {
 	private final CartaoCreditoRepository cartoes;
 	private final EmpresaRepository empresas;
 	private final UsuarioRepository usuarios;
+	private final PagamentoFaturaCartaoRepository pagamentos;
 
 	public FaturaCartaoService(FaturaCartaoRepository faturas, ParcelaCompraCartaoRepository parcelas,
-			CartaoCreditoRepository cartoes, EmpresaRepository empresas, UsuarioRepository usuarios) {
+			CartaoCreditoRepository cartoes, EmpresaRepository empresas, UsuarioRepository usuarios,
+			PagamentoFaturaCartaoRepository pagamentos) {
 		this.faturas = faturas;
 		this.parcelas = parcelas;
 		this.cartoes = cartoes;
 		this.empresas = empresas;
 		this.usuarios = usuarios;
+		this.pagamentos = pagamentos;
 	}
 
 	@Transactional(readOnly = true)
@@ -106,8 +110,32 @@ public class FaturaCartaoService {
 		FaturaCartao fatura = new FaturaCartao(empresa, principal, competencia,
 				fechamentoAnterior.plusDays(1), fechamento, fechamento, competencia, autor);
 		faturas.saveAndFlush(fatura);
+		LocalDate competenciaAnterior = diaNoMes(mes.minusMonths(1), principal.getDiaVencimento());
+		BigDecimal saldoHerdado = calcularSaldoFinanciadoAnterior(contexto.empresaId(), principal, competenciaAnterior);
+		fatura.assumirSaldoFinanciado(saldoHerdado, autor);
 		recomporInterno(fatura, autor);
 		return resultado(fatura);
+	}
+
+	/**
+	 * Saldo devedor da fatura da competencia imediatamente anterior do mesmo
+	 * cartao principal (LES-F3-005) - zero se nao existir, se ainda estiver
+	 * ABERTA (nunca deveria ter saldo devedor relevante) ou se ja estiver PAGA.
+	 * Congelado uma unica vez em abrir(), nunca recalculado em recompor().
+	 */
+	private BigDecimal calcularSaldoFinanciadoAnterior(UUID empresaId, CartaoCredito principal,
+			LocalDate competenciaAnterior) {
+		return faturas.findByEmpresaIdAndCartaoPrincipalIdAndCompetencia(empresaId, principal.getId(), competenciaAnterior)
+				.filter(anterior -> anterior.getStatus() != StatusFaturaCartao.ABERTA
+						&& anterior.getStatus() != StatusFaturaCartao.PAGA)
+				.map(anterior -> {
+					BigDecimal pago = pagamentos.somarValorPago(empresaId, anterior.getId());
+					BigDecimal totalPago = pago == null ? BigDecimal.ZERO : pago;
+					return anterior.getValorDevido().subtract(totalPago);
+				})
+				.filter(saldo -> saldo.signum() > 0)
+				.map(saldo -> saldo.setScale(2, RoundingMode.HALF_UP))
+				.orElse(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
 	}
 
 	@Transactional

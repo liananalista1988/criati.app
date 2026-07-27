@@ -66,6 +66,15 @@ public class FaturaCartao {
 	@Column(name = "valor_total", nullable = false, precision = 19, scale = 2)
 	private BigDecimal valorTotal;
 
+	@Column(name = "saldo_financiado_anterior", nullable = false, precision = 19, scale = 2)
+	private BigDecimal saldoFinanciadoAnterior;
+
+	@Column(name = "juros", nullable = false, precision = 19, scale = 2)
+	private BigDecimal juros;
+
+	@Column(name = "multa", nullable = false, precision = 19, scale = 2)
+	private BigDecimal multa;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private StatusFaturaCartao status;
@@ -106,6 +115,9 @@ public class FaturaCartao {
 		this.dataFechamento = Objects.requireNonNull(dataFechamento);
 		this.dataVencimento = Objects.requireNonNull(dataVencimento);
 		this.valorTotal = zero();
+		this.saldoFinanciadoAnterior = zero();
+		this.juros = zero();
+		this.multa = zero();
 		this.status = StatusFaturaCartao.ABERTA;
 		this.criadoEm = OffsetDateTime.now();
 		this.atualizadoEm = this.criadoEm;
@@ -130,13 +142,88 @@ public class FaturaCartao {
 		alterar(autor);
 	}
 
+	/**
+	 * Congela, uma unica vez, o saldo devedor herdado da fatura anterior do
+	 * mesmo cartao principal (LES-F3-005) - chamado apenas por
+	 * FaturaCartaoService#abrir no momento da criacao, nunca em recompor().
+	 * Nao recalculado depois: idempotencia vem do proprio abrir() ja ser
+	 * idempotente (uma fatura so e criada uma vez por competencia).
+	 */
+	public void assumirSaldoFinanciado(BigDecimal saldo, Usuario autor) {
+		exigirAberta();
+		this.saldoFinanciadoAnterior = normalizarNaoNegativo(saldo, "saldoFinanciadoAnterior");
+		alterar(autor);
+	}
+
+	/**
+	 * Substitui os encargos vigentes (nunca acumula sobre chamadas anteriores,
+	 * mesmo criterio de ParcelaEmprestimo#aplicarEncargos), aumentando
+	 * explicitamente o valor devido da fatura. So permitido em fatura ja
+	 * fechada e ainda nao quitada.
+	 */
+	public void aplicarEncargos(BigDecimal juros, BigDecimal multa, BigDecimal totalPagoAcumulado, Usuario autor) {
+		exigirPagavel();
+		this.juros = normalizarNaoNegativo(juros, "juros");
+		this.multa = normalizarNaoNegativo(multa, "multa");
+		recalcularStatus(Objects.requireNonNull(totalPagoAcumulado, "totalPagoAcumulado nao pode ser nulo"));
+		alterar(autor);
+	}
+
+	/**
+	 * Recalcula o status a partir do total ja pago (soma de todos os
+	 * PagamentoFaturaCartao ativos desta fatura, calculada pelo service - a
+	 * fatura nunca acumula o proprio valor pago como campo, para nao duplicar
+	 * fonte de verdade). Pagamento parcial/minimo nunca altera parcelas
+	 * individualmente: apenas este status e a fonte de verdade.
+	 */
+	public void registrarPagamento(BigDecimal totalPagoAcumulado, Usuario autor) {
+		exigirPagavel();
+		recalcularStatus(Objects.requireNonNull(totalPagoAcumulado, "totalPagoAcumulado nao pode ser nulo"));
+		alterar(autor);
+	}
+
+	/**
+	 * Valor devido total: soma das parcelas da competencia (valorTotal) mais o
+	 * saldo financiado herdado do ciclo anterior e os encargos manuais
+	 * aplicados - nunca persistido como coluna propria, sempre derivado.
+	 */
+	public BigDecimal getValorDevido() {
+		return valorTotal.add(saldoFinanciadoAnterior).add(juros).add(multa).setScale(2, RoundingMode.HALF_UP);
+	}
+
 	public boolean estaAberta() {
 		return status == StatusFaturaCartao.ABERTA;
+	}
+
+	private void recalcularStatus(BigDecimal totalPagoAcumulado) {
+		BigDecimal saldoDevido = getValorDevido().subtract(totalPagoAcumulado).setScale(2, RoundingMode.HALF_UP);
+		if (saldoDevido.signum() <= 0) {
+			this.status = StatusFaturaCartao.PAGA;
+		} else if (LocalDate.now().isAfter(dataVencimento)) {
+			this.status = StatusFaturaCartao.ATRASADA;
+		} else {
+			this.status = StatusFaturaCartao.PARCIALMENTE_PAGA;
+		}
 	}
 
 	private void exigirAberta() {
 		if (!estaAberta()) {
 			throw new FaturaCartaoStatusInvalidoException("Fatura fechada nao pode ser alterada");
+		}
+	}
+
+	/**
+	 * Fatura ABERTA nunca recebe pagamento (precisa fechar primeiro); fatura
+	 * PAGA nao aceita novo pagamento/encargo (estorno, quando existir, e
+	 * escopo de LES-F3-006). FECHADA, PARCIALMENTE_PAGA e ATRASADA sao os
+	 * unicos estados pagaveis.
+	 */
+	private void exigirPagavel() {
+		if (status == StatusFaturaCartao.ABERTA) {
+			throw new FaturaCartaoStatusInvalidoException("Fatura aberta ainda nao pode receber pagamento");
+		}
+		if (status == StatusFaturaCartao.PAGA) {
+			throw new FaturaCartaoStatusInvalidoException("Fatura ja esta paga");
 		}
 	}
 
@@ -147,5 +234,13 @@ public class FaturaCartao {
 
 	private static BigDecimal zero() {
 		return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+	}
+
+	private static BigDecimal normalizarNaoNegativo(BigDecimal valor, String campo) {
+		BigDecimal efetivo = valor == null ? BigDecimal.ZERO : valor;
+		if (efetivo.signum() < 0) {
+			throw new IllegalArgumentException(campo + " nao pode ser negativo");
+		}
+		return efetivo.setScale(2, RoundingMode.HALF_UP);
 	}
 }

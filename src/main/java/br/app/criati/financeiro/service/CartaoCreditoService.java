@@ -25,8 +25,9 @@ import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.financeiro.model.CartaoCredito;
 import br.app.criati.financeiro.model.InstituicaoFinanceira;
 import br.app.criati.financeiro.repository.CartaoCreditoRepository;
-import br.app.criati.financeiro.repository.CompraCartaoRepository;
+import br.app.criati.financeiro.repository.ParcelaCompraCartaoRepository;
 import br.app.criati.shared.enums.StatusCompraCartao;
+import br.app.criati.shared.enums.StatusFaturaCartao;
 import br.app.criati.financeiro.shared.model.PessoaFinanceira;
 import br.app.criati.financeiro.shared.repository.PessoaFinanceiraRepository;
 import br.app.criati.shared.enums.Bandeira;
@@ -39,10 +40,14 @@ import br.app.criati.usuario.repository.UsuarioRepository;
 
 /**
  * Gestao estrutural (cadastral) de cartoes de credito: titularidade,
- * instituicao, bandeira, limites e vinculo fisico/virtual. Compras, parcelas
- * e faturas nao existem nesta entrega — o limite comprometido e sempre zero
- * (ver {@link CartaoCredito#getLimiteComprometidoEfetivo()}). Ver
- * docs/empresas/financeiro-les/IMPLEMENTACAO-F3-001.md.
+ * instituicao, bandeira, limites e vinculo fisico/virtual. O limite
+ * comprometido (ver {@link #limiteComprometido}) soma parcelas de compras
+ * ATIVA ainda nao cobertas por uma fatura PAGA (LES-F3-005): pagamento
+ * integral da fatura libera o limite das parcelas nela contidas; parcial ou
+ * minimo nao libera nada, mesmo que a fatura ja tenha recebido algum
+ * pagamento. {@link CartaoCredito#getLimiteComprometidoEfetivo()} continua
+ * sempre zero - resquicio da entrega estrutural (F3-001), nao usado por este
+ * service. Ver docs/empresas/financeiro-les/IMPLEMENTACAO-F3-001.md.
  */
 @Service
 public class CartaoCreditoService {
@@ -52,17 +57,17 @@ public class CartaoCreditoService {
 	private final InstituicaoFinanceiraService instituicaoService;
 	private final EmpresaRepository empresaRepository;
 	private final UsuarioRepository usuarioRepository;
-	private final CompraCartaoRepository compraRepository;
+	private final ParcelaCompraCartaoRepository parcelaRepository;
 
 	public CartaoCreditoService(CartaoCreditoRepository cartaoRepository, PessoaFinanceiraRepository pessoaRepository,
 			InstituicaoFinanceiraService instituicaoService, EmpresaRepository empresaRepository,
-			UsuarioRepository usuarioRepository, CompraCartaoRepository compraRepository) {
+			UsuarioRepository usuarioRepository, ParcelaCompraCartaoRepository parcelaRepository) {
 		this.cartaoRepository = cartaoRepository;
 		this.pessoaRepository = pessoaRepository;
 		this.instituicaoService = instituicaoService;
 		this.empresaRepository = empresaRepository;
 		this.usuarioRepository = usuarioRepository;
-		this.compraRepository = compraRepository;
+		this.parcelaRepository = parcelaRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -152,16 +157,16 @@ public class CartaoCreditoService {
 	@Transactional(readOnly = true)
 	public BigDecimal limiteComprometido(CartaoCredito cartao) {
 		CartaoCredito principal = cartao.ehVirtual() ? cartao.getCartaoPrincipal() : cartao;
-		BigDecimal valor = compraRepository.somarComprometido(cartao.getEmpresa().getId(), principal.getId(),
-				StatusCompraCartao.ATIVA);
+		BigDecimal valor = parcelaRepository.somarNaoQuitado(cartao.getEmpresa().getId(), principal.getId(),
+				StatusCompraCartao.ATIVA, StatusFaturaCartao.PAGA);
 		return (valor == null ? BigDecimal.ZERO : valor).setScale(2, RoundingMode.HALF_UP);
 	}
 
 	@Transactional(readOnly = true)
 	public BigDecimal limiteComprometidoTerceiros(CartaoCredito cartao) {
 		CartaoCredito principal = cartao.ehVirtual() ? cartao.getCartaoPrincipal() : cartao;
-		BigDecimal valor = compraRepository.somarComprometidoTerceiros(cartao.getEmpresa().getId(), principal.getId(),
-				StatusCompraCartao.ATIVA);
+		BigDecimal valor = parcelaRepository.somarNaoQuitadoTerceiros(cartao.getEmpresa().getId(), principal.getId(),
+				StatusCompraCartao.ATIVA, StatusFaturaCartao.PAGA);
 		return (valor == null ? BigDecimal.ZERO : valor).setScale(2, RoundingMode.HALF_UP);
 	}
 

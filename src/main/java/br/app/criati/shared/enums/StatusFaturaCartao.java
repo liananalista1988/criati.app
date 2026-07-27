@@ -2,5 +2,8 @@ package br.app.criati.shared.enums;
 
 public enum StatusFaturaCartao {
 	ABERTA,
-	FECHADA
+	FECHADA,
+	PARCIALMENTE_PAGA,
+	PAGA,
+	ATRASADA
 }

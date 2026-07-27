@@ -223,6 +223,31 @@ public class LancamentoFinanceiro {
 		return lancamento;
 	}
 
+	/**
+	 * Gera o lancamento de despesa liquidado que representa a saida de caixa
+	 * unica de um pagamento (integral, parcial ou minimo) de uma FaturaCartao
+	 * (LES-F3-005). Sempre usa a categoria tecnica reservada de pagamento de
+	 * fatura (nunca a categoria das compras que compoem a fatura, ja
+	 * reconhecidas como gasto real no momento da compra) - por isso
+	 * DashboardFinanceiroService exclui lancamentos de origem FATURA do gasto
+	 * real e do resumo por categoria, evitando contar o mesmo consumo duas
+	 * vezes. pessoaFinanceira/parteFinanceira sempre nulos: o pagamento da
+	 * fatura nao e atribuivel a uma pessoa ou terceiro especifico. Mesma razao
+	 * de {@link #gerarDeEmprestimoConcedido} para nao referenciar
+	 * recorrencia_id: mais de um pagamento na mesma fatura geraria mais de um
+	 * lancamento na mesma data_competencia.
+	 */
+	public static LancamentoFinanceiro gerarDeFatura(Empresa empresa, ContaFinanceira conta,
+			CategoriaFinanceira categoria, String descricao, BigDecimal valor, LocalDate dataCompetencia,
+			LocalDate dataVencimento, LocalDate dataLiquidacao, FormaPagamentoLancamento formaPagamento,
+			Usuario autor) {
+		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, null, null,
+				TipoFinanceiro.DESPESA, descricao, valor, dataCompetencia, dataVencimento, dataLiquidacao,
+				StatusLancamentoFinanceiro.LIQUIDADO, formaPagamento, null, autor);
+		lancamento.origem = OrigemLancamentoFinanceiro.FATURA;
+		return lancamento;
+	}
+
 	public void atualizarDados(
 			ContaFinanceira conta,
 			CategoriaFinanceira categoria,
