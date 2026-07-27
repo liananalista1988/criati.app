@@ -23,6 +23,8 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import br.app.criati.admin.RedefinirSenhaGlobalAcessoNegadoAuditor;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -55,7 +57,7 @@ public class SecurityConfig {
 			HttpSecurity http,
 			SecurityContextRepository securityContextRepository,
 			JsonAuthenticationEntryPoint jsonAuthenticationEntryPoint,
-			JsonAccessDeniedHandler accessDeniedHandler) throws Exception {
+			RedefinirSenhaGlobalAcessoNegadoAuditor accessDeniedHandler) throws Exception {
 		// A API (/api/**) sempre responde 401 em JSON (JsonAuthenticationEntryPoint).
 		// Paginas Thymeleaf (ex.: /app/**) precisam de um 401 "navegavel": redirecionar
 		// para /login, em vez de devolver um corpo JSON no navegador. As duas rotas

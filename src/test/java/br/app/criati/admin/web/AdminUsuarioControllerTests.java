@@ -161,9 +161,13 @@ class AdminUsuarioControllerTests {
 	}
 
 	@Test
-	void usuarioComumRecebe403AoTentarRedefinirSenhaGlobalSemCriarAuditoria() throws Exception {
-		MockHttpSession sessionComum = login("usuario.comum.redefine.global@criati.test", false);
+	void usuarioComumRecebe403AoTentarRedefinirSenhaGlobalEAuditaSemPermissaoSemDuplicar() throws Exception {
+		String emailComum = "usuario.comum.redefine.global@criati.test";
+		MockHttpSession sessionComum = login(emailComum, false);
 		Usuario alvo = criarUsuarioGlobal("alvo.redefine.negado@criati.test", StatusCadastro.ATIVO);
+		String hashOriginalAlvo = alvo.getSenha();
+		commitarSetupParaAuditoriaEmTransacaoIndependente();
+		Usuario chamadorComum = usuarioRepository.findByEmailIgnoreCase(emailComum).orElseThrow();
 
 		mockMvc.perform(post("/api/admin/usuarios/" + alvo.getId() + "/redefinir-senha")
 				.session(sessionComum).with(csrf()).contentType(MediaType.APPLICATION_JSON)
@@ -172,12 +176,22 @@ class AdminUsuarioControllerTests {
 						""".formatted(SENHA_NOVA_GLOBAL, SENHA_NOVA_GLOBAL)))
 				.andExpect(status().isForbidden());
 
-		// bloqueado pelo SecurityConfig (/api/admin/** exige ROLE_SUPERADMIN)
-		// antes mesmo de chegar ao service - por isso nao ha auditoria aqui
-		// (ver RedefinirSenhaGlobalServiceTests para o guard redundante do
-		// proprio service, exercido chamando-o diretamente).
-		assertThat(redefinicaoSenhaGlobalAuditoriaRepository.findAllByUsuarioAlvoIdOrderByCriadoEmDesc(alvo.getId()))
-				.isEmpty();
+		// bloqueado pelo SecurityConfig (/api/admin/** exige ROLE_SUPERADMIN) antes
+		// mesmo de chegar ao service/controller - a auditoria agora acontece no
+		// AccessDeniedHandler (RedefinirSenhaGlobalAcessoNegadoAuditor), o unico
+		// ponto que intercepta essa negacao real via HTTP. Exatamente um evento e
+		// criado (sem duplicar com o guard redundante do proprio service, que
+		// aqui nunca chega a executar - ver RedefinirSenhaGlobalServiceTests).
+		List<RedefinicaoSenhaGlobalAuditoria> eventos =
+				redefinicaoSenhaGlobalAuditoriaRepository.findAllByUsuarioAlvoIdOrderByCriadoEmDesc(alvo.getId());
+		assertThat(eventos).hasSize(1);
+		assertThat(eventos.get(0).getResultado()).isEqualTo(ResultadoAuditoriaSeguranca.NEGADO);
+		assertThat(eventos.get(0).getMotivo()).isEqualTo(MotivoAuditoriaSeguranca.SEM_PERMISSAO);
+		assertThat(eventos.get(0).getAdministrador().getId()).isEqualTo(chamadorComum.getId());
+
+		// acesso realmente negado (nao apenas auditado): senha do alvo intacta
+		Usuario alvoAtual = usuarioRepository.findById(alvo.getId()).orElseThrow();
+		assertThat(alvoAtual.getSenha()).isEqualTo(hashOriginalAlvo);
 	}
 
 	@Test
@@ -292,6 +306,64 @@ class AdminUsuarioControllerTests {
 		assertThat(eventos).hasSize(1);
 		assertThat(eventos.get(0).getResultado()).isEqualTo(ResultadoAuditoriaSeguranca.FALHA_VALIDACAO);
 		assertThat(eventos.get(0).getMotivo()).isEqualTo(MotivoAuditoriaSeguranca.SENHA_INVALIDA);
+	}
+
+	// RedefinirSenhaGlobalRequest nao usa @NotBlank de proposito: um corpo com
+	// novaSenha/confirmacaoSenha vazia (ou ausente) precisa chegar ate o
+	// service para ser validado por SenhaValidador e auditado como
+	// FALHA_VALIDACAO/SENHA_INVALIDA - se @NotBlank barrasse antes, o
+	// MethodArgumentNotValidException do Bean Validation responderia 400 sem
+	// nenhuma auditoria (gap corrigido aqui).
+	@Test
+	void senhaVaziaERejeitadaComAuditoriaDeFalhaValidacaoSemAlterarSenhaArmazenada() throws Exception {
+		MockHttpSession sessionSuperAdmin = loginSuperAdministrador("superadmin.redefine.vazia@criati.test");
+		Usuario alvo = criarUsuarioGlobal("alvo.redefine.vazia@criati.test", StatusCadastro.ATIVO);
+		String hashOriginal = alvo.getSenha();
+		commitarSetupParaAuditoriaEmTransacaoIndependente();
+
+		mockMvc.perform(post("/api/admin/usuarios/" + alvo.getId() + "/redefinir-senha")
+				.session(sessionSuperAdmin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "", "confirmacaoSenha": "" }
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.novaSenha").doesNotExist())
+				.andExpect(jsonPath("$.senha").doesNotExist());
+
+		List<RedefinicaoSenhaGlobalAuditoria> eventos =
+				redefinicaoSenhaGlobalAuditoriaRepository.findAllByUsuarioAlvoIdOrderByCriadoEmDesc(alvo.getId());
+		assertThat(eventos).hasSize(1);
+		assertThat(eventos.get(0).getResultado()).isEqualTo(ResultadoAuditoriaSeguranca.FALHA_VALIDACAO);
+		assertThat(eventos.get(0).getMotivo()).isEqualTo(MotivoAuditoriaSeguranca.SENHA_INVALIDA);
+
+		Usuario alvoAtual = usuarioRepository.findById(alvo.getId()).orElseThrow();
+		assertThat(alvoAtual.getSenha()).isEqualTo(hashOriginal);
+	}
+
+	@Test
+	void confirmacaoVaziaERejeitadaComAuditoriaDeFalhaValidacaoSemAlterarSenhaArmazenada() throws Exception {
+		MockHttpSession sessionSuperAdmin = loginSuperAdministrador("superadmin.redefine.confvazia@criati.test");
+		Usuario alvo = criarUsuarioGlobal("alvo.redefine.confvazia@criati.test", StatusCadastro.ATIVO);
+		String hashOriginal = alvo.getSenha();
+		commitarSetupParaAuditoriaEmTransacaoIndependente();
+
+		mockMvc.perform(post("/api/admin/usuarios/" + alvo.getId() + "/redefinir-senha")
+				.session(sessionSuperAdmin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{ "novaSenha": "%s", "confirmacaoSenha": "" }
+						""".formatted(SENHA_NOVA_GLOBAL)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.novaSenha").doesNotExist())
+				.andExpect(jsonPath("$.senha").doesNotExist());
+
+		List<RedefinicaoSenhaGlobalAuditoria> eventos =
+				redefinicaoSenhaGlobalAuditoriaRepository.findAllByUsuarioAlvoIdOrderByCriadoEmDesc(alvo.getId());
+		assertThat(eventos).hasSize(1);
+		assertThat(eventos.get(0).getResultado()).isEqualTo(ResultadoAuditoriaSeguranca.FALHA_VALIDACAO);
+		assertThat(eventos.get(0).getMotivo()).isEqualTo(MotivoAuditoriaSeguranca.SENHA_INVALIDA);
+
+		Usuario alvoAtual = usuarioRepository.findById(alvo.getId()).orElseThrow();
+		assertThat(alvoAtual.getSenha()).isEqualTo(hashOriginal);
 	}
 
 	// RedefinicaoSenhaGlobalAuditoriaService.registrarFalha roda em transacao

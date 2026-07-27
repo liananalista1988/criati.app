@@ -82,12 +82,14 @@ class RedefinirSenhaGlobalServiceTests {
 		assertThat(evento.getIpOrigem()).isEqualTo("203.0.113.10");
 	}
 
-	// SEM_PERMISSAO nunca e alcancavel via HTTP real (SecurityConfig ja exige
-	// ROLE_SUPERADMIN em qualquer verbo de /api/admin/**, barrando a
+	// Este branch do service nunca e alcancado via HTTP real (SecurityConfig
+	// ja exige ROLE_SUPERADMIN em qualquer verbo de /api/admin/**, barrando a
 	// requisicao antes do controller) - mas o service tem seu proprio guard
 	// redundante (defesa em profundidade, nunca so escondendo o botao na
-	// tela), e este teste o exercita diretamente, como prova de que ele
-	// existe e audita a tentativa mesmo que a rota HTTP nunca a alcance.
+	// tela), e este teste o exercita diretamente. A auditoria da negacao real
+	// via HTTP por falta de ROLE_SUPERADMIN acontece em outro ponto
+	// (RedefinirSenhaGlobalAcessoNegadoAuditor, um AccessDeniedHandler - ver
+	// AdminUsuarioControllerTests), nunca aqui, para nao duplicar o evento.
 	@Test
 	void deveRejeitarEAuditarQuandoChamadorNaoEhSuperAdministrador() {
 		Usuario usuarioComum = criarUsuario("comum@criati.test", false, StatusCadastro.ATIVO);
