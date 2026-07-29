@@ -101,7 +101,8 @@ class PaginaComprasTerceirosSegurancaTests {
 				.andExpect(content().string(containsString("Total ressarcido")))
 				.andExpect(content().string(containsString("Saldo a receber")))
 				.andExpect(content().string(containsString("financeiro-compras-terceiros.js")))
-				.andExpect(content().string(containsString("Navegação do Financeiro LeS")))
+				.andExpect(content().string(containsString("Crédito e terceiros")))
+				.andExpect(content().string(not(containsString("financeiro-navegacao"))))
 				.andExpect(content().string(not(containsString("href=\"/app/financeiro/compras-terceiros/nova\""))));
 	}
 

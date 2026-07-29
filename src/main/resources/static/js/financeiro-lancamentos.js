@@ -4,24 +4,35 @@
 	var STATUS_LABEL = { PENDENTE: "Pendente", LIQUIDADO: "Liquidado", PAGO: "Pago (legado)", CANCELADO: "Cancelado" };
 	var lancamentoEmEdicao = null, lancamentoParaLiquidar = null;
 	var contas = [], categorias = [], pessoas = [], partes = [];
+	var modalLancamento, modalLiquidacao;
 	function el(id) { return document.getElementById(id); }
 	function hoje() { return new Date().toISOString().slice(0, 10); }
 
 	function iniciar() {
 		if (!el("financeiro-lancamento-form")) return;
+		if (el("financeiro-lancamento-form").dataset.inicializado === "true") return;
+		el("financeiro-lancamento-form").dataset.inicializado = "true";
+		modalLancamento = window.CriatiUI.criarModal(el("financeiro-lancamento-modal"));
+		modalLiquidacao = window.CriatiUI.criarModal(el("financeiro-pagar-modal"));
 		el("financeiro-lancamentos-nova-receita").addEventListener("click", function () { abrirCriacao("RECEITA"); });
 		el("financeiro-lancamentos-nova-despesa").addEventListener("click", function () { abrirCriacao("DESPESA"); });
 		el("financeiro-lancamento-cancelar").addEventListener("click", fecharFormulario);
 		el("financeiro-lancamento-form").addEventListener("submit", salvar);
 		el("financeiro-pagar-cancelar").addEventListener("click", fecharLiquidacao);
 		el("financeiro-pagar-form").addEventListener("submit", confirmarLiquidacao);
-		["data-inicial", "data-final", "tipo", "status", "conta", "categoria", "pessoa", "parte", "vencido"]
-			.forEach(function (s) { el("financeiro-filtro-" + s).addEventListener("change", carregar); });
-		el("financeiro-filtro-busca").addEventListener("input", debounce(carregar, 300));
+		el("financeiro-lancamentos-filtros").addEventListener("submit", function (evento) {
+			evento.preventDefault();
+			carregar();
+		});
+		el("financeiro-lancamentos-limpar-filtros").addEventListener("click", limparFiltros);
 		carregarAuxiliares().then(carregar);
 	}
 
-	function debounce(fn, atraso) { var timer; return function () { clearTimeout(timer); timer = setTimeout(fn, atraso); }; }
+	function limparFiltros() {
+		el("financeiro-lancamentos-filtros").reset();
+		el("financeiro-lancamentos-filtros").dispatchEvent(new Event("input", { bubbles: true }));
+		carregar();
+	}
 	function preencher(select, itens, texto) {
 		select.innerHTML = "";
 		if (texto !== null) { var vazio = document.createElement("option"); vazio.value = ""; vazio.textContent = texto; select.appendChild(vazio); }
@@ -57,35 +68,45 @@
 		Promise.all([window.FinanceiroApi.lancamentos.listar(f), window.FinanceiroApi.lancamentos.resumo({
 			competencia: competencia, pessoaId: f.pessoaId, contaId: f.contaId })]).then(function (r) {
 			el("financeiro-lancamentos-carregando").hidden = true; renderResumo(r[1].data || {});
-			var itens = r[0].data || []; if (!itens.length) { el("financeiro-lancamentos-vazio").hidden = false; return; }
+			var itens = r[0].data || [];
+			el("resumo-quantidade-lancamentos").textContent = String(itens.length);
+			if (!itens.length) { el("financeiro-lancamentos-vazio").hidden = false; return; }
 			el("financeiro-lancamentos-tabela-wrap").hidden = false; renderTabela(itens);
 		}).catch(function () { el("financeiro-lancamentos-carregando").hidden = true; el("financeiro-lancamentos-erro").hidden = false; });
 	}
 	function renderResumo(r) {
-		[["receitas-liquidadas", r.receitasLiquidadas], ["despesas-liquidadas", r.despesasLiquidadas],
-		["resultado-liquidado", r.resultadoLiquidado], ["saldo-consolidado", r.saldoConsolidado],
-		["receitas-pendentes", r.receitasPendentes], ["despesas-pendentes", r.despesasPendentes]]
-			.forEach(function (item) { el("resumo-" + item[0]).textContent = window.FinanceiroFormatacao.moeda(item[1] || 0); });
+		[["receitas-liquidadas", r.receitasLiquidadas, "ENTRADA"], ["despesas-liquidadas", r.despesasLiquidadas, "SAIDA"],
+		["resultado-liquidado", r.resultadoLiquidado, "SALDO"], ["saldo-consolidado", r.saldoConsolidado, "SALDO"],
+		["receitas-pendentes", r.receitasPendentes, "ENTRADA"], ["despesas-pendentes", r.despesasPendentes, "SAIDA"]]
+			.forEach(function (item) {
+				window.FinanceiroFormatacao.renderMoeda(el("resumo-" + item[0]), item[1] || 0, item[2]);
+			});
 		el("resumo-vencidos").textContent = r.quantidadeVencidos || 0;
 	}
 	function renderTabela(itens) { var tbody = el("financeiro-lancamentos-tbody"); tbody.innerHTML = "";
 		itens.forEach(function (l) { tbody.appendChild(linha(l)); }); }
-	function celula(texto) { var td = document.createElement("td"); td.textContent = texto || "—"; return td; }
+	function celula(texto, rotulo) {
+		var td = document.createElement("td");
+		td.textContent = texto || "—";
+		if (rotulo) td.dataset.label = rotulo;
+		return td;
+	}
 	function linha(l) {
-		var tr = document.createElement("tr"); tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataCompetencia)));
-		tr.appendChild(celula(l.descricao)); tr.appendChild(celula(l.categoriaNome)); tr.appendChild(celula(l.contaNome));
-		tr.appendChild(celula(l.pessoaFinanceiraNome)); tr.appendChild(celula(l.tipo === "RECEITA" ? "Receita" : "Despesa"));
+		var tr = document.createElement("tr"); tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataCompetencia), "Competência"));
+		tr.appendChild(celula(l.descricao, "Descrição")); tr.appendChild(celula(l.categoriaNome, "Categoria")); tr.appendChild(celula(l.contaNome, "Conta"));
+		tr.appendChild(celula(l.pessoaFinanceiraNome, "Pessoa")); tr.appendChild(celula(l.tipo === "RECEITA" ? "Receita" : "Despesa", "Tipo"));
 		var valor = celula((l.tipo === "RECEITA" ? "+ " : "- ") + window.FinanceiroFormatacao.moeda(l.valor));
-		valor.className = l.tipo === "RECEITA" ? "criati-valor-positivo" : "criati-valor-negativo"; tr.appendChild(valor);
+		valor.dataset.label = "Valor"; valor.className = l.tipo === "RECEITA" ? "criati-valor-positivo" : "criati-valor-negativo"; tr.appendChild(valor);
 		var status = document.createElement("td"), badge = document.createElement("span");
+		status.dataset.label = "Status";
 		badge.className = "criati-badge criati-badge-" + l.status.toLowerCase();
 		badge.textContent = l.vencido ? "Vencido" : (STATUS_LABEL[l.status] || l.status); status.appendChild(badge); tr.appendChild(status);
-		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataVencimento)));
-		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataLiquidacao)));
+		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataVencimento), "Vencimento"));
+		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataLiquidacao), "Liquidação"));
 		tr.appendChild(acoes(l)); return tr;
 	}
-	function botao(texto, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "criati-btn criati-btn-ghost"; b.textContent = texto; b.addEventListener("click", fn); return b; }
-	function acoes(l) { var td = document.createElement("td"); td.className = "criati-table-acoes";
+	function botao(texto, fn, classe) { var b = document.createElement("button"); b.type = "button"; b.className = classe || "criati-btn criati-btn-ghost"; b.textContent = texto; b.addEventListener("click", fn); return b; }
+	function acoes(l) { var td = document.createElement("td"); td.className = "criati-table-acoes"; td.dataset.label = "Ações";
 		td.appendChild(botao("Detalhes", function () { window.FinanceiroDetalhes.abrir("Detalhes do lançamento", [
 			["Descrição", l.descricao], ["Natureza", l.tipo === "RECEITA" ? "Receita" : "Despesa"],
 			["Valor", window.FinanceiroFormatacao.moeda(l.valor)], ["Competência", window.FinanceiroFormatacao.dataBr(l.dataCompetencia)],
@@ -94,9 +115,9 @@
 			["Forma de pagamento", l.formaPagamento], ["Origem", l.origem], ["Observação", l.observacao],
 			["Status", l.vencido ? "Vencido" : (STATUS_LABEL[l.status] || l.status)]
 		]); }));
-		if (l.status === "PENDENTE") { td.appendChild(botao("Editar", function () { abrirEdicao(l); })); td.appendChild(botao("Liquidar", function () { abrirLiquidacao(l); })); }
+		if (l.status === "PENDENTE") { td.appendChild(botao("Editar", function () { abrirEdicao(l); })); td.appendChild(botao("Liquidar", function () { abrirLiquidacao(l); }, "criati-btn criati-btn-primary")); }
 		if (l.status === "LIQUIDADO" || l.status === "PAGO") { td.appendChild(botao("Editar", function () { abrirEdicao(l); })); td.appendChild(botao("Desliquidar", function () { desliquidar(l); })); }
-		if (l.status !== "CANCELADO") td.appendChild(botao("Cancelar", function () { cancelar(l); })); return td; }
+		if (l.status !== "CANCELADO") td.appendChild(botao("Cancelar", function () { cancelar(l); }, "criati-btn criati-btn-danger")); return td; }
 	function cancelar(l) { if (!confirm("Cancelar removerá qualquer impacto deste lançamento no saldo. Continuar?")) return;
 		window.FinanceiroApi.lancamentos.cancelar(l.id).then(sucesso("Lançamento cancelado.")).catch(falha("Não foi possível cancelar.")); }
 	function desliquidar(l) { if (!confirm("Desliquidar removerá o impacto no saldo. Continuar?")) return;
@@ -104,8 +125,8 @@
 	function sucesso(msg) { return function () { window.CriatiUI.showToast("sucesso", msg); carregar(); }; }
 	function falha(msg) { return function (erro) { window.CriatiUI.showToast("erro", (erro && erro.message) || msg); }; }
 
-	function abrirLiquidacao(l) { lancamentoParaLiquidar = l; el("financeiro-pagar-data").value = hoje(); el("financeiro-pagar-forma").value = l.formaPagamento || ""; el("financeiro-pagar-modal").hidden = false; }
-	function fecharLiquidacao() { el("financeiro-pagar-modal").hidden = true; lancamentoParaLiquidar = null; }
+	function abrirLiquidacao(l) { lancamentoParaLiquidar = l; el("financeiro-pagar-data").value = hoje(); el("financeiro-pagar-forma").value = l.formaPagamento || ""; modalLiquidacao.abrir(el("financeiro-pagar-data")); }
+	function fecharLiquidacao() { modalLiquidacao.fechar(); lancamentoParaLiquidar = null; }
 	function confirmarLiquidacao(e) { e.preventDefault(); var b = el("financeiro-pagar-confirmar"); window.CriatiUI.setButtonLoading(b, true, "Confirmando...");
 		window.FinanceiroApi.lancamentos.liquidar(lancamentoParaLiquidar.id, { dataLiquidacao: el("financeiro-pagar-data").value,
 			formaPagamento: el("financeiro-pagar-forma").value || null }).then(function () { fecharLiquidacao(); sucesso("Lançamento liquidado.")(); })
@@ -116,7 +137,7 @@
 		el("financeiro-lancamento-tipo").value = tipo; el("financeiro-lancamento-descricao").value = ""; el("financeiro-lancamento-valor").value = "";
 		el("financeiro-lancamento-data-competencia").value = hoje(); el("financeiro-lancamento-data-vencimento").value = "";
 		el("financeiro-lancamento-data-liquidacao").value = ""; el("financeiro-lancamento-status").value = "PENDENTE";
-		el("financeiro-lancamento-forma").value = ""; el("financeiro-lancamento-observacao").value = ""; preencherCategorias(tipo); el("financeiro-lancamento-modal").hidden = false; }
+		el("financeiro-lancamento-forma").value = ""; el("financeiro-lancamento-observacao").value = ""; preencherCategorias(tipo); modalLancamento.abrir(el("financeiro-lancamento-conta")); }
 	function abrirEdicao(l) { lancamentoEmEdicao = l; el("financeiro-lancamento-modal-titulo").textContent = "Editar lançamento";
 		el("financeiro-lancamento-tipo").value = l.tipo; preencherCategorias(l.tipo); el("financeiro-lancamento-conta").value = l.contaId;
 		el("financeiro-lancamento-categoria").value = l.categoriaId; el("financeiro-lancamento-pessoa").value = l.pessoaFinanceiraId || "";
@@ -124,8 +145,8 @@
 		el("financeiro-lancamento-valor").value = l.valor; el("financeiro-lancamento-data-competencia").value = l.dataCompetencia;
 		el("financeiro-lancamento-data-vencimento").value = l.dataVencimento || ""; el("financeiro-lancamento-status").value = l.status === "PAGO" ? "LIQUIDADO" : l.status;
 		el("financeiro-lancamento-data-liquidacao").value = l.dataLiquidacao || ""; el("financeiro-lancamento-forma").value = l.formaPagamento || "";
-		el("financeiro-lancamento-observacao").value = l.observacao || ""; el("financeiro-lancamento-modal").hidden = false; }
-	function fecharFormulario() { el("financeiro-lancamento-modal").hidden = true; el("financeiro-lancamento-form").reset(); lancamentoEmEdicao = null; }
+		el("financeiro-lancamento-observacao").value = l.observacao || ""; modalLancamento.abrir(el("financeiro-lancamento-conta")); }
+	function fecharFormulario() { modalLancamento.fechar(); el("financeiro-lancamento-form").reset(); lancamentoEmEdicao = null; }
 	function salvar(e) { e.preventDefault(); var b = el("financeiro-lancamento-salvar"), tipo = el("financeiro-lancamento-tipo").value;
 		var d = { contaId: el("financeiro-lancamento-conta").value, categoriaId: el("financeiro-lancamento-categoria").value,
 			pessoaFinanceiraId: el("financeiro-lancamento-pessoa").value, parteFinanceiraId: el("financeiro-lancamento-parte").value || null,

@@ -15,19 +15,21 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-parcelas')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
-				<div class="criati-page-header">
+				<header class="financeiro-operacional-cabecalho">
+					<div>
+					<p class="financeiro-dashboard-sobretitulo">Crédito</p>
 					<h1>Parcelas de cartão</h1>
 					<p>Acompanhe as parcelas geradas pelas compras. Alterações e cancelamentos são feitos na compra de origem.</p>
-				</div>
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('parcelas')}"></div>
-
+					</div>
+					<a class="criati-btn criati-btn-primary" href="/app/financeiro/compras-cartao">Registrar compra</a>
+				</header>
 				<div id="parcelas-mensagem" class="criati-alert criati-alert-error" role="alert" hidden></div>
-				<div class="criati-toolbar">
+				<div class="criati-toolbar financeiro-painel-filtros">
 					<div class="criati-field">
 						<label for="parcelas-filtro-competencia">Competência</label>
 						<input class="criati-input" id="parcelas-filtro-competencia" type="month" />
@@ -52,14 +54,14 @@
 					<button class="criati-btn criati-btn-primary" id="parcelas-filtrar" type="button">Filtrar</button>
 				</div>
 
-				<p id="parcelas-carregando">Carregando parcelas...</p>
+				<p id="parcelas-carregando" class="financeiro-operacional-status" role="status">Carregando parcelas...</p>
 				<div id="parcelas-vazio" class="criati-empty-state" hidden>
 					<p>Nenhuma parcela encontrada.</p>
 					<p>Registre uma compra no cartão ou altere os filtros para visualizar o cronograma.</p>
 					<a class="criati-btn criati-btn-primary" href="/app/financeiro/compras-cartao">Registrar compra</a>
 				</div>
-				<div class="criati-table-wrap" id="parcelas-tabela-wrap" hidden>
-					<table class="criati-table">
+				<div class="criati-table-wrap financeiro-tabela-operacional-scroll" id="parcelas-tabela-wrap" hidden>
+					<table class="criati-table" aria-label="Parcelas de cartão">
 						<thead>
 							<tr>
 								<th>Competência</th>

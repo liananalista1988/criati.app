@@ -22,6 +22,12 @@
 		return celula;
 	}
 
+	function tdMoeda(valor) {
+		var celula = td(formatacao.moeda(valor));
+		formatacao.aplicarSemantica(celula, valor, "SAIDA");
+		return celula;
+	}
+
 	function statusLabel(status) {
 		return {
 			ABERTA: "Aberta",
@@ -110,7 +116,7 @@
 			linha.appendChild(td(compra.cartaoNome));
 			linha.appendChild(td(compra.pessoaResponsavelNome));
 			linha.appendChild(td(parcela.numero + "/" + parcela.totalParcelas));
-			linha.appendChild(td(formatacao.moeda(parcela.valor)));
+			linha.appendChild(tdMoeda(parcela.valor));
 			linha.appendChild(td(compra.parteFinanceiraNome ? "Terceiro: " + compra.parteFinanceiraNome : "Residência"));
 			linha.appendChild(td(statusLabel(parcela.status)));
 			var acoes = document.createElement("td");
@@ -166,6 +172,8 @@
 	}
 
 	function iniciar() {
+		if (!el("parcelas-filtrar") || el("parcelas-filtrar").dataset.inicializado === "true") return;
+		el("parcelas-filtrar").dataset.inicializado = "true";
 		el("parcelas-filtrar").addEventListener("click", carregar);
 		el("parcelas-filtro-status").addEventListener("change", renderizar);
 		el("parcela-detalhes-fechar").addEventListener("click", function () {

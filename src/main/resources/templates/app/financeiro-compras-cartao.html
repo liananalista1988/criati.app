@@ -15,26 +15,45 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-compras')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
-				<div class="criati-page-header">
+				<header class="financeiro-operacional-cabecalho">
+					<div>
+					<p class="financeiro-dashboard-sobretitulo">Crédito</p>
 					<h1>Compras no cartão</h1>
 					<p>Registre compras à vista ou parceladas e identifique claramente quando o gasto pertence a um terceiro.</p>
-				</div>
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('compras')}"></div>
+					</div>
+					<a class="criati-btn criati-btn-ghost" href="/app/financeiro/parcelas-cartao">Ver parcelas</a>
+				</header>
 				<div id="compras-mensagem" class="criati-alert" role="alert" hidden></div>
 
-				<section class="criati-grid criati-grid-4" aria-label="Resumo das compras">
-					<div class="criati-card"><p class="criati-card-sub">Total comprado</p><p class="criati-card-value" id="resumo-total">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Limite total</p><p class="criati-card-value" id="resumo-limite">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Comprometido</p><p class="criati-card-value" id="resumo-comprometido">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Disponível</p><p class="criati-card-value" id="resumo-disponivel">R$ 0,00</p></div>
+				<!-- Total comprado e comprometido: obrigacao junto ao cartao
+					(is-despesa). Limite total: neutro. Disponivel: informativo,
+					nao e receita. -->
+				<section class="financeiro-operacional-cards" aria-label="Resumo das compras">
+					<div class="financeiro-stat-card is-despesa">
+						<p class="financeiro-stat-card-rotulo">Total comprado</p>
+						<p class="criati-card-value" id="resumo-total">R$ 0,00</p>
+					</div>
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Limite total</p>
+						<p class="criati-card-value" id="resumo-limite">R$ 0,00</p>
+					</div>
+					<div class="financeiro-stat-card is-despesa">
+						<p class="financeiro-stat-card-rotulo">Comprometido</p>
+						<p class="criati-card-value" id="resumo-comprometido">R$ 0,00</p>
+					</div>
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Disponível</p>
+						<p class="criati-card-value" id="resumo-disponivel">R$ 0,00</p>
+						<p class="financeiro-stat-card-apoio">Informativo, não é receita</p>
+					</div>
 				</section>
 
-				<section class="criati-card">
+				<section class="criati-card financeiro-formulario-operacional">
 					<h2>Nova compra</h2>
 					<form id="compra-form" class="criati-form-grid">
 						<div class="criati-field"><label for="compra-cartao">Cartão</label><select class="criati-select" id="compra-cartao" required></select></div>
@@ -45,14 +64,14 @@
 						<div class="criati-field"><label for="compra-valor">Valor total</label><input class="criati-input" type="number" min="0.01" step="0.01" id="compra-valor" required /></div>
 						<div class="criati-field"><label for="compra-parcelas">Parcelas</label><input class="criati-input" type="number" min="1" value="1" id="compra-parcelas" required /></div>
 						<div class="criati-field"><label for="compra-observacao">Observação</label><input class="criati-input" id="compra-observacao" maxlength="500" /></div>
-						<div><button class="criati-btn criati-btn-primary" id="compra-salvar" type="submit">Registrar compra</button></div>
+						<div class="financeiro-acoes-formulario"><button class="criati-btn criati-btn-primary" id="compra-salvar" type="submit">Registrar compra</button></div>
 					</form>
 					<p id="impacto-limite" class="criati-card-sub"></p>
 					<p class="criati-card-sub">Para registrar uma compra realizada para outra pessoa, utilize
 						<a href="/app/financeiro/compras-terceiros">Compras para terceiros</a>.</p>
 				</section>
 
-				<section class="criati-card">
+				<section class="criati-card financeiro-painel-operacional">
 					<h2>Compras</h2>
 					<div class="criati-toolbar">
 						<input class="criati-input" id="filtro-busca" type="search" placeholder="Pesquisar descrição" />
@@ -63,11 +82,11 @@
 							<option value="ESTORNADA">Estornada</option>
 						</select>
 						<input class="criati-input" type="month" id="filtro-competencia" />
-						<button class="criati-btn" id="filtrar" type="button">Filtrar</button>
+						<button class="criati-btn criati-btn-ghost" id="filtrar" type="button">Filtrar</button>
 					</div>
-					<p id="compras-carregando">Carregando compras...</p>
-					<div class="criati-table-wrap" id="compras-tabela-wrap" hidden>
-						<table class="criati-table">
+					<p id="compras-carregando" class="financeiro-operacional-status" role="status">Carregando compras...</p>
+					<div class="criati-table-wrap financeiro-tabela-operacional-scroll" id="compras-tabela-wrap" hidden>
+						<table class="criati-table" aria-label="Compras no cartão">
 							<thead><tr><th>Data</th><th>Descrição</th><th>Cartão</th><th>Responsável</th><th>Destino</th><th>Valor</th><th>Parcelas</th><th>Status</th><th>Ações</th></tr></thead>
 							<tbody id="compras-tbody"></tbody>
 						</table>

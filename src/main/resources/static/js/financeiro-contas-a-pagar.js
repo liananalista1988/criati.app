@@ -17,6 +17,8 @@
 
 	function iniciar() {
 		if (!el("contas-a-pagar-aba-ocorrencias")) return;
+		if (el("contas-a-pagar-aba-ocorrencias").dataset.inicializado === "true") return;
+		el("contas-a-pagar-aba-ocorrencias").dataset.inicializado = "true";
 		el("contas-a-pagar-aba-ocorrencias").addEventListener("click", function () { mostrarAba("ocorrencias"); });
 		el("contas-a-pagar-aba-compromissos").addEventListener("click", function () { mostrarAba("compromissos"); });
 		el("contas-a-pagar-aba-calendario").addEventListener("click", function () { mostrarAba("calendario"); });
@@ -100,8 +102,13 @@
 	function sucesso(msg, recarregar) { return function () { window.CriatiUI.showToast("sucesso", msg); recarregar(); }; }
 	function falha(msg) { return function (erro) { window.CriatiUI.showToast("erro", (erro && erro.message) || msg); }; }
 	function celula(texto) { var td = document.createElement("td"); td.textContent = texto || "—"; return td; }
-	function botao(texto, fn) {
-		var b = document.createElement("button"); b.type = "button"; b.className = "criati-btn criati-btn-ghost";
+	function celulaMoeda(valor, natureza) {
+		var td = celula(window.FinanceiroFormatacao.moeda(valor));
+		window.FinanceiroFormatacao.aplicarSemantica(td, valor, natureza);
+		return td;
+	}
+	function botao(texto, fn, classe) {
+		var b = document.createElement("button"); b.type = "button"; b.className = classe || "criati-btn criati-btn-ghost";
 		b.textContent = texto; b.addEventListener("click", fn); return b;
 	}
 	function badge(status, labelMap) {
@@ -142,8 +149,8 @@
 		var m = window.FinanceiroFormatacao.moeda;
 		el("resumo-total-previsto").textContent = m(r.totalPrevisto || 0);
 		el("resumo-total-principal").textContent = m((r.totalPrincipal || 0));
-		el("resumo-total-pago").textContent = m(r.totalPago || 0);
-		el("resumo-saldo-pendente").textContent = m(r.saldoPendente || 0);
+		window.FinanceiroFormatacao.renderMoeda(el("resumo-total-pago"), r.totalPago || 0, "SAIDA");
+		window.FinanceiroFormatacao.renderMoeda(el("resumo-saldo-pendente"), r.saldoPendente || 0, "SAIDA");
 		el("resumo-qtd-pendente").textContent = r.quantidadePendente || 0;
 		el("resumo-qtd-parcial").textContent = r.quantidadeParcialmentePaga || 0;
 		el("resumo-qtd-vencida").textContent = r.quantidadeVencida || 0;
@@ -162,9 +169,9 @@
 		tr.appendChild(celula(descricao));
 		tr.appendChild(celula(window.FinanceiroFormatacao.competenciaLabel(o.competencia)));
 		tr.appendChild(celula(d(o.vencimento)));
-		tr.appendChild(celula(m(o.valorTotal)));
-		tr.appendChild(celula(m(o.valorPago)));
-		tr.appendChild(celula(m(o.saldoPendente)));
+		tr.appendChild(celulaMoeda(o.valorTotal, "SAIDA"));
+		tr.appendChild(celulaMoeda(o.valorPago, "SAIDA"));
+		tr.appendChild(celulaMoeda(o.saldoPendente, "SAIDA"));
 		tr.appendChild(celula(o.pessoaFinanceiraNome));
 		tr.appendChild(celula(o.categoriaNome));
 		tr.appendChild(badge(o.status, STATUS_LABEL));
@@ -185,12 +192,12 @@
 			["Conta prevista", o.contaPrevistaNome], ["Observação", o.observacao], ["Status", STATUS_LABEL[o.status] || o.status]
 		]); }));
 		if (o.status !== "PAGA" && o.status !== "CANCELADA") {
-			td.appendChild(botao("Pagar", function () { abrirPagamento(o); }));
+			td.appendChild(botao("Pagar", function () { abrirPagamento(o); }, "criati-btn criati-btn-primary"));
 		}
 		td.appendChild(botao("Pagamentos", function () { abrirHistorico(o); }));
 		if (o.status !== "CANCELADA") {
 			td.appendChild(botao("Editar", function () { abrirEdicaoOcorrencia(o); }));
-			td.appendChild(botao("Cancelar", function () { cancelarOcorrencia(o); }));
+			td.appendChild(botao("Cancelar", function () { cancelarOcorrencia(o); }, "criati-btn criati-btn-danger"));
 		}
 		return td;
 	}
@@ -342,13 +349,13 @@
 		var tr = document.createElement("tr");
 		var m = window.FinanceiroFormatacao.moeda, d = window.FinanceiroFormatacao.dataBr;
 		tr.appendChild(celula(d(p.dataPagamento)));
-		tr.appendChild(celula(m(p.valor)));
+		tr.appendChild(celulaMoeda(p.valor, "SAIDA"));
 		tr.appendChild(celula(p.contaNome));
 		tr.appendChild(celula(p.formaPagamento || "-"));
 		tr.appendChild(badge(p.status, PAGAMENTO_STATUS_LABEL));
 		var acoes = document.createElement("td");
 		if (p.status === "ATIVO") {
-			acoes.appendChild(botao("Estornar", function () { estornarPagamento(p); }));
+			acoes.appendChild(botao("Estornar", function () { estornarPagamento(p); }, "criati-btn criati-btn-danger"));
 		}
 		tr.appendChild(acoes);
 		return tr;
@@ -503,8 +510,8 @@
 		var m = window.FinanceiroFormatacao.moeda, d = window.FinanceiroFormatacao.dataBr;
 		tr.appendChild(celula(d(o.vencimento)));
 		tr.appendChild(celula(o.descricao));
-		tr.appendChild(celula(m(o.valorTotal)));
-		tr.appendChild(celula(m(o.saldoPendente)));
+		tr.appendChild(celulaMoeda(o.valorTotal, "SAIDA"));
+		tr.appendChild(celulaMoeda(o.saldoPendente, "SAIDA"));
 		tr.appendChild(badge(o.status, STATUS_LABEL));
 		tr.appendChild(celula(o.vencida ? (o.diasEmAtraso + " dia(s)") : "-"));
 		return tr;

@@ -15,92 +15,106 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-visao-geral')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 			<main class="criati-content">
-				<div class="criati-page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
-					<div>
+				<header class="financeiro-dashboard-cabecalho">
+					<div class="financeiro-dashboard-titulo">
+						<p class="financeiro-dashboard-sobretitulo">Visão geral</p>
 						<h1>Gerenciador Financeiro</h1>
-						<p>Controle financeiro, receitas, despesas, contas e resultados.</p>
+						<p>Acompanhe o caixa e os compromissos da empresa em um só lugar.</p>
 					</div>
-					<div class="criati-field">
-						<label for="financeiro-dashboard-competencia">Competencia</label>
-						<input class="criati-input" type="month" id="financeiro-dashboard-competencia" />
+					<div class="financeiro-dashboard-comandos">
+						<div class="criati-field financeiro-dashboard-periodo">
+							<label for="financeiro-dashboard-competencia">Período selecionado</label>
+							<input class="criati-input" type="month" id="financeiro-dashboard-competencia" />
+						</div>
 					</div>
-				</div>
+				</header>
 
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('visao-geral')}"></div>
-
-				<p id="financeiro-dashboard-carregando">Carregando dashboard...</p>
+				<p id="financeiro-dashboard-carregando" class="financeiro-dashboard-status" role="status">
+					Carregando resumo financeiro...
+				</p>
 				<div id="financeiro-dashboard-erro" class="criati-error-state" hidden>
 					<p>Nao foi possivel carregar o dashboard financeiro agora.</p>
 				</div>
 
 				<div id="financeiro-dashboard-conteudo" hidden>
-					<section class="criati-cards" aria-label="Resumo financeiro">
-						<article class="criati-card">
-							<p class="criati-card-label">Saldo atual</p>
+					<section class="financeiro-dashboard-resumo" aria-labelledby="financeiro-resumo-titulo">
+						<h2 id="financeiro-resumo-titulo" class="financeiro-dashboard-titulo-secao">Resumo financeiro</h2>
+						<div class="financeiro-dashboard-cards">
+						<article class="financeiro-dashboard-card is-saldo">
+							<p class="financeiro-dashboard-card-rotulo">Saldo atual</p>
 							<p class="criati-card-value" id="financeiro-card-saldo-atual">R$ 0,00</p>
+							<p class="financeiro-dashboard-card-apoio">Saldo consolidado das contas</p>
 						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">Receitas pagas</p>
+						<article class="financeiro-dashboard-card is-receita">
+							<p class="financeiro-dashboard-card-rotulo">Receitas do período</p>
 							<p class="criati-card-value" id="financeiro-card-receitas">R$ 0,00</p>
+							<p class="financeiro-dashboard-card-apoio">Entradas liquidadas</p>
 						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">Despesas pagas</p>
+						<article class="financeiro-dashboard-card is-despesa">
+							<p class="financeiro-dashboard-card-rotulo">Despesas do período</p>
 							<p class="criati-card-value" id="financeiro-card-despesas">R$ 0,00</p>
+							<p class="financeiro-dashboard-card-apoio">Saídas liquidadas</p>
 						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">Resultado do mes</p>
+						<article class="financeiro-dashboard-card is-resultado">
+							<p class="financeiro-dashboard-card-rotulo">Resultado do período</p>
 							<p class="criati-card-value" id="financeiro-card-resultado">R$ 0,00</p>
+							<p class="financeiro-dashboard-card-apoio">Receitas menos despesas</p>
 						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">A receber</p>
-							<p class="criati-card-value" id="financeiro-card-a-receber">R$ 0,00</p>
-						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">A pagar</p>
-							<p class="criati-card-value" id="financeiro-card-a-pagar">R$ 0,00</p>
-						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">Contas ativas</p>
-							<p class="criati-card-value" id="financeiro-card-contas-ativas">0</p>
-						</article>
-						<article class="criati-card">
-							<p class="criati-card-label">Lancamentos no periodo</p>
-							<p class="criati-card-value" id="financeiro-card-lancamentos-periodo">0</p>
-						</article>
+						</div>
 					</section>
 
-					<div class="criati-shortcuts">
-						<a href="/app/financeiro/lancamentos" class="criati-shortcut">Nova receita</a>
-						<a href="/app/financeiro/lancamentos" class="criati-shortcut">Nova despesa</a>
-						<a href="/app/financeiro/contas" class="criati-shortcut">Nova conta</a>
-						<a href="/app/financeiro/cartoes" class="criati-shortcut">Cartões</a>
-						<a href="/app/financeiro/compras-cartao" class="criati-shortcut">Compras no cartão</a>
-						<a href="/app/financeiro/parcelas-cartao" class="criati-shortcut">Parcelas de cartão</a>
-						<a href="/app/financeiro/categorias" class="criati-shortcut">Categorias</a>
-						<a href="/app/financeiro/pessoas" class="criati-shortcut">Pessoas da residencia</a>
-						<a href="/app/financeiro/contatos" class="criati-shortcut">Contatos financeiros</a>
-						<a href="/app/financeiro/recorrencias" class="criati-shortcut">Recorrencias</a>
-						<a href="/app/financeiro/contas-a-pagar" class="criati-shortcut">Contas a pagar</a>
-					</div>
+					<div class="financeiro-dashboard-layout">
+						<div class="financeiro-dashboard-coluna-principal">
+							<section class="financeiro-dashboard-painel" aria-labelledby="financeiro-fluxo-titulo">
+								<div class="financeiro-dashboard-painel-cabecalho">
+									<div>
+										<p class="financeiro-dashboard-sobretitulo">Movimentação</p>
+										<h2 id="financeiro-fluxo-titulo">Receitas e despesas</h2>
+									</div>
+									<p class="financeiro-dashboard-painel-contexto">Período selecionado</p>
+								</div>
+								<div class="financeiro-dashboard-comparativo" role="img"
+									aria-label="Comparação entre receitas e despesas liquidadas no período">
+									<div class="financeiro-dashboard-comparativo-item">
+										<div class="financeiro-dashboard-comparativo-legenda">
+											<span><span class="financeiro-dashboard-ponto is-receita"></span>Receitas</span>
+											<strong id="financeiro-grafico-receitas-valor">R$ 0,00</strong>
+										</div>
+										<div class="financeiro-dashboard-barra-fundo">
+											<div class="financeiro-dashboard-barra is-receita" id="financeiro-grafico-receitas-barra"></div>
+										</div>
+									</div>
+									<div class="financeiro-dashboard-comparativo-item">
+										<div class="financeiro-dashboard-comparativo-legenda">
+											<span><span class="financeiro-dashboard-ponto is-despesa"></span>Despesas</span>
+											<strong id="financeiro-grafico-despesas-valor">R$ 0,00</strong>
+										</div>
+										<div class="financeiro-dashboard-barra-fundo">
+											<div class="financeiro-dashboard-barra is-despesa" id="financeiro-grafico-despesas-barra"></div>
+										</div>
+									</div>
+								</div>
+								<p id="financeiro-grafico-vazio" class="financeiro-dashboard-vazio" hidden>
+									Nenhuma receita ou despesa liquidada neste período.
+								</p>
+							</section>
 
-					<div class="criati-next-steps">
-						<h2>Resumo por categoria (mes selecionado)</h2>
-						<div id="financeiro-resumo-categorias" class="criati-resumo-categorias"></div>
-						<p id="financeiro-resumo-categorias-vazio" class="criati-card-sub" hidden>
-							Nenhum lancamento pago nesta competencia ainda.
-						</p>
-					</div>
-
-					<div class="criati-next-steps" style="margin-top: 24px;">
-						<h2>Ultimos lancamentos</h2>
-						<div class="criati-table-wrap" style="border: none;">
+							<section class="financeiro-dashboard-painel" aria-labelledby="financeiro-lancamentos-titulo">
+								<div class="financeiro-dashboard-painel-cabecalho">
+									<div>
+										<p class="financeiro-dashboard-sobretitulo">Histórico</p>
+										<h2 id="financeiro-lancamentos-titulo">Lançamentos recentes</h2>
+									</div>
+									<a href="/app/financeiro/lancamentos">Ver todos</a>
+								</div>
+								<div class="criati-table-wrap financeiro-dashboard-tabela" id="financeiro-ultimos-lancamentos-tabela">
 							<table class="criati-table">
 								<thead>
 									<tr>
@@ -114,9 +128,52 @@
 								<tbody id="financeiro-ultimos-lancamentos-tbody"></tbody>
 							</table>
 						</div>
-						<p id="financeiro-ultimos-lancamentos-vazio" class="criati-card-sub" hidden>
-							Nenhum lancamento cadastrado ainda.
-						</p>
+								<div id="financeiro-ultimos-lancamentos-vazio" class="financeiro-dashboard-vazio" hidden>
+									<p>Nenhum lançamento cadastrado ainda.</p>
+									<a class="criati-btn criati-btn-ghost" href="/app/financeiro/lancamentos">Criar primeiro lançamento</a>
+								</div>
+							</section>
+						</div>
+
+						<aside class="financeiro-dashboard-coluna-lateral" aria-label="Informacoes complementares">
+							<section class="financeiro-dashboard-painel" aria-labelledby="financeiro-categorias-titulo">
+								<div class="financeiro-dashboard-painel-cabecalho">
+									<div>
+										<p class="financeiro-dashboard-sobretitulo">Distribuicao</p>
+										<h2 id="financeiro-categorias-titulo">Despesas por categoria</h2>
+									</div>
+								</div>
+								<div id="financeiro-resumo-categorias" class="criati-resumo-categorias"></div>
+								<p id="financeiro-resumo-categorias-vazio" class="financeiro-dashboard-vazio" hidden>
+									Nenhuma despesa liquidada neste periodo.
+								</p>
+							</section>
+
+							<section class="financeiro-dashboard-painel" aria-labelledby="financeiro-pendencias-titulo">
+								<div class="financeiro-dashboard-painel-cabecalho">
+									<div>
+										<p class="financeiro-dashboard-sobretitulo">Compromissos</p>
+										<h2 id="financeiro-pendencias-titulo">Pendências financeiras</h2>
+									</div>
+								</div>
+								<dl class="financeiro-dashboard-indicadores">
+									<div><dt>A receber</dt><dd id="financeiro-card-a-receber">R$ 0,00</dd></div>
+									<div><dt>A pagar</dt><dd id="financeiro-card-a-pagar">R$ 0,00</dd></div>
+									<div><dt>Ressarcimentos de terceiros</dt><dd id="financeiro-card-a-receber-terceiros">R$ 0,00</dd></div>
+								</dl>
+								<p class="financeiro-dashboard-metricas">
+									<span><strong id="financeiro-card-contas-ativas">0</strong> contas ativas</span>
+									<span><strong id="financeiro-card-lancamentos-periodo">0</strong> lançamentos no período</span>
+								</p>
+							</section>
+
+							<nav class="financeiro-dashboard-atalhos" aria-label="Acessos rápidos do Financeiro">
+								<a href="/app/financeiro/contas">Contas</a>
+								<a href="/app/financeiro/cartoes">Cartões</a>
+								<a href="/app/financeiro/recorrencias">Recorrências</a>
+								<a href="/app/financeiro/compras-terceiros">Terceiros</a>
+							</nav>
+						</aside>
 					</div>
 				</div>
 			</main>

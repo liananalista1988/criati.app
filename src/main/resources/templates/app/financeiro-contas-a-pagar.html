@@ -15,21 +15,23 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-contas-a-pagar')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 			<main class="criati-content">
-				<div class="criati-page-header">
+				<header class="financeiro-operacional-cabecalho">
+					<div>
+					<p class="financeiro-dashboard-sobretitulo">Obrigações</p>
 					<h1>Contas a pagar</h1>
 					<p>Compromissos, ocorrencias de cada competencia e pagamentos integrais ou parciais.</p>
-				</div>
+					</div>
+					<button type="button" id="ocorrencias-nova" class="criati-btn criati-btn-primary">Nova obrigação</button>
+				</header>
 
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('contas-a-pagar')}"></div>
-
-				<div class="criati-toolbar">
+				<div class="financeiro-abas" role="tablist" aria-label="Visões de contas a pagar">
 					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-ocorrencias">Ocorrencias</button>
 					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-compromissos">Compromissos</button>
 					<button type="button" class="criati-btn criati-btn-ghost" id="contas-a-pagar-aba-calendario">Calendario</button>
@@ -37,6 +39,12 @@
 
 				<!-- ==================== OCORRENCIAS ==================== -->
 				<section id="contas-a-pagar-secao-ocorrencias">
+					<section class="criati-filtros" data-filtros-recolhiveis>
+						<button type="button" class="criati-btn criati-btn-ghost criati-filtros-toggle" data-filtros-toggle
+							aria-expanded="false" aria-controls="ocorrencias-filtros-painel">
+							Filtros <span class="criati-filtros-contador" data-filtros-contador hidden></span>
+						</button>
+						<div id="ocorrencias-filtros-painel" data-filtros-painel hidden>
 					<div class="criati-toolbar">
 						<div class="criati-field">
 							<label for="ocorrencias-filtro-status">Status</label>
@@ -65,32 +73,60 @@
 							<input class="criati-input" type="text" id="ocorrencias-filtro-busca" placeholder="Descricao..." />
 						</div>
 					</div>
+						</div>
+					</section>
 
-					<div class="criati-grid criati-grid-4" id="ocorrencias-resumo" aria-live="polite">
-						<div class="criati-card"><p class="criati-card-sub">Previsto</p><p class="criati-card-value" id="resumo-total-previsto">R$ 0,00</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Total (principal + juros + multa - desconto)</p><p class="criati-card-value" id="resumo-total-principal">R$ 0,00</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Pago</p><p class="criati-card-value" id="resumo-total-pago">R$ 0,00</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Saldo pendente</p><p class="criati-card-value" id="resumo-saldo-pendente">R$ 0,00</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Pendentes</p><p class="criati-card-value" id="resumo-qtd-pendente">0</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Parcialmente pagas</p><p class="criati-card-value" id="resumo-qtd-parcial">0</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Vencidas</p><p class="criati-card-value" id="resumo-qtd-vencida">0</p></div>
-						<div class="criati-card"><p class="criati-card-sub">Vencendo em ate 3 dias</p><p class="criati-card-value" id="resumo-qtd-vencendo">0</p></div>
+					<!-- Previsto: neutro (estimativa, ainda nao e obrigacao fechada).
+						Total: obrigacao apurada (is-despesa). Pago: saida ja efetivada
+						(is-despesa, nao verde - pagar uma despesa nao e receita).
+						Saldo pendente: informativo, obrigacao em aberto (neutro).
+						Vencidas: alerta (is-despesa). -->
+					<div class="financeiro-operacional-cards" id="ocorrencias-resumo" aria-live="polite">
+						<div class="financeiro-stat-card">
+							<p class="financeiro-stat-card-rotulo">Previsto</p>
+							<p class="criati-card-value" id="resumo-total-previsto">R$ 0,00</p>
+						</div>
+						<div class="financeiro-stat-card is-despesa">
+							<p class="financeiro-stat-card-rotulo">Total da obrigação</p>
+							<p class="criati-card-value" id="resumo-total-principal">R$ 0,00</p>
+							<p class="financeiro-stat-card-apoio">Principal + juros + multa − desconto</p>
+						</div>
+						<div class="financeiro-stat-card is-despesa">
+							<p class="financeiro-stat-card-rotulo">Pago</p>
+							<p class="criati-card-value" id="resumo-total-pago">R$ 0,00</p>
+						</div>
+						<div class="financeiro-stat-card">
+							<p class="financeiro-stat-card-rotulo">Saldo pendente</p>
+							<p class="criati-card-value" id="resumo-saldo-pendente">R$ 0,00</p>
+							<p class="financeiro-stat-card-apoio">Obrigação em aberto</p>
+						</div>
+						<div class="financeiro-stat-card">
+							<p class="financeiro-stat-card-rotulo">Pendentes</p>
+							<p class="criati-card-value" id="resumo-qtd-pendente">0</p>
+						</div>
+						<div class="financeiro-stat-card">
+							<p class="financeiro-stat-card-rotulo">Parcialmente pagas</p>
+							<p class="criati-card-value" id="resumo-qtd-parcial">0</p>
+						</div>
+						<div class="financeiro-stat-card is-despesa">
+							<p class="financeiro-stat-card-rotulo">Vencidas</p>
+							<p class="criati-card-value" id="resumo-qtd-vencida">0</p>
+						</div>
+						<div class="financeiro-stat-card">
+							<p class="financeiro-stat-card-rotulo">Vencendo em até 3 dias</p>
+							<p class="criati-card-value" id="resumo-qtd-vencendo">0</p>
+						</div>
 					</div>
-					<p class="criati-card-sub">Saldo pendente e a obrigacao em aberto, nao o saldo bancario das contas.</p>
+					<p class="criati-card-sub">Saldo pendente é a obrigação em aberto, não o saldo bancário das contas.</p>
 
-					<div class="criati-toolbar">
-						<div style="flex: 1"></div>
-						<button type="button" id="ocorrencias-nova" class="criati-btn criati-btn-primary">Nova obrigacao avulsa</button>
-					</div>
-
-					<p id="ocorrencias-carregando">Carregando ocorrencias...</p>
+					<p id="ocorrencias-carregando" class="financeiro-operacional-status" role="status">Carregando ocorrencias...</p>
 					<div id="ocorrencias-erro" class="criati-error-state" hidden><p>Nao foi possivel carregar as ocorrencias agora.</p></div>
 					<div id="ocorrencias-vazio" class="criati-empty-state" hidden>
 						<p>Nenhuma conta a pagar encontrada. Cadastre obrigacoes avulsas ou recorrentes para acompanhar vencimentos e pagamentos.</p>
 					</div>
 
-					<div class="criati-table-wrap" id="ocorrencias-tabela-wrap" hidden>
-						<table class="criati-table">
+					<div class="criati-table-wrap financeiro-tabela-operacional-scroll" id="ocorrencias-tabela-wrap" hidden>
+						<table class="criati-table" aria-label="Ocorrências de contas a pagar">
 							<thead>
 								<tr>
 									<th>Descricao</th><th>Competencia</th><th>Vencimento</th><th>Valor total</th>
@@ -158,7 +194,7 @@
 
 	<!-- Modal: nova/editar ocorrencia avulsa -->
 	<div class="criati-modal-overlay" id="ocorrencia-modal" hidden>
-		<div class="criati-modal">
+		<div class="criati-modal financeiro-modal-operacional" role="dialog" aria-modal="true" aria-labelledby="ocorrencia-modal-titulo">
 			<h2 id="ocorrencia-modal-titulo">Nova obrigacao avulsa</h2>
 			<form class="criati-modal-form" id="ocorrencia-form">
 				<div class="criati-field"><label for="ocorrencia-descricao">Descricao</label>
@@ -199,8 +235,8 @@
 
 	<!-- Modal: pagamento (integral ou parcial) -->
 	<div class="criati-modal-overlay" id="pagamento-modal" hidden>
-		<div class="criati-modal">
-			<h2>Pagar ocorrencia</h2>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="pagamento-modal-titulo">
+			<h2 id="pagamento-modal-titulo">Pagar ocorrencia</h2>
 			<p class="criati-card-sub">Valor total: <span id="pagamento-valor-total">R$ 0,00</span> ·
 				Ja pago: <span id="pagamento-valor-pago">R$ 0,00</span> ·
 				Saldo pendente: <span id="pagamento-saldo-pendente">R$ 0,00</span></p>
@@ -229,9 +265,9 @@
 
 	<!-- Modal: historico de pagamentos / estorno -->
 	<div class="criati-modal-overlay" id="pagamentos-historico-modal" hidden>
-		<div class="criati-modal">
-			<h2>Pagamentos da ocorrencia</h2>
-			<div class="criati-table-wrap" style="border: none;">
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="pagamentos-historico-titulo">
+			<h2 id="pagamentos-historico-titulo">Pagamentos da ocorrencia</h2>
+			<div class="criati-table-wrap financeiro-tabela-sem-borda">
 				<table class="criati-table">
 					<thead><tr><th>Data</th><th>Valor</th><th>Conta</th><th>Forma</th><th>Status</th><th></th></tr></thead>
 					<tbody id="pagamentos-historico-tbody"></tbody>
@@ -246,7 +282,7 @@
 
 	<!-- Modal: novo/editar compromisso -->
 	<div class="criati-modal-overlay" id="compromisso-modal" hidden>
-		<div class="criati-modal">
+		<div class="criati-modal financeiro-modal-operacional" role="dialog" aria-modal="true" aria-labelledby="compromisso-modal-titulo">
 			<h2 id="compromisso-modal-titulo">Novo compromisso</h2>
 			<form class="criati-modal-form" id="compromisso-form">
 				<div class="criati-field"><label for="compromisso-descricao">Descricao</label>
@@ -298,6 +334,7 @@
 		document.addEventListener("DOMContentLoaded", function () {
 			CriatiUI.initSidebarToggle();
 			CriatiUI.initUserMenu();
+			CriatiUI.initFiltrosRecolhiveis();
 			CriatiAuth.initLogout();
 			CriatiContexto.iniciar();
 			CriatiAplicacoes.carregarSidebar();

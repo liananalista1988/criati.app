@@ -4,7 +4,12 @@
 (function (window, document) {
 	"use strict";
 
-	var STATUS_LABEL = { PENDENTE: "Pendente", PAGO: "Pago", CANCELADO: "Cancelado" };
+	var STATUS_LABEL = {
+		PENDENTE: "Pendente",
+		LIQUIDADO: "Liquidado",
+		PAGO: "Pago",
+		CANCELADO: "Cancelado"
+	};
 
 	function el(id) {
 		return document.getElementById(id);
@@ -15,6 +20,10 @@
 		if (!seletor) {
 			return;
 		}
+		if (seletor.dataset.dashboardInicializado === "true") {
+			return;
+		}
+		seletor.dataset.dashboardInicializado = "true";
 		seletor.value = window.FinanceiroFormatacao.competenciaAtual();
 		seletor.addEventListener("change", carregar);
 		carregar();
@@ -45,35 +54,77 @@
 	}
 
 	function render(dados) {
-		el("financeiro-card-saldo-atual").textContent = window.FinanceiroFormatacao.moeda(dados.saldoAtualConsolidado);
-		el("financeiro-card-receitas").textContent = window.FinanceiroFormatacao.moeda(dados.receitasPagas);
-		el("financeiro-card-despesas").textContent = window.FinanceiroFormatacao.moeda(dados.despesasPagas);
-		el("financeiro-card-resultado").textContent = window.FinanceiroFormatacao.moeda(dados.resultadoMes);
-		el("financeiro-card-a-receber").textContent = window.FinanceiroFormatacao.moeda(dados.totalPendenteReceber);
-		el("financeiro-card-a-pagar").textContent = window.FinanceiroFormatacao.moeda(dados.totalPendentePagar);
+		renderValor("financeiro-card-saldo-atual", dados.saldoAtualConsolidado, "SALDO");
+		renderValor("financeiro-card-receitas", dados.receitasPagas, "ENTRADA");
+		renderValor("financeiro-card-despesas", dados.despesasPagas, "SAIDA");
+		renderValor("financeiro-card-resultado", dados.resultadoMes, "SALDO");
+		renderValor("financeiro-card-a-receber", dados.totalPendenteReceber, "ENTRADA");
+		renderValor("financeiro-card-a-pagar", dados.totalPendentePagar, "SAIDA");
+		renderValor(
+			"financeiro-card-a-receber-terceiros",
+			dados.totalPendenteReceberTerceiros,
+			"ENTRADA"
+		);
 		el("financeiro-card-contas-ativas").textContent = String(dados.quantidadeContasAtivas);
 		el("financeiro-card-lancamentos-periodo").textContent = String(dados.quantidadeLancamentosPeriodo);
 
+		renderComparativo(dados.receitasPagas, dados.despesasPagas);
 		renderResumoCategorias(dados.resumoPorCategoria || []);
 		renderUltimosLancamentos(dados.ultimosLancamentos || []);
+	}
+
+	function renderValor(id, valor, natureza) {
+		var elemento = el(id);
+		elemento.textContent = window.FinanceiroFormatacao.moeda(valor);
+		window.FinanceiroFormatacao.aplicarSemantica(elemento, valor, natureza);
+	}
+
+	function renderComparativo(receitas, despesas) {
+		var valorReceitas = Number(receitas) || 0;
+		var valorDespesas = Number(despesas) || 0;
+		var maior = Math.max(valorReceitas, valorDespesas);
+		var vazio = el("financeiro-grafico-vazio");
+		var grafico = document.querySelector(".financeiro-dashboard-comparativo");
+
+		var elementoReceitas = el("financeiro-grafico-receitas-valor");
+		var elementoDespesas = el("financeiro-grafico-despesas-valor");
+		elementoReceitas.textContent = window.FinanceiroFormatacao.moeda(valorReceitas);
+		elementoDespesas.textContent = window.FinanceiroFormatacao.moeda(valorDespesas);
+		window.FinanceiroFormatacao.aplicarSemantica(elementoReceitas, valorReceitas, "ENTRADA");
+		window.FinanceiroFormatacao.aplicarSemantica(elementoDespesas, valorDespesas, "SAIDA");
+		el("financeiro-grafico-receitas-barra").style.width =
+			(maior ? (valorReceitas / maior) * 100 : 0) + "%";
+		el("financeiro-grafico-despesas-barra").style.width =
+			(maior ? (valorDespesas / maior) * 100 : 0) + "%";
+
+		grafico.hidden = maior === 0;
+		vazio.hidden = maior !== 0;
+		grafico.setAttribute(
+			"aria-label",
+			"Receitas " + window.FinanceiroFormatacao.moeda(valorReceitas)
+				+ "; despesas " + window.FinanceiroFormatacao.moeda(valorDespesas)
+		);
 	}
 
 	function renderResumoCategorias(resumo) {
 		var container = el("financeiro-resumo-categorias");
 		var vazio = el("financeiro-resumo-categorias-vazio");
+		var despesas = resumo.filter(function (item) {
+			return item.tipo === "DESPESA";
+		});
 		container.innerHTML = "";
 
-		if (resumo.length === 0) {
+		if (despesas.length === 0) {
 			vazio.hidden = false;
 			return;
 		}
 		vazio.hidden = true;
 
-		var maior = resumo.reduce(function (max, item) {
+		var maior = despesas.reduce(function (max, item) {
 			return Math.max(max, Number(item.total));
 		}, 0.01);
 
-		resumo.forEach(function (item) {
+		despesas.forEach(function (item) {
 			var linha = document.createElement("div");
 			linha.className = "criati-resumo-categoria-linha";
 
@@ -83,13 +134,18 @@
 			var barraFundo = document.createElement("div");
 			barraFundo.className = "criati-resumo-categoria-barra-fundo";
 			var barra = document.createElement("div");
-			barra.className = "criati-resumo-categoria-barra" + (item.tipo === "DESPESA" ? " is-despesa" : "");
+			barra.className = "criati-resumo-categoria-barra is-despesa";
 			var percentual = Math.min(100, (Number(item.total) / maior) * 100);
 			barra.style.width = percentual + "%";
 			barraFundo.appendChild(barra);
 
 			var total = document.createElement("span");
 			total.textContent = window.FinanceiroFormatacao.moeda(item.total);
+			window.FinanceiroFormatacao.aplicarSemantica(
+				total,
+				item.total,
+				"SAIDA"
+			);
 
 			linha.appendChild(nome);
 			linha.appendChild(barraFundo);
@@ -101,13 +157,16 @@
 	function renderUltimosLancamentos(lancamentos) {
 		var tbody = el("financeiro-ultimos-lancamentos-tbody");
 		var vazio = el("financeiro-ultimos-lancamentos-vazio");
+		var tabela = el("financeiro-ultimos-lancamentos-tabela");
 		tbody.innerHTML = "";
 
 		if (lancamentos.length === 0) {
 			vazio.hidden = false;
+			tabela.hidden = true;
 			return;
 		}
 		vazio.hidden = true;
+		tabela.hidden = false;
 
 		lancamentos.forEach(function (lancamento) {
 			var linha = document.createElement("tr");
@@ -122,7 +181,11 @@
 			celulaCategoria.textContent = lancamento.categoriaNome;
 
 			var celulaValor = document.createElement("td");
-			celulaValor.className = lancamento.tipo === "RECEITA" ? "criati-valor-positivo" : "criati-valor-negativo";
+			window.FinanceiroFormatacao.aplicarSemantica(
+				celulaValor,
+				lancamento.valor,
+				lancamento.tipo === "RECEITA" ? "ENTRADA" : "SAIDA"
+			);
 			celulaValor.textContent = (lancamento.tipo === "RECEITA" ? "+ " : "- ")
 				+ window.FinanceiroFormatacao.moeda(lancamento.valor);
 

@@ -137,24 +137,66 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/pessoas")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/contatos")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/contatos")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-dashboard-cards")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-card-saldo-atual")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-card-receitas")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-card-despesas")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-card-resultado")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/lancamentos")))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("financeiro-dashboard-acoes"))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("Novo lançamento"))))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Despesas por categoria")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Pendências financeiras")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Lançamentos recentes")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-grafico-vazio")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-ultimos-lancamentos-vazio")))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("financeiro-navegacao"))));
 		mockMvc.perform(get("/app/financeiro/contas").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma conta financeira cadastrada")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Saldo inicial consolidado")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("O saldo informado representa a posição inicial")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("O saldo informado representa a posição inicial")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("contas-filtros-painel")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-operacional-cards")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nova conta")));
 		mockMvc.perform(get("/app/financeiro/categorias").session(session)).andExpect(status().isOk());
-		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk());
+		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-filtros-recolhiveis")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-filtros-painel hidden")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Novo lançamento")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-operacional-cards")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("resumo-quantidade-lancamentos")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Aplicar filtros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Limpar filtros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-tabela-operacional")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("role=\"dialog\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("financeiro-navegacao"))));
 		mockMvc.perform(get("/app/financeiro/pessoas").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma pessoa cadastrada")));
 		mockMvc.perform(get("/app/financeiro/contatos").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhum contato financeiro cadastrado")));
 		mockMvc.perform(get("/app/financeiro/recorrencias").session(session)).andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma recorrencia cadastrada")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma recorrencia cadastrada")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("recorrencias-filtros-painel")));
 		mockMvc.perform(get("/app/financeiro/contas-a-pagar").session(session)).andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma conta a pagar encontrada")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma conta a pagar encontrada")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("ocorrencias-filtros-painel")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-abas")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nova obrigação")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("role=\"dialog\"")));
 		mockMvc.perform(get("/app/financeiro/cartoes").session(session)).andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Cadastrar cartão")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Cadastrar cartão")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("cartoes-filtros-painel")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Novo cartão")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-operacional-cards")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("role=\"dialog\"")));
 		mockMvc.perform(get("/app/financeiro/compras-cartao").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-formulario-operacional")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Ver parcelas")))
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("Compra realizada para terceiro"))))
 				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Pessoa relacionada"))))
@@ -162,7 +204,13 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/parcelas-cartao").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Parcelas de cartão")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhuma parcela encontrada")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Navegação do Financeiro LeS")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-painel-filtros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Movimentações")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Crédito e terceiros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Cadastros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("aria-current=\"page\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("financeiro-navegacao"))));
 		mockMvc.perform(get("/app/financeiro/emprestimos").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Empréstimos concedidos")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nenhum empréstimo concedido encontrado")));

@@ -15,44 +15,62 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-contas')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
-				<div class="criati-page-header">
+				<header class="financeiro-operacional-cabecalho">
+					<div>
+					<p class="financeiro-dashboard-sobretitulo">Caixa e saldos</p>
 					<h1>Contas financeiras</h1>
 					<p>Organize individualmente as contas e carteiras da residência.</p>
+					</div>
+					<button type="button" id="contas-nova" class="criati-btn criati-btn-primary">Nova conta</button>
+				</header>
+
+				<div class="financeiro-operacional-cards" id="contas-resumo">
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Contas ativas</p>
+						<p class="criati-card-value" id="contas-resumo-quantidade">—</p>
+					</div>
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Saldo inicial consolidado</p>
+						<p class="criati-card-value" id="contas-resumo-saldo">—</p>
+					</div>
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Saldos iniciais por titular</p>
+						<p class="financeiro-stat-card-lista" id="contas-resumo-titulares">—</p>
+					</div>
 				</div>
 
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('contas')}"></div>
-
-				<div class="criati-cards-grid" id="contas-resumo">
-					<div class="criati-card"><p class="criati-card-label">Contas ativas</p><p class="criati-card-value" id="contas-resumo-quantidade">—</p></div>
-					<div class="criati-card"><p class="criati-card-label">Saldo inicial consolidado</p><p class="criati-card-value" id="contas-resumo-saldo">—</p></div>
-					<div class="criati-card"><p class="criati-card-label">Saldos iniciais por titular</p><p id="contas-resumo-titulares">—</p></div>
-				</div>
-
-				<div class="criati-toolbar">
+				<section class="criati-filtros" data-filtros-recolhiveis>
+					<button type="button" class="criati-btn criati-btn-ghost criati-filtros-toggle" data-filtros-toggle
+						aria-expanded="false" aria-controls="contas-filtros-painel">
+						Filtros <span class="criati-filtros-contador" data-filtros-contador hidden></span>
+					</button>
+					<div id="contas-filtros-painel" data-filtros-painel hidden>
+				<div class="criati-toolbar financeiro-filtros-grade">
 					<div class="criati-field"><label for="contas-busca">Buscar</label><input class="criati-input" id="contas-busca" type="search" placeholder="Nome da conta" /></div>
 					<div class="criati-field"><label for="contas-filtro-titular">Titular</label><select class="criati-select" id="contas-filtro-titular"><option value="">Todos</option></select></div>
 					<div class="criati-field"><label for="contas-filtro-instituicao">Instituição</label><select class="criati-select" id="contas-filtro-instituicao"><option value="">Todas</option></select></div>
 					<div class="criati-field"><label for="contas-filtro-tipo">Tipo</label><select class="criati-select" id="contas-filtro-tipo"><option value="">Todos</option><option value="CONTA_CORRENTE">Conta corrente</option><option value="CONTA_PAGAMENTO">Conta de pagamento</option><option value="POUPANCA">Poupança</option><option value="DINHEIRO">Dinheiro</option><option value="CARTEIRA">Carteira</option><option value="OUTRA">Outra</option></select></div>
 					<div class="criati-field"><label for="contas-filtro-status">Status</label><select class="criati-select" id="contas-filtro-status"><option value="ATIVO">Ativas</option><option value="INATIVO">Inativas</option></select></div>
-					<button type="button" id="contas-nova" class="criati-btn criati-btn-primary">Nova conta</button>
 				</div>
+					</div>
+				</section>
 
-				<p id="contas-carregando">Carregando contas...</p>
+				<p id="contas-carregando" class="financeiro-operacional-status" role="status">Carregando contas...</p>
 				<div id="contas-erro" class="criati-error-state" hidden><p>Não foi possível carregar as contas agora.</p></div>
 				<div id="contas-vazio" class="criati-empty-state" hidden><p>Nenhuma conta financeira cadastrada.</p><p>Cadastre as contas da residência para organizar saldos e movimentações.</p></div>
-				<div class="criati-table-wrap" id="contas-tabela-wrap" hidden>
-					<table class="criati-table"><thead><tr><th>Nome</th><th>Titular</th><th>Instituição</th><th>Tipo</th><th>Saldo inicial</th><th>Data</th><th>Conciliação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="contas-tbody"></tbody></table>
+				<div class="criati-table-wrap financeiro-tabela-operacional-scroll" id="contas-tabela-wrap" hidden>
+					<table class="criati-table" aria-label="Contas financeiras"><thead><tr><th>Nome</th><th>Titular</th><th>Instituição</th><th>Tipo</th><th>Saldo inicial</th><th>Data</th><th>Conciliação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="contas-tbody"></tbody></table>
 				</div>
 			</main>
 		</div>
 	</div>
 
-	<div class="criati-modal-overlay" id="conta-modal" hidden><div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="conta-modal-titulo">
+	<div class="criati-modal-overlay" id="conta-modal" hidden><div class="criati-modal financeiro-modal-operacional" role="dialog" aria-modal="true" aria-labelledby="conta-modal-titulo">
 		<h2 id="conta-modal-titulo">Nova conta</h2>
 		<form class="criati-modal-form" id="conta-form">
 			<div class="criati-field"><label for="conta-nome">Nome de identificação</label><input class="criati-input" id="conta-nome" required maxlength="150" /></div>
@@ -80,6 +98,6 @@
 	<div th:replace="~{fragments/feedback :: toasts}"></div>
 	<script th:src="@{/js/criati-api.js}"></script><script th:src="@{/js/criati-tema.js}"></script><script th:src="@{/js/criati-estilo.js}"></script><script th:src="@{/js/criati-ui.js}"></script>
 	<script th:src="@{/js/criati-auth.js}"></script><script th:src="@{/js/criati-contexto.js}"></script><script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-formatacao.js}"></script><script th:src="@{/js/financeiro-detalhes.js}"></script><script th:src="@{/js/financeiro-api.js}"></script><script th:src="@{/js/financeiro-contas.js}"></script>
-	<script>document.addEventListener("DOMContentLoaded", function () { CriatiUI.initSidebarToggle(); CriatiUI.initUserMenu(); CriatiAuth.initLogout(); CriatiContexto.iniciar(); CriatiAplicacoes.carregarSidebar(); FinanceiroContas.iniciar(); });</script>
+	<script>document.addEventListener("DOMContentLoaded", function () { CriatiUI.initSidebarToggle(); CriatiUI.initUserMenu(); CriatiUI.initFiltrosRecolhiveis(); CriatiAuth.initLogout(); CriatiContexto.iniciar(); CriatiAplicacoes.carregarSidebar(); FinanceiroContas.iniciar(); });</script>
 </body>
 </html>

@@ -15,7 +15,7 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-categorias')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 
 		<div class="criati-main">
@@ -26,8 +26,6 @@
 					<h1>Categorias financeiras</h1>
 					<p>Organize receitas e despesas por categoria.</p>
 				</div>
-
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('categorias')}"></div>
 
 				<div class="criati-toolbar">
 					<div class="criati-field">

@@ -24,12 +24,17 @@
 	function renderSidebar(placeholder, aplicacoes) {
 		var parent = placeholder.parentNode;
 		aplicacoes.forEach(function (aplicacao) {
+			if (document.querySelector("[data-menu-financeiro]")
+					&& aplicacao.urlInicial.indexOf("/app/financeiro") === 0) {
+				return;
+			}
 			var link = document.createElement("a");
 			link.className = "criati-nav-link";
 			link.href = aplicacao.urlInicial;
 			link.setAttribute("aria-label", aplicacao.nome);
 			link.setAttribute("data-tooltip", aplicacao.nome);
-			if (window.location.pathname === aplicacao.urlInicial) {
+			if (window.location.pathname === aplicacao.urlInicial
+					|| window.location.pathname.indexOf(aplicacao.urlInicial + "/") === 0) {
 				link.classList.add("is-active");
 				link.setAttribute("aria-current", "page");
 			}

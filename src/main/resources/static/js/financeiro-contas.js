@@ -15,6 +15,8 @@
 
 	function iniciar() {
 		if (!el("conta-form")) { return; }
+		if (el("conta-form").dataset.inicializado === "true") { return; }
+		el("conta-form").dataset.inicializado = "true";
 		el("conta-data-saldo").max = hoje();
 		el("contas-nova").addEventListener("click", function () { abrirConta(null); });
 		el("conta-cancelar").addEventListener("click", fecharConta);
@@ -69,7 +71,11 @@
 		window.FinanceiroApi.contas.resumo().then(function (resposta) {
 			var resumo = resposta.data;
 			el("contas-resumo-quantidade").textContent = resumo.quantidadeContasAtivas;
-			el("contas-resumo-saldo").textContent = window.FinanceiroFormatacao.moeda(resumo.saldoInicialConsolidado);
+			window.FinanceiroFormatacao.renderMoeda(
+				el("contas-resumo-saldo"),
+				resumo.saldoInicialConsolidado,
+				"SALDO"
+			);
 			el("contas-resumo-titulares").textContent = (resumo.saldosPorTitular || []).map(function (item) {
 				return item.titularNome + ": " + window.FinanceiroFormatacao.moeda(item.saldoInicial);
 			}).join(" · ") || "Sem contas ativas";
@@ -81,7 +87,9 @@
 		contas.forEach(function (conta) {
 			var linha = document.createElement("tr"); linha.appendChild(td(conta.nome)); linha.appendChild(td(conta.titularNome));
 			linha.appendChild(td(conta.instituicaoNome)); linha.appendChild(td(ROTULOS[conta.tipo] || conta.tipo));
-			linha.appendChild(td(window.FinanceiroFormatacao.moeda(conta.saldoInicial))); linha.appendChild(td(conta.dataSaldoInicial));
+			var saldo = td(window.FinanceiroFormatacao.moeda(conta.saldoInicial));
+			window.FinanceiroFormatacao.aplicarSemantica(saldo, conta.saldoInicial, "SALDO");
+			linha.appendChild(saldo); linha.appendChild(td(conta.dataSaldoInicial));
 			linha.appendChild(td(conta.permiteConciliacao ? "Permitida" : "Não permitida"));
 			var status = td(""); var badge = document.createElement("span"); badge.className = "criati-badge criati-badge-" + conta.status.toLowerCase(); badge.textContent = conta.status === "ATIVO" ? "Ativa" : "Inativa"; status.appendChild(badge); linha.appendChild(status);
 			var acoes = td(""); acoes.className = "criati-table-acoes";

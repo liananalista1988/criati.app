@@ -15,7 +15,7 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-recorrencias')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 
 		<div class="criati-main">
@@ -27,8 +27,12 @@
 					<p>Receitas e despesas que se repetem (salario, condominio, assinaturas) e os lancamentos gerados por elas.</p>
 				</div>
 
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('recorrencias')}"></div>
-
+				<section class="criati-filtros" data-filtros-recolhiveis>
+					<button type="button" class="criati-btn criati-btn-ghost criati-filtros-toggle" data-filtros-toggle
+						aria-expanded="false" aria-controls="recorrencias-filtros-painel">
+						Filtros <span class="criati-filtros-contador" data-filtros-contador hidden></span>
+					</button>
+					<div id="recorrencias-filtros-painel" data-filtros-painel hidden>
 				<div class="criati-toolbar">
 					<div class="criati-field">
 						<label for="financeiro-recorrencias-filtro-status">Status</label>
@@ -64,6 +68,8 @@
 						<input class="criati-input" type="text" id="financeiro-recorrencias-filtro-busca" placeholder="Descricao..." />
 					</div>
 				</div>
+					</div>
+				</section>
 
 				<div class="criati-grid criati-grid-4" id="financeiro-recorrencias-resumo" aria-live="polite">
 					<div class="criati-card"><p class="criati-card-sub">Recorrencias ativas</p><p class="criati-card-value" id="resumo-recorrencias-ativas">0</p></div>
@@ -232,6 +238,7 @@
 		document.addEventListener("DOMContentLoaded", function () {
 			CriatiUI.initSidebarToggle();
 			CriatiUI.initUserMenu();
+			CriatiUI.initFiltrosRecolhiveis();
 			CriatiAuth.initLogout();
 			CriatiContexto.iniciar();
 			CriatiAplicacoes.carregarSidebar();

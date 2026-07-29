@@ -15,21 +15,36 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-lancamentos')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 			<main class="criati-content">
-				<div class="criati-page-header">
-					<h1>Lancamentos</h1>
-					<p>Receitas e despesas da residência, separando competência, vencimento e liquidação.</p>
-				</div>
+				<header class="financeiro-operacional-cabecalho">
+					<div>
+						<p class="financeiro-dashboard-sobretitulo">Movimentações</p>
+						<h1>Lançamentos</h1>
+						<p>Organize receitas e despesas por competência, vencimento e liquidação.</p>
+					</div>
+					<div class="financeiro-operacional-acoes">
+						<button type="button" id="financeiro-lancamentos-nova-receita"
+							class="criati-btn criati-btn-ghost">Nova receita</button>
+						<button type="button" id="financeiro-lancamentos-nova-despesa"
+							class="criati-btn criati-btn-primary">Novo lançamento</button>
+					</div>
+				</header>
 
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('lancamentos')}"></div>
-
-				<div class="criati-toolbar">
+				<section class="criati-filtros" data-filtros-recolhiveis>
+					<button type="button" class="criati-btn criati-btn-ghost criati-filtros-toggle" data-filtros-toggle
+						aria-expanded="false" aria-controls="lancamentos-filtros-painel">
+						Filtros <span class="criati-filtros-contador" data-filtros-contador hidden></span>
+					</button>
+					<form id="financeiro-lancamentos-filtros" class="financeiro-filtros-form"
+						aria-label="Filtros de lançamentos">
+					<div id="lancamentos-filtros-painel" data-filtros-painel hidden>
+				<div class="criati-toolbar financeiro-filtros-grade">
 					<div class="criati-field">
 						<label for="financeiro-filtro-data-inicial">De</label>
 						<input class="criati-input" type="date" id="financeiro-filtro-data-inicial" />
@@ -70,32 +85,43 @@
 						<select class="criati-select" id="financeiro-filtro-parte"></select></div>
 					<div class="criati-field"><label for="financeiro-filtro-vencido">Vencimento</label>
 						<select class="criati-select" id="financeiro-filtro-vencido"><option value="">Todos</option><option value="true">Vencidos</option></select></div>
-					<div class="criati-field" style="flex: 1; min-width: 200px;">
+					<div class="criati-field financeiro-campo-busca">
 						<label for="financeiro-filtro-busca">Buscar</label>
-						<input class="criati-input" type="text" id="financeiro-filtro-busca" placeholder="Descricao..." />
+						<input class="criati-input" type="search" id="financeiro-filtro-busca" placeholder="Descrição..." />
 					</div>
 				</div>
-				<div class="criati-grid criati-grid-4" id="financeiro-lancamentos-resumo" aria-live="polite">
-					<div class="criati-card"><p class="criati-card-sub">Receitas liquidadas</p><p class="criati-card-value" id="resumo-receitas-liquidadas">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Despesas liquidadas</p><p class="criati-card-value" id="resumo-despesas-liquidadas">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Resultado liquidado</p><p class="criati-card-value" id="resumo-resultado-liquidado">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Saldo atual consolidado</p><p class="criati-card-value" id="resumo-saldo-consolidado">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Receitas pendentes</p><p class="criati-card-value" id="resumo-receitas-pendentes">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Despesas pendentes</p><p class="criati-card-value" id="resumo-despesas-pendentes">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Pendentes vencidos</p><p class="criati-card-value" id="resumo-vencidos">0</p></div>
-				</div>
+						<div class="financeiro-filtros-acoes">
+							<button type="button" class="criati-btn criati-btn-ghost"
+								id="financeiro-lancamentos-limpar-filtros">Limpar filtros</button>
+							<button type="submit" class="criati-btn criati-btn-primary">Aplicar filtros</button>
+						</div>
+					</div>
+					</form>
+				</section>
+				<section aria-labelledby="financeiro-lancamentos-resumo-titulo">
+					<h2 id="financeiro-lancamentos-resumo-titulo" class="financeiro-dashboard-titulo-secao">Resumo do período</h2>
+					<div class="financeiro-operacional-cards" id="financeiro-lancamentos-resumo" aria-live="polite">
+						<article class="financeiro-dashboard-card is-receita"><p class="financeiro-dashboard-card-rotulo">Receitas liquidadas</p><p class="criati-card-value" id="resumo-receitas-liquidadas">R$ 0,00</p><p class="financeiro-dashboard-card-apoio">Entradas realizadas</p></article>
+						<article class="financeiro-dashboard-card is-despesa"><p class="financeiro-dashboard-card-rotulo">Despesas liquidadas</p><p class="criati-card-value" id="resumo-despesas-liquidadas">R$ 0,00</p><p class="financeiro-dashboard-card-apoio">Saídas realizadas</p></article>
+						<article class="financeiro-dashboard-card is-resultado"><p class="financeiro-dashboard-card-rotulo">Resultado liquidado</p><p class="criati-card-value" id="resumo-resultado-liquidado">R$ 0,00</p><p class="financeiro-dashboard-card-apoio">Receitas menos despesas</p></article>
+						<article class="financeiro-dashboard-card"><p class="financeiro-dashboard-card-rotulo">Lançamentos encontrados</p><p class="criati-card-value criati-valor-neutro" id="resumo-quantidade-lancamentos">0</p><p class="financeiro-dashboard-card-apoio">Conforme os filtros atuais</p></article>
+					</div>
+				</section>
 
-				<div class="criati-toolbar">
-					<div style="flex: 1"></div>
-					<button type="button" id="financeiro-lancamentos-nova-receita" class="criati-btn criati-btn-ghost">
-						Nova receita
-					</button>
-					<button type="button" id="financeiro-lancamentos-nova-despesa" class="criati-btn criati-btn-primary">
-						Nova despesa
-					</button>
-				</div>
+				<section class="financeiro-operacional-pendencias" aria-labelledby="financeiro-lancamentos-pendencias-titulo">
+					<div>
+						<p class="financeiro-dashboard-sobretitulo">Acompanhamento</p>
+						<h2 id="financeiro-lancamentos-pendencias-titulo">Valores pendentes</h2>
+					</div>
+					<dl>
+						<div><dt>Receitas</dt><dd id="resumo-receitas-pendentes">R$ 0,00</dd></div>
+						<div><dt>Despesas</dt><dd id="resumo-despesas-pendentes">R$ 0,00</dd></div>
+						<div><dt>Vencidos</dt><dd id="resumo-vencidos">0</dd></div>
+						<div><dt>Saldo atual</dt><dd id="resumo-saldo-consolidado">R$ 0,00</dd></div>
+					</dl>
+				</section>
 
-				<p id="financeiro-lancamentos-carregando">Carregando lancamentos...</p>
+				<p id="financeiro-lancamentos-carregando" class="financeiro-operacional-status" role="status">Carregando lançamentos...</p>
 				<div id="financeiro-lancamentos-erro" class="criati-error-state" hidden>
 					<p>Nao foi possivel carregar os lancamentos agora.</p>
 				</div>
@@ -103,8 +129,8 @@
 					<p>Nenhum lançamento nesta competência. Cadastre receitas e despesas para acompanhar o fluxo financeiro da residência.</p>
 				</div>
 
-				<div class="criati-table-wrap" id="financeiro-lancamentos-tabela-wrap" hidden>
-					<table class="criati-table">
+				<div class="criati-table-wrap financeiro-tabela-operacional" id="financeiro-lancamentos-tabela-wrap" hidden>
+					<table class="criati-table" aria-label="Lançamentos financeiros">
 						<thead>
 							<tr>
 								<th>Competencia</th>
@@ -128,7 +154,8 @@
 	</div>
 
 	<div class="criati-modal-overlay" id="financeiro-lancamento-modal" hidden>
-		<div class="criati-modal">
+		<div class="criati-modal financeiro-modal-operacional" role="dialog" aria-modal="true"
+			aria-labelledby="financeiro-lancamento-modal-titulo">
 			<h2 id="financeiro-lancamento-modal-titulo">Novo lancamento</h2>
 			<form class="criati-modal-form" id="financeiro-lancamento-form">
 				<input type="hidden" id="financeiro-lancamento-tipo" />
@@ -177,8 +204,8 @@
 	</div>
 
 	<div class="criati-modal-overlay" id="financeiro-pagar-modal" hidden>
-		<div class="criati-modal">
-			<h2>Confirmar liquidação</h2>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="financeiro-pagar-modal-titulo">
+			<h2 id="financeiro-pagar-modal-titulo">Confirmar liquidação</h2>
 			<form class="criati-modal-form" id="financeiro-pagar-form">
 				<div class="criati-field">
 					<label for="financeiro-pagar-data">Data de liquidação</label>
@@ -210,6 +237,7 @@
 		document.addEventListener("DOMContentLoaded", function () {
 			CriatiUI.initSidebarToggle();
 			CriatiUI.initUserMenu();
+			CriatiUI.initFiltrosRecolhiveis();
 			CriatiAuth.initLogout();
 			CriatiContexto.iniciar();
 			CriatiAplicacoes.carregarSidebar();

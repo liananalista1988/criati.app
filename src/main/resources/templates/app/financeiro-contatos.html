@@ -10,10 +10,9 @@
 	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" /><link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
 </head>
 <body>
-	<div class="criati-app"><div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div><div class="criati-sidebar-overlay"></div>
+	<div class="criati-app"><div th:replace="~{fragments/sidebar :: sidebar('financeiro-contatos')}"></div><div class="criati-sidebar-overlay"></div>
 		<div class="criati-main"><div th:replace="~{fragments/topbar :: topbar}"></div><main class="criati-content">
 			<div class="criati-page-header"><h1>Contatos financeiros</h1><p>Identifique favorecidos, credores, devedores, estabelecimentos e organizacoes.</p></div>
-			<div th:replace="~{fragments/financeiro-navegacao :: navegacao('contatos')}"></div>
 			<div class="criati-toolbar">
 				<div class="criati-field"><label for="contatos-busca">Buscar</label><input id="contatos-busca" class="criati-input" type="search" placeholder="Nome do contato" /></div>
 				<div class="criati-field"><label for="contatos-filtro-tipo">Tipo</label><select id="contatos-filtro-tipo" class="criati-select"><option value="">Todos</option><option value="PESSOA">Pessoa</option><option value="ORGANIZACAO">Organizacao</option><option value="ESTABELECIMENTO">Estabelecimento</option><option value="OUTRA">Outra</option></select></div>

@@ -15,7 +15,7 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-pessoas')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
@@ -24,7 +24,6 @@
 					<h1>Pessoas da residencia</h1>
 					<p>Cadastre os integrantes usados na titularidade de contas, cartoes e gastos.</p>
 				</div>
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('pessoas')}"></div>
 				<div class="criati-toolbar">
 					<div class="criati-field">
 						<label for="pessoas-filtro-status">Status</label>

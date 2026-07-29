@@ -15,6 +15,12 @@
 		return celula;
 	}
 
+	function tdMoeda(valor, natureza) {
+		var celula = td(formatacao.moeda(valor));
+		formatacao.aplicarSemantica(celula, valor, natureza);
+		return celula;
+	}
+
 	function option(valor, texto) {
 		var item = document.createElement("option");
 		item.value = valor;
@@ -77,10 +83,10 @@
 		return query.toString();
 	}
 
-	function botao(texto, acao) {
+	function botao(texto, acao, classe) {
 		var item = document.createElement("button");
 		item.type = "button";
-		item.className = "criati-btn criati-btn-ghost";
+		item.className = classe || "criati-btn criati-btn-ghost";
 		item.textContent = texto;
 		item.addEventListener("click", acao);
 		return item;
@@ -96,15 +102,15 @@
 			linha.appendChild(td(compra.cartaoNome));
 			linha.appendChild(td(compra.pessoaResponsavelNome));
 			linha.appendChild(td(compra.parteFinanceiraNome ? "Terceiro: " + compra.parteFinanceiraNome : "Residência"));
-			linha.appendChild(td(formatacao.moeda(compra.valorTotal)));
+			linha.appendChild(tdMoeda(compra.valorTotal, "SAIDA"));
 			linha.appendChild(td(String(compra.quantidadeParcelas)));
 			linha.appendChild(td(statusLabel(compra.status)));
 			var acoes = document.createElement("td");
 			acoes.className = "criati-table-acoes";
 			acoes.appendChild(botao("Detalhes", function () { abrirDetalhes(compra); }));
 			if (compra.status === "ATIVA") {
-				acoes.appendChild(botao("Cancelar", function () { alterarStatus(compra, "cancelar"); }));
-				acoes.appendChild(botao("Estornar", function () { alterarStatus(compra, "estornar"); }));
+				acoes.appendChild(botao("Cancelar", function () { alterarStatus(compra, "cancelar"); }, "criati-btn criati-btn-danger"));
+				acoes.appendChild(botao("Estornar", function () { alterarStatus(compra, "estornar"); }, "criati-btn criati-btn-danger"));
 			}
 			linha.appendChild(acoes);
 			corpo.appendChild(linha);
@@ -131,9 +137,9 @@
 	function atualizarResumo() {
 		return api.get("/api/contexto/financeiro/compras-cartao/resumo").then(function (resposta) {
 			var resumo = resposta.data || {};
-			el("resumo-total").textContent = formatacao.moeda(resumo.totalComprado);
+			formatacao.renderMoeda(el("resumo-total"), resumo.totalComprado, "SAIDA");
 			el("resumo-limite").textContent = formatacao.moeda(resumo.limiteTotalConsolidado);
-			el("resumo-comprometido").textContent = formatacao.moeda(resumo.limiteComprometido);
+			formatacao.renderMoeda(el("resumo-comprometido"), resumo.limiteComprometido, "SAIDA");
 			el("resumo-disponivel").textContent = formatacao.moeda(resumo.limiteDisponivel);
 		});
 	}
@@ -224,7 +230,7 @@
 		compra.parcelas.forEach(function (parcela) {
 			var linha = document.createElement("tr");
 			linha.appendChild(td(parcela.numero + "/" + parcela.totalParcelas));
-			linha.appendChild(td(formatacao.moeda(parcela.valor)));
+			linha.appendChild(tdMoeda(parcela.valor, "SAIDA"));
 			linha.appendChild(td(formatacao.dataBr(parcela.competencia)));
 			linha.appendChild(td(statusLabel(parcela.status)));
 			corpo.appendChild(linha);
@@ -233,6 +239,8 @@
 	}
 
 	function iniciar() {
+		if (!el("compra-form") || el("compra-form").dataset.inicializado === "true") return;
+		el("compra-form").dataset.inicializado = "true";
 		el("compra-form").addEventListener("submit", salvar);
 		el("compra-cartao").addEventListener("change", mostrarLimiteAtual);
 		el("filtrar").addEventListener("click", listar);

@@ -97,14 +97,15 @@ class PaginaEmprestimosSegurancaTests {
 				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
 				.andExpect(content().string(containsString("Empréstimos concedidos")))
 				.andExpect(content().string(containsString("Nenhum empréstimo concedido encontrado")))
-				.andExpect(content().string(containsString("Total principal")))
+				.andExpect(content().string(containsString("Total concedido")))
 				.andExpect(content().string(containsString("Total recebido")))
 				.andExpect(content().string(containsString("Saldo a receber")))
 				.andExpect(content().string(containsString("Parcelas pendentes")))
 				.andExpect(content().string(containsString("Parcelas vencidas")))
 				.andExpect(content().string(containsString("Próximas do vencimento")))
 				.andExpect(content().string(containsString("financeiro-emprestimos.js")))
-				.andExpect(content().string(containsString("Navegação do Financeiro LeS")))
+				.andExpect(content().string(containsString("Crédito e terceiros")))
+				.andExpect(content().string(not(containsString("financeiro-navegacao"))))
 				.andExpect(content().string(not(containsString("href=\"/app/financeiro/emprestimos/novo\""))));
 	}
 

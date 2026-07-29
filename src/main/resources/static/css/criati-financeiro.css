@@ -1,36 +1,460 @@
 /* Criati - componentes reutilizaveis do modulo Financeiro: tabela, badges de
    status, modal de formulario e barras CSS simples (sem biblioteca externa). */
 
-.financeiro-navegacao {
-	display: flex;
-	gap: 6px;
-	overflow-x: auto;
-	padding: 2px 0 12px;
-	margin: -4px 0 20px;
-	scrollbar-width: thin;
+.criati-filtros {
+	margin-bottom: var(--criati-space-lg);
 }
 
-.financeiro-navegacao a {
-	flex: 0 0 auto;
-	padding: 8px 11px;
+.criati-filtros-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--criati-space-sm);
+}
+
+.criati-filtros-contador {
+	min-width: 1.4rem;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: var(--criati-accent);
+	color: #fff;
+	font-size: var(--criati-font-size-xs);
+	text-align: center;
+}
+
+.criati-filtros [data-filtros-painel] {
+	margin-top: var(--criati-space-sm);
+	padding: var(--criati-space-md);
 	border: 1px solid var(--criati-border);
 	border-radius: var(--criati-radius);
+	background: var(--criati-surface-alt);
+}
+
+.criati-filtros [data-filtros-painel][hidden] {
+	display: none;
+}
+
+.criati-filtros .criati-toolbar {
+	margin: 0;
+}
+
+.financeiro-dashboard-cabecalho {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--criati-space-xl);
+	margin-bottom: var(--criati-space-xl);
+}
+
+.financeiro-dashboard-titulo {
+	min-width: 0;
+}
+
+.financeiro-dashboard-titulo h1 {
+	margin-bottom: var(--criati-space-xs);
+}
+
+.financeiro-dashboard-titulo > p:last-child {
+	margin: 0;
 	color: var(--criati-text-muted);
+}
+
+.financeiro-dashboard-sobretitulo {
+	margin: 0 0 var(--criati-space-xs);
+	color: var(--criati-accent);
+	font-size: var(--criati-font-size-xs);
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+}
+
+.financeiro-dashboard-comandos {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--criati-space-sm);
+}
+
+.financeiro-dashboard-comandos {
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.financeiro-dashboard-periodo {
+	min-width: 185px;
+}
+
+.financeiro-dashboard-status {
+	padding: var(--criati-space-xl);
+	border-radius: var(--criati-radius);
+	background: var(--criati-surface-alt);
+	color: var(--criati-text-muted);
+	text-align: center;
+}
+
+.financeiro-dashboard-titulo-secao {
+	margin-bottom: var(--criati-space-md);
+	font-size: var(--criati-font-size-lg);
+}
+
+.financeiro-dashboard-cards {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: var(--criati-space-md);
+}
+
+/* Card financeiro base (LES-VIS-001): estrutura unica reaproveitada pelo
+   dashboard (.financeiro-dashboard-card) e pelos cards de resumo de outras
+   telas do modulo (.financeiro-stat-card, ex.: emprestimos, cartoes) - evita
+   duplicar borda/sombra/tipografia em cada tela. Semantica de cor por
+   modificador, nunca por nome de tela: is-receita (verde, valor realizado
+   positivo), is-despesa (vermelho, obrigacao/atraso), is-resultado (roxo/
+   acento secundario, indicador calculado), sem modificador = neutro/
+   informativo (nunca herda cor de sucesso nem de erro). */
+.financeiro-dashboard-card,
+.financeiro-stat-card {
+	position: relative;
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	height: 100%;
+	padding: calc(var(--criati-card-padding) - 4px) var(--criati-card-padding);
+	overflow: hidden;
+	border: 1px solid transparent;
+	border-radius: var(--criati-radius-lg);
+	background: var(--criati-surface);
+	box-shadow: var(--criati-shadow-soft);
+}
+
+.financeiro-dashboard-card::before,
+.financeiro-stat-card::before {
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 3px;
+	background: var(--criati-accent);
+	content: "";
+}
+
+.financeiro-dashboard-card.is-receita::before,
+.financeiro-stat-card.is-receita::before {
+	background: var(--criati-success);
+}
+
+.financeiro-dashboard-card.is-despesa::before,
+.financeiro-stat-card.is-despesa::before {
+	background: var(--criati-danger);
+}
+
+.financeiro-dashboard-card.is-resultado::before,
+.financeiro-stat-card.is-resultado::before {
+	background: var(--criati-accent-2);
+}
+
+.financeiro-dashboard-card-rotulo,
+.financeiro-dashboard-card-apoio,
+.financeiro-stat-card-rotulo,
+.financeiro-stat-card-apoio {
+	margin: 0;
+	color: var(--criati-text-muted);
+}
+
+.financeiro-dashboard-card-rotulo,
+.financeiro-stat-card-rotulo {
 	font-size: var(--criati-font-size-sm);
+	font-weight: 600;
+}
+
+.financeiro-dashboard-card .criati-card-value,
+.financeiro-stat-card .criati-card-value {
+	margin: var(--criati-space-xs) 0;
+	overflow-wrap: anywhere;
+	font-size: clamp(1.05rem, 1.6vw, 1.5rem);
+	font-variant-numeric: tabular-nums;
+}
+
+.financeiro-dashboard-card-apoio,
+.financeiro-stat-card-apoio {
+	margin-top: auto;
+	padding-top: var(--criati-space-xs);
+	font-size: var(--criati-font-size-xs);
+	line-height: 1.3;
+}
+
+/* Variante do card de resumo cujo conteudo e uma lista textual (nao um
+   numero unico em destaque, ex.: saldos por titular) - evita aplicar a
+   tipografia grande de .criati-card-value a um texto potencialmente longo. */
+.financeiro-stat-card-lista {
+	margin: var(--criati-space-xs) 0 0;
+	overflow-wrap: anywhere;
+	color: var(--criati-text);
+	font-size: var(--criati-font-size-sm);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.financeiro-dashboard-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.85fr);
+	gap: var(--criati-space-lg);
+	margin-top: var(--criati-space-lg);
+}
+
+.financeiro-dashboard-coluna-principal,
+.financeiro-dashboard-coluna-lateral {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: var(--criati-space-lg);
+}
+
+.financeiro-dashboard-painel {
+	min-width: 0;
+	padding: var(--criati-card-padding);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-lg);
+	background: var(--criati-surface);
+	box-shadow: var(--criati-shadow-soft);
+}
+
+.financeiro-dashboard-painel-cabecalho {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--criati-space-md);
+	margin-bottom: var(--criati-space-lg);
+}
+
+.financeiro-dashboard-painel-cabecalho h2 {
+	margin: 0;
+	font-size: var(--criati-font-size-lg);
+}
+
+.financeiro-dashboard-painel-cabecalho a {
+	flex-shrink: 0;
+	color: var(--criati-accent);
+	font-size: var(--criati-font-size-sm);
+	font-weight: 600;
 	text-decoration: none;
 }
 
-.financeiro-navegacao a:hover,
-.financeiro-navegacao a:focus-visible {
-	color: var(--criati-text);
-	border-color: var(--criati-accent);
+.financeiro-dashboard-painel-contexto {
+	margin: 0;
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-xs);
 }
 
-.financeiro-navegacao a.is-active {
-	color: var(--criati-accent);
-	border-color: var(--criati-accent);
+.financeiro-dashboard-comparativo {
+	display: flex;
+	flex-direction: column;
+	gap: var(--criati-space-lg);
+}
+
+.financeiro-dashboard-comparativo[hidden] {
+	display: none;
+}
+
+.financeiro-dashboard-comparativo-legenda {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--criati-space-md);
+	margin-bottom: var(--criati-space-sm);
+	font-size: var(--criati-font-size-sm);
+}
+
+.financeiro-dashboard-comparativo-legenda span {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--criati-space-sm);
+}
+
+.financeiro-dashboard-comparativo-legenda strong {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.financeiro-dashboard-ponto {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--criati-accent);
+}
+
+.financeiro-dashboard-ponto.is-receita {
+	background: var(--criati-success);
+}
+
+.financeiro-dashboard-ponto.is-despesa {
+	background: var(--criati-danger);
+}
+
+.financeiro-dashboard-barra-fundo {
+	height: 12px;
+	overflow: hidden;
+	border-radius: 999px;
 	background: var(--criati-surface-alt);
+}
+
+.financeiro-dashboard-barra {
+	width: 0;
+	height: 100%;
+	border-radius: inherit;
+	transition: width 0.2s ease;
+}
+
+.financeiro-dashboard-barra.is-receita {
+	background: var(--criati-success);
+}
+
+.financeiro-dashboard-barra.is-despesa {
+	background: var(--criati-danger);
+}
+
+.financeiro-dashboard-indicadores {
+	display: flex;
+	flex-direction: column;
+	gap: var(--criati-space-md);
+	margin: 0;
+}
+
+.financeiro-dashboard-indicadores > div {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--criati-space-md);
+	padding-bottom: var(--criati-space-sm);
+	border-bottom: 1px solid var(--criati-border);
+}
+
+.financeiro-dashboard-indicadores dt {
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-sm);
+}
+
+.financeiro-dashboard-indicadores dd {
+	margin: 0;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.financeiro-dashboard-metricas {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--criati-space-sm) var(--criati-space-lg);
+	margin: var(--criati-space-lg) 0 0;
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-xs);
+}
+
+.financeiro-dashboard-metricas strong {
+	color: var(--criati-text);
+}
+
+.financeiro-dashboard-atalhos {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--criati-space-sm);
+}
+
+.financeiro-dashboard-atalhos a {
+	padding: var(--criati-space-md);
+	border-radius: var(--criati-radius);
+	background: var(--criati-surface-alt);
+	color: var(--criati-text);
+	font-size: var(--criati-font-size-sm);
 	font-weight: 600;
+	text-align: center;
+	text-decoration: none;
+}
+
+.financeiro-dashboard-atalhos a:hover,
+.financeiro-dashboard-atalhos a:focus-visible {
+	background: var(--criati-surface-hover);
+	color: var(--criati-accent);
+}
+
+.financeiro-dashboard-vazio {
+	margin: 0;
+	padding: var(--criati-space-lg);
+	border-radius: var(--criati-radius);
+	background: var(--criati-surface-alt);
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-sm);
+	text-align: center;
+}
+
+.financeiro-dashboard-tabela {
+	border: 0;
+}
+
+.financeiro-dashboard-tabela .criati-table {
+	min-width: 620px;
+}
+
+@media (max-width: 1100px) {
+	.financeiro-dashboard-cabecalho {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.financeiro-dashboard-comandos {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.financeiro-dashboard-cards {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.financeiro-dashboard-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.financeiro-dashboard-coluna-lateral {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.financeiro-dashboard-atalhos {
+		align-content: start;
+	}
+}
+
+@media (max-width: 600px) {
+	.financeiro-dashboard-comandos {
+		width: 100%;
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.financeiro-dashboard-periodo {
+		width: 100%;
+	}
+
+	.financeiro-dashboard-cards,
+	.financeiro-dashboard-coluna-lateral {
+		grid-template-columns: 1fr;
+	}
+
+	.financeiro-dashboard-card .criati-card-value {
+		font-size: 1.45rem;
+	}
+
+	.financeiro-dashboard-painel-cabecalho,
+	.financeiro-dashboard-comparativo-legenda {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.financeiro-dashboard-indicadores > div {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.financeiro-dashboard-barra {
+		transition: none;
+	}
 }
 
 .financeiro-campo-condicional[hidden] {
@@ -56,6 +480,17 @@
 .financeiro-campo-busca,
 .financeiro-campo-largo {
 	flex: 1 1 260px;
+}
+
+/* Grade de formulario compacto usada em "Nova compra"/"Novo emprestimo" etc.
+   (antes referenciada nos templates sem regra correspondente: os campos
+   ficavam colados verticalmente, sem espacamento entre eles). */
+.criati-form-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: var(--criati-space-md) var(--criati-space-lg);
+	align-items: start;
+	margin-bottom: var(--criati-space-sm);
 }
 
 .financeiro-acoes-formulario,
@@ -173,6 +608,17 @@
 	flex-wrap: wrap;
 }
 
+/* Botao pequeno padrao para acoes de tabela/card: mesma variante visual
+   (ghost/primary/danger), altura e area de toque reduzidas para caber em
+   linhas de tabela e rodapes de card sem exigir troca de classe no JS que
+   ja cria esses botoes (.criati-btn base). */
+.criati-table-acoes .criati-btn,
+.financeiro-cartao-card-acoes .criati-btn {
+	min-height: 0;
+	padding: 6px 12px;
+	font-size: var(--criati-font-size-xs);
+}
+
 .criati-badge {
 	display: inline-flex;
 	align-items: center;
@@ -206,7 +652,8 @@
 	color: var(--criati-text-muted);
 }
 
-.criati-badge-atrasada {
+.criati-badge-atrasada,
+.criati-badge-bloqueado {
 	background: var(--criati-danger-bg);
 	color: var(--criati-danger-fg);
 }
@@ -216,12 +663,24 @@
 	color: var(--criati-danger-fg);
 }
 
+.criati-badge-virtual {
+	background: rgba(148, 163, 184, 0.18);
+	color: var(--criati-text-muted);
+}
+
 .criati-valor-positivo {
 	color: var(--criati-success-fg);
+	font-variant-numeric: tabular-nums;
 }
 
 .criati-valor-negativo {
 	color: var(--criati-danger-fg);
+	font-variant-numeric: tabular-nums;
+}
+
+.criati-valor-neutro {
+	color: var(--criati-text);
+	font-variant-numeric: tabular-nums;
 }
 
 .criati-modal-overlay {
@@ -272,18 +731,34 @@
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	margin-bottom: 24px;
+	margin: 0;
 }
 
 .criati-resumo-categoria-linha {
 	display: grid;
-	grid-template-columns: 140px 1fr 90px;
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 10px;
 	font-size: 0.85rem;
 }
 
+.criati-resumo-categoria-linha > span:first-child {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.criati-resumo-categoria-linha > span:last-child {
+	grid-column: 2;
+	grid-row: 1;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
 .criati-resumo-categoria-barra-fundo {
+	grid-column: 1 / -1;
+	grid-row: 2;
 	background: var(--criati-surface-alt);
 	border-radius: 999px;
 	height: 8px;
@@ -298,4 +773,399 @@
 
 .criati-resumo-categoria-barra.is-despesa {
 	background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+/* Telas operacionais do Financeiro */
+.criati-content .criati-input,
+.criati-content .criati-select {
+	min-height: 42px;
+}
+
+.criati-content textarea.criati-input {
+	min-height: 96px;
+	resize: vertical;
+}
+
+.criati-content .criati-input:disabled,
+.criati-content .criati-select:disabled,
+.criati-content .criati-input[readonly] {
+	cursor: not-allowed;
+	opacity: 0.72;
+	background: var(--criati-surface-alt);
+}
+
+.criati-content .criati-field:has(:invalid:not(:placeholder-shown)) label {
+	color: var(--criati-danger-fg);
+}
+
+.criati-content a:not(.criati-btn):focus-visible,
+.criati-content a:not(.criati-btn):hover {
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
+}
+
+.financeiro-abas {
+	display: flex;
+	gap: 6px;
+	margin-bottom: 18px;
+	padding: 5px;
+	border-radius: var(--criati-radius-lg);
+	background: var(--criati-surface-alt);
+	overflow-x: auto;
+}
+
+.financeiro-abas .criati-btn {
+	flex: 0 0 auto;
+}
+
+.financeiro-operacional-cabecalho {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 24px;
+	margin-bottom: 24px;
+}
+
+.financeiro-operacional-cabecalho h1 {
+	margin: 2px 0 6px;
+	font-size: clamp(1.65rem, 3vw, 2.25rem);
+}
+
+.financeiro-operacional-cabecalho p:last-child {
+	margin: 0;
+	color: var(--criati-text-muted);
+}
+
+.financeiro-operacional-acoes,
+.financeiro-filtros-acoes {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.financeiro-filtros-form {
+	margin-top: 12px;
+}
+
+.financeiro-filtros-grade {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	align-items: end;
+	margin-bottom: 14px;
+}
+
+.financeiro-filtros-grade .financeiro-campo-busca {
+	min-width: min(100%, 220px);
+}
+
+/* auto-fit recolhe trilhas vazias e distribui igualmente entre os cards todo
+   o espaco util da linha. O minimo limitado a 100% evita overflow quando a
+   area disponivel fica menor que a largura-base do card. */
+.financeiro-operacional-cards {
+	display: grid;
+	width: 100%;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+	align-items: stretch;
+	gap: var(--criati-space-md);
+	margin-bottom: var(--criati-space-lg);
+}
+
+.financeiro-operacional-pendencias {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	margin-bottom: 18px;
+	padding: 16px 18px;
+	border-radius: var(--criati-radius-lg);
+	background: var(--criati-surface);
+	box-shadow: var(--criati-shadow-sm);
+}
+
+.financeiro-operacional-pendencias h2 {
+	margin: 2px 0 0;
+	font-size: var(--criati-font-size-lg);
+}
+
+.financeiro-operacional-pendencias dl {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(110px, auto));
+	gap: 12px 24px;
+	margin: 0;
+}
+
+.financeiro-operacional-pendencias dl > div {
+	display: grid;
+	gap: 3px;
+}
+
+.financeiro-operacional-pendencias dt {
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-xs);
+}
+
+.financeiro-operacional-pendencias dd {
+	margin: 0;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.financeiro-operacional-status {
+	color: var(--criati-text-muted);
+}
+
+.financeiro-tabela-operacional {
+	border: 0;
+	box-shadow: var(--criati-shadow-sm);
+}
+
+.financeiro-tabela-operacional .criati-table td:nth-child(2) {
+	max-width: 260px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.financeiro-modal-operacional {
+	max-width: 620px;
+}
+
+.financeiro-tabela-operacional-scroll,
+.financeiro-painel-operacional,
+.financeiro-formulario-operacional,
+.financeiro-painel-filtros {
+	border-color: transparent;
+	box-shadow: var(--criati-shadow-sm);
+}
+
+.financeiro-tabela-operacional-scroll {
+	overscroll-behavior-inline: contain;
+}
+
+/* Cards individuais de cartao de credito (um por cartao fisico/virtual),
+   reaproveitando bordas/sombra/raio ja usados pelos demais cards do modulo.
+   auto-fill + minmax garante mesma largura por linha independente da
+   quantidade de cartoes; align-items: stretch (grid) da mesma altura a
+   todos os cards de uma linha mesmo com nomes/quantidade de badges
+   diferentes. */
+.financeiro-cartoes-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+	align-items: stretch;
+	gap: var(--criati-space-md);
+	margin-bottom: var(--criati-space-lg);
+}
+
+.financeiro-cartao-card {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: var(--criati-space-md);
+	padding: var(--criati-card-padding);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-lg);
+	background: var(--criati-surface);
+	box-shadow: var(--criati-shadow-soft);
+}
+
+.financeiro-cartao-card-cabecalho {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--criati-space-sm);
+}
+
+.financeiro-cartao-card-titulo {
+	min-width: 0;
+}
+
+.financeiro-cartao-card-titulo h3 {
+	margin: 0 0 2px;
+	overflow: hidden;
+	font-size: var(--criati-font-size-base);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.financeiro-cartao-card-titulo p {
+	margin: 0;
+	overflow: hidden;
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-xs);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.financeiro-cartao-card-badges {
+	display: flex;
+	flex-shrink: 0;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.financeiro-cartao-card-dados {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px var(--criati-space-md);
+	margin: 0;
+}
+
+.financeiro-cartao-card-dados dt {
+	margin: 0;
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-xs);
+}
+
+.financeiro-cartao-card-dados dd {
+	margin: 2px 0 0;
+	overflow-wrap: anywhere;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.financeiro-cartao-card-acoes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: auto;
+	padding-top: var(--criati-space-sm);
+	border-top: 1px solid var(--criati-border);
+}
+
+@media (max-width: 600px) {
+	.financeiro-cartoes-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.financeiro-cartao-card-dados {
+		grid-template-columns: 1fr;
+	}
+}
+
+.financeiro-tabela-sem-borda {
+	border: 0;
+}
+
+.financeiro-formulario-operacional,
+.financeiro-painel-operacional {
+	margin-bottom: 18px;
+}
+
+.financeiro-formulario-operacional h2,
+.financeiro-painel-operacional h2 {
+	margin-bottom: 16px;
+	font-size: var(--criati-font-size-lg);
+}
+
+.financeiro-painel-filtros {
+	padding: 14px;
+	border-radius: var(--criati-radius-lg);
+	background: var(--criati-surface);
+}
+
+@media (max-width: 980px) {
+	.financeiro-operacional-pendencias {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.financeiro-operacional-pendencias dl {
+		width: 100%;
+	}
+}
+
+@media (max-width: 600px) {
+	.financeiro-operacional-cabecalho {
+		align-items: stretch;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.financeiro-operacional-acoes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.financeiro-operacional-acoes .criati-btn {
+		width: 100%;
+	}
+
+	.financeiro-operacional-cards,
+	.financeiro-operacional-pendencias dl {
+		grid-template-columns: 1fr;
+	}
+
+	.financeiro-filtros-acoes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.financeiro-tabela-operacional {
+		overflow: visible;
+		box-shadow: none;
+	}
+
+	.financeiro-tabela-operacional .criati-table,
+	.financeiro-tabela-operacional tbody,
+	.financeiro-tabela-operacional tr,
+	.financeiro-tabela-operacional td {
+		display: block;
+		width: 100%;
+	}
+
+	.financeiro-tabela-operacional thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.financeiro-tabela-operacional tr {
+		margin-bottom: 12px;
+		padding: 14px;
+		border-radius: var(--criati-radius-lg);
+		background: var(--criati-surface);
+		box-shadow: var(--criati-shadow-sm);
+	}
+
+	.financeiro-tabela-operacional .criati-table td {
+		display: grid;
+		grid-template-columns: minmax(100px, 0.7fr) minmax(0, 1.3fr);
+		gap: 12px;
+		align-items: baseline;
+		max-width: none;
+		padding: 7px 0;
+		white-space: normal;
+		border: 0;
+		text-align: right;
+		overflow-wrap: anywhere;
+	}
+
+	.financeiro-tabela-operacional .criati-table td::before {
+		content: attr(data-label);
+		color: var(--criati-text-muted);
+		font-size: var(--criati-font-size-xs);
+		font-weight: 600;
+		text-align: left;
+		text-transform: uppercase;
+	}
+
+	.financeiro-tabela-operacional .criati-table .criati-table-acoes {
+		display: flex;
+		justify-content: flex-end;
+		padding-top: 12px;
+		border-top: 1px solid var(--criati-border);
+	}
+
+	.financeiro-tabela-operacional .criati-table .criati-table-acoes::before {
+		content: none;
+	}
 }

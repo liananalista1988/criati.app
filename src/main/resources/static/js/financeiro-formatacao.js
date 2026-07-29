@@ -48,10 +48,36 @@
 		return agora.getFullYear() + "-" + mes;
 	}
 
+	function aplicarSemantica(elemento, valor, natureza) {
+		if (!elemento) {
+			return;
+		}
+		var numero = Number(valor);
+		elemento.classList.remove("criati-valor-positivo", "criati-valor-negativo", "criati-valor-neutro");
+		var classe = "criati-valor-neutro";
+		if (!Number.isNaN(numero) && numero !== 0) {
+			if (natureza === "ENTRADA") {
+				classe = "criati-valor-positivo";
+			} else if (natureza === "SAIDA") {
+				classe = "criati-valor-negativo";
+			} else if (natureza === "SALDO") {
+				classe = numero > 0 ? "criati-valor-positivo" : "criati-valor-negativo";
+			}
+		}
+		elemento.classList.add(classe);
+	}
+
+	function renderMoeda(elemento, valor, natureza) {
+		elemento.textContent = moeda(valor);
+		aplicarSemantica(elemento, valor, natureza);
+	}
+
 	window.FinanceiroFormatacao = {
 		moeda: moeda,
 		dataBr: dataBr,
 		competenciaLabel: competenciaLabel,
-		competenciaAtual: competenciaAtual
+		competenciaAtual: competenciaAtual,
+		aplicarSemantica: aplicarSemantica,
+		renderMoeda: renderMoeda
 	};
 })(window);

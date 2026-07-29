@@ -47,6 +47,14 @@
 	font-size: var(--criati-font-size-base);
 }
 
+.criati-sidebar > nav {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	scrollbar-width: thin;
+}
+
 .criati-nav {
 	list-style: none;
 	margin: 0;
@@ -75,6 +83,13 @@
 	flex-shrink: 0;
 	width: var(--criati-nav-icon-size);
 	height: var(--criati-nav-icon-size);
+}
+
+.criati-nav-link > [aria-hidden="true"]:not(svg) {
+	width: var(--criati-nav-icon-size);
+	flex-shrink: 0;
+	text-align: center;
+	font-weight: 700;
 }
 
 .criati-nav-link:hover {

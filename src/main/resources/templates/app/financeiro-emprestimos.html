@@ -15,12 +15,12 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-emprestimos')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
-				<div class="criati-page-header">
+				<div class="criati-page-header financeiro-operacional-cabecalho">
 					<div>
 						<h1>Empréstimos concedidos</h1>
 						<p>Acompanhe valores emprestados, parcelas e recebimentos registrados pelo backend financeiro.</p>
@@ -28,18 +28,39 @@
 					<a th:if="${podeGerenciarEmprestimos}" class="criati-btn criati-btn-primary"
 						href="/app/financeiro/emprestimos/novo">Novo empréstimo</a>
 				</div>
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('emprestimos')}"></div>
 				<div id="emprestimos-mensagem" class="criati-alert" role="alert" hidden></div>
 
-				<section class="criati-grid criati-grid-4" aria-label="Resumo de empréstimos">
-					<div class="criati-card"><p class="criati-card-sub">Total principal</p><p class="criati-card-value" id="resumo-principal">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Total recebido</p><p class="criati-card-value" id="resumo-recebido">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Saldo a receber</p><p class="criati-card-value" id="resumo-saldo">R$ 0,00</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Parcelas pendentes</p><p class="criati-card-value" id="resumo-pendentes">0</p></div>
-					<div class="criati-card"><p class="criati-card-sub">Parcelas vencidas</p><p class="criati-card-value" id="resumo-vencidas">0</p></div>
+				<section class="financeiro-operacional-cards" aria-label="Resumo de empréstimos">
+					<!-- Valor concedido e capital cedido, nao receita: card sem modificador
+						de cor (neutro), igual a saldo a receber e parcelas pendentes -
+						apenas recebimentos ja efetivados (is-receita) e atrasos
+						(is-despesa) usam cor semantica. -->
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Total concedido</p>
+						<p class="criati-card-value" id="resumo-principal">R$ 0,00</p>
+						<p class="financeiro-stat-card-apoio">Capital cedido, não é receita</p>
+					</div>
+					<div class="financeiro-stat-card is-receita">
+						<p class="financeiro-stat-card-rotulo">Total recebido</p>
+						<p class="criati-card-value" id="resumo-recebido">R$ 0,00</p>
+						<p class="financeiro-stat-card-apoio">Recebimentos já efetivados</p>
+					</div>
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Saldo a receber</p>
+						<p class="criati-card-value" id="resumo-saldo">R$ 0,00</p>
+						<p class="financeiro-stat-card-apoio">Informativo, ainda não recebido</p>
+					</div>
+					<div class="financeiro-stat-card">
+						<p class="financeiro-stat-card-rotulo">Parcelas pendentes</p>
+						<p class="criati-card-value" id="resumo-pendentes">0</p>
+					</div>
+					<div class="financeiro-stat-card is-despesa">
+						<p class="financeiro-stat-card-rotulo">Parcelas vencidas</p>
+						<p class="criati-card-value" id="resumo-vencidas">0</p>
+					</div>
 				</section>
 
-				<section class="criati-card">
+				<section class="criati-card financeiro-painel-operacional">
 					<div class="criati-toolbar">
 						<div class="criati-field">
 							<label for="emprestimos-filtro-status">Situação</label>
@@ -55,18 +76,18 @@
 							<input class="criati-input" id="emprestimos-filtro-busca" type="search"
 								placeholder="Devedor ou descrição" />
 						</div>
-						<button class="criati-btn" id="emprestimos-filtrar" type="button">Filtrar</button>
+						<button class="criati-btn criati-btn-ghost" id="emprestimos-filtrar" type="button">Filtrar</button>
 					</div>
 					<p id="emprestimos-carregando" aria-live="polite">Carregando empréstimos...</p>
 					<div id="emprestimos-erro" class="criati-error-state" hidden>
 						<p>Não foi possível carregar os empréstimos.</p>
-						<button class="criati-btn" id="emprestimos-tentar-novamente" type="button">Tentar novamente</button>
+						<button class="criati-btn criati-btn-ghost" id="emprestimos-tentar-novamente" type="button">Tentar novamente</button>
 					</div>
 					<div id="emprestimos-vazio" class="criati-empty-state" hidden>
 						<p>Nenhum empréstimo concedido encontrado.</p>
 						<p>Cadastre o primeiro empréstimo ou altere os filtros.</p>
 					</div>
-					<div id="emprestimos-tabela-wrap" class="criati-table-wrap" hidden>
+					<div id="emprestimos-tabela-wrap" class="criati-table-wrap financeiro-tabela-operacional-scroll" hidden>
 						<table class="criati-table">
 							<thead>
 								<tr>
@@ -82,13 +103,13 @@
 				</section>
 
 				<div class="criati-grid criati-grid-2">
-					<section class="criati-card">
+					<section class="criati-card financeiro-painel-operacional">
 						<h2>Parcelas vencidas</h2>
 						<p id="emprestimos-vencidas-carregando">Carregando...</p>
 						<div id="emprestimos-vencidas-vazio" class="criati-empty-state" hidden><p>Nenhuma parcela vencida.</p></div>
 						<ul id="emprestimos-vencidas-lista" class="financeiro-lista-operacional" hidden></ul>
 					</section>
-					<section class="criati-card">
+					<section class="criati-card financeiro-painel-operacional">
 						<h2>Próximas do vencimento</h2>
 						<p id="emprestimos-proximas-carregando">Carregando...</p>
 						<div id="emprestimos-proximas-vazio" class="criati-empty-state" hidden><p>Nenhuma parcela próxima do vencimento.</p></div>

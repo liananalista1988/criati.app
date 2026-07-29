@@ -74,6 +74,25 @@
 		return td;
 	}
 
+	// Total recebido/saldo em aberto por emprestimo nao sao expostos pela API
+	// atual (somente agregados por parcela) - em vez de texto estatico nao
+	// clicavel, a celula linka para o detalhe do emprestimo (mesma rota do
+	// botao "Detalhes"), onde as parcelas e os valores reais sao exibidos.
+	function celulaVerParcelas(emprestimoId) {
+		var td = document.createElement("td");
+		var link = document.createElement("a");
+		link.href = "/app/financeiro/emprestimos/" + encodeURIComponent(emprestimoId);
+		link.textContent = "Ver parcelas";
+		td.appendChild(link);
+		return td;
+	}
+
+	function celulaMoeda(valor, natureza) {
+		var td = celula(window.FinanceiroFormatacao.moeda(valor));
+		window.FinanceiroFormatacao.aplicarSemantica(td, valor, natureza);
+		return td;
+	}
+
 	function badge(valor, labels) {
 		var td = document.createElement("td");
 		var span = document.createElement("span");
@@ -128,6 +147,8 @@
 	}
 
 	function iniciarLista() {
+		if (!el("emprestimos-filtrar") || el("emprestimos-filtrar").dataset.inicializado === "true") return;
+		el("emprestimos-filtrar").dataset.inicializado = "true";
 		el("emprestimos-filtrar").addEventListener("click", carregarLista);
 		el("emprestimos-tentar-novamente").addEventListener("click", carregarLista);
 		carregarResumo();
@@ -139,8 +160,8 @@
 		window.FinanceiroApi.parcelasEmprestimo.resumo().then(function (resposta) {
 			var resumo = resposta.data;
 			el("resumo-principal").textContent = window.FinanceiroFormatacao.moeda(resumo.totalPrincipal);
-			el("resumo-recebido").textContent = window.FinanceiroFormatacao.moeda(resumo.totalRecebido);
-			el("resumo-saldo").textContent = window.FinanceiroFormatacao.moeda(resumo.saldoAReceber);
+			window.FinanceiroFormatacao.renderMoeda(el("resumo-recebido"), resumo.totalRecebido, "ENTRADA");
+			window.FinanceiroFormatacao.renderMoeda(el("resumo-saldo"), resumo.saldoAReceber, "NEUTRO");
 			el("resumo-pendentes").textContent = resumo.quantidadePendente;
 			el("resumo-vencidas").textContent = resumo.quantidadeVencida;
 		}).catch(function (erro) {
@@ -189,8 +210,8 @@
 		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(emprestimo.valorPrincipal)));
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(emprestimo.dataConcessao)));
 		tr.appendChild(celula(FORMA_EMPRESTIMO[emprestimo.formaPagamento] || emprestimo.formaPagamento));
-		tr.appendChild(celula("Ver parcelas"));
-		tr.appendChild(celula("Ver parcelas"));
+		tr.appendChild(celulaVerParcelas(emprestimo.id));
+		tr.appendChild(celulaVerParcelas(emprestimo.id));
 		tr.appendChild(badge(emprestimo.status, STATUS_EMPRESTIMO));
 		tr.appendChild(celula(proxima ? window.FinanceiroFormatacao.dataBr(proxima.vencimento) : "—"));
 		tr.appendChild(celula(proxima && proxima.atrasada ? proxima.diasEmAtraso + " dia(s)" : "Em dia"));
@@ -242,6 +263,8 @@
 	}
 
 	function iniciarFormulario() {
+		if (!el("emprestimo-form") || el("emprestimo-form").dataset.inicializado === "true") return;
+		el("emprestimo-form").dataset.inicializado = "true";
 		el("emprestimo-data").value = hojeIso();
 		el("emprestimo-forma").addEventListener("change", atualizarCamposForma);
 		el("emprestimo-cobranca").addEventListener("change", atualizarCamposCobranca);
@@ -313,6 +336,8 @@
 	}
 
 	function iniciarDetalhe(podeGerenciar) {
+		if (!el("emprestimo-detalhe-titulo") || el("emprestimo-detalhe-titulo").dataset.inicializado === "true") return;
+		el("emprestimo-detalhe-titulo").dataset.inicializado = "true";
 		podeGerenciarAtual = Boolean(podeGerenciar);
 		if (el("emprestimo-cancelar")) {
 			el("emprestimo-cancelar").addEventListener("click", cancelarEmprestimo);
@@ -406,8 +431,8 @@
 		tr.appendChild(celula("Juros " + window.FinanceiroFormatacao.moeda(parcela.juros)
 			+ " · Multa " + window.FinanceiroFormatacao.moeda(parcela.multa)));
 		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(parcela.valorTotal)));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(parcela.valorRecebido)));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(parcela.saldoPendente)));
+		tr.appendChild(celulaMoeda(parcela.valorRecebido, "ENTRADA"));
+		tr.appendChild(celulaMoeda(parcela.saldoPendente, "NEUTRO"));
 		tr.appendChild(badge(parcela.situacao, SITUACAO_PARCELA));
 		var acoes = document.createElement("td");
 		acoes.className = "criati-table-acoes";
@@ -539,7 +564,7 @@
 			recebimentos.forEach(function (recebimento) {
 				var tr = document.createElement("tr");
 				tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(recebimento.dataRecebimento)));
-				tr.appendChild(celula(window.FinanceiroFormatacao.moeda(recebimento.valor)));
+				tr.appendChild(celulaMoeda(recebimento.valor, "ENTRADA"));
 				tr.appendChild(celula(recebimento.contaNome));
 				tr.appendChild(celula(recebimento.formaPagamento));
 				tr.appendChild(celula(recebimento.status === "ATIVO" ? "Ativo" : "Estornado"));

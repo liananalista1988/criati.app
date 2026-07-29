@@ -77,11 +77,15 @@
 		var app = document.querySelector(".criati-app");
 		var toggle = document.querySelector(".criati-menu-toggle");
 		var overlay = document.querySelector(".criati-sidebar-overlay");
-		var nav = document.querySelector(".criati-nav");
+		var sidebar = document.getElementById("criati-sidebar");
 		var raiz = document.documentElement;
 		if (!app || !toggle) {
 			return;
 		}
+		if (app.dataset.sidebarInicializada === "true") {
+			return;
+		}
+		app.dataset.sidebarInicializada = "true";
 
 		function atualizarAria() {
 			if (ehMobile()) {
@@ -137,8 +141,8 @@
 			overlay.addEventListener("click", fecharMobile);
 		}
 
-		if (nav) {
-			nav.addEventListener("click", function (evento) {
+		if (sidebar) {
+			sidebar.addEventListener("click", function (evento) {
 				if (evento.target.closest(".criati-nav-link") && ehMobile()) {
 					fecharMobile();
 				}
@@ -159,6 +163,50 @@
 		});
 
 		aplicarEstadoConformeViewport();
+	}
+
+	function initFiltrosRecolhiveis() {
+		document.querySelectorAll("[data-filtros-recolhiveis]").forEach(function (container) {
+			if (container.dataset.filtrosInicializados === "true") {
+				return;
+			}
+			var botao = container.querySelector("[data-filtros-toggle]");
+			var painel = container.querySelector("[data-filtros-painel]");
+			var contador = container.querySelector("[data-filtros-contador]");
+			if (!botao || !painel) {
+				return;
+			}
+			container.dataset.filtrosInicializados = "true";
+
+			function atualizarContador() {
+				var ativos = Array.prototype.filter.call(
+					painel.querySelectorAll("input, select, textarea"),
+					function (campo) {
+						var padrao = campo.getAttribute("data-filtro-padrao");
+						if (padrao === null) {
+							padrao = "";
+						}
+						return campo.value !== padrao;
+					}
+				).length;
+				if (contador) {
+					contador.textContent = ativos ? String(ativos) : "";
+					contador.hidden = ativos === 0;
+					contador.setAttribute("aria-label", ativos + " filtro(s) ativo(s)");
+				}
+			}
+
+			function alternar() {
+				var abrir = painel.hidden;
+				painel.hidden = !abrir;
+				botao.setAttribute("aria-expanded", String(abrir));
+			}
+
+			botao.addEventListener("click", alternar);
+			painel.addEventListener("input", atualizarContador);
+			painel.addEventListener("change", atualizarContador);
+			atualizarContador();
+		});
 	}
 
 	function initUserMenu() {
@@ -306,6 +354,7 @@
 		setButtonLoading: setButtonLoading,
 		initTogglePassword: initTogglePassword,
 		initSidebarToggle: initSidebarToggle,
+		initFiltrosRecolhiveis: initFiltrosRecolhiveis,
 		initUserMenu: initUserMenu,
 		criarModal: criarModal,
 		confirmarAcao: confirmarAcao

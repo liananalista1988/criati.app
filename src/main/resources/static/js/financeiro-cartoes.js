@@ -16,6 +16,8 @@
 
 	function iniciar() {
 		if (!el("cartao-form")) return;
+		if (el("cartao-form").dataset.inicializado === "true") return;
+		el("cartao-form").dataset.inicializado = "true";
 		el("cartoes-novo").addEventListener("click", abrirCriacao);
 		el("cartao-cancelar").addEventListener("click", fecharFormulario);
 		el("cartao-form").addEventListener("submit", salvar);
@@ -73,16 +75,16 @@
 
 	function carregar() {
 		el("cartoes-carregando").hidden = false; el("cartoes-erro").hidden = true;
-		el("cartoes-vazio").hidden = true; el("cartoes-tabela-wrap").hidden = true;
+		el("cartoes-vazio").hidden = true; el("cartoes-grid").hidden = true;
 		Promise.all([window.FinanceiroApi.cartoes.listar(filtros()), window.FinanceiroApi.cartoes.resumo()])
 			.then(function (r) {
 				el("cartoes-carregando").hidden = true;
 				renderResumo(r[1].data || {});
 				var itens = r[0].data || [];
 				if (!itens.length) { el("cartoes-vazio").hidden = false; return; }
-				el("cartoes-tabela-wrap").hidden = false;
-				var tbody = el("cartoes-tbody"); tbody.innerHTML = "";
-				itens.forEach(function (c) { tbody.appendChild(linha(c)); });
+				var grid = el("cartoes-grid"); grid.innerHTML = "";
+				itens.forEach(function (c) { grid.appendChild(cartaoCard(c)); });
+				grid.hidden = false;
 			}).catch(function () { el("cartoes-carregando").hidden = true; el("cartoes-erro").hidden = false; });
 	}
 
@@ -101,52 +103,75 @@
 		var b = document.createElement("button"); b.type = "button"; b.className = "criati-btn criati-btn-ghost";
 		b.textContent = texto; b.addEventListener("click", fn); return b;
 	}
-	function badge(texto, classe) {
-		var td = document.createElement("td"), span = document.createElement("span");
-		span.className = "criati-badge criati-badge-" + classe; span.textContent = texto; td.appendChild(span); return td;
+	function badgeSpan(texto, classe) {
+		var span = document.createElement("span");
+		span.className = "criati-badge criati-badge-" + classe;
+		span.textContent = texto;
+		return span;
 	}
 
-	function linha(c) {
-		var tr = document.createElement("tr");
+	function dado(lista, rotulo, valor, classe) {
+		var dt = document.createElement("dt"); dt.textContent = rotulo;
+		var dd = document.createElement("dd");
+		if (classe) { dd.className = classe; }
+		dd.textContent = valor === null || valor === undefined || valor === "" ? "—" : valor;
+		lista.appendChild(dt);
+		lista.appendChild(dd);
+	}
+
+	// Card por cartao (fisico ou virtual): cabecalho com nome/titular e
+	// badges de situacao, dados de limite/fechamento/vencimento e acoes fixas
+	// no rodape (ver .financeiro-cartao-card-acoes, margin-top: auto) - mesma
+	// posicao mesmo quando o cabecalho varia de tamanho entre cartoes.
+	function cartaoCard(c) {
 		var m = window.FinanceiroFormatacao.moeda;
-		tr.appendChild(celula(c.nome));
-		tr.appendChild(celula(c.titularNome));
-		tr.appendChild(celula(c.instituicaoNome));
-		tr.appendChild(celula(BANDEIRA_LABEL[c.bandeira] || c.bandeira));
-		tr.appendChild(celula(TIPO_LABEL[c.tipo] || c.tipo));
-		tr.appendChild(celula(c.ultimosQuatroDigitos ? "**** " + c.ultimosQuatroDigitos : "—"));
-		tr.appendChild(celula(c.limiteTotal != null ? m(c.limiteTotal) : "—"));
-		tr.appendChild(celula(c.limiteSaudavel != null ? m(c.limiteSaudavel) : "—"));
-		tr.appendChild(celula(c.limiteDisponivel != null ? m(c.limiteDisponivel) : "—"));
-		tr.appendChild(celula(c.diaFechamento || "—"));
-		tr.appendChild(celula(c.diaVencimento || "—"));
-		var situacao = document.createElement("td");
-		var statusSpan = document.createElement("span");
-		statusSpan.className = "criati-badge criati-badge-" + c.status.toLowerCase();
-		statusSpan.textContent = STATUS_LABEL[c.status] || c.status;
-		situacao.appendChild(statusSpan);
-		if (c.bloqueadoEfetivo) {
-			var bloqueadoSpan = document.createElement("span");
-			bloqueadoSpan.className = "criati-badge criati-badge-bloqueado";
-			bloqueadoSpan.textContent = "Bloqueado";
-			situacao.appendChild(document.createTextNode(" "));
-			situacao.appendChild(bloqueadoSpan);
-		}
-		if (c.tipo === "VIRTUAL") {
-			var virtualSpan = document.createElement("span");
-			virtualSpan.className = "criati-badge criati-badge-virtual";
-			virtualSpan.textContent = "Virtual";
-			situacao.appendChild(document.createTextNode(" "));
-			situacao.appendChild(virtualSpan);
-		}
-		tr.appendChild(situacao);
-		tr.appendChild(acoes(c));
-		return tr;
+		var artigo = document.createElement("article");
+		artigo.className = "financeiro-cartao-card";
+
+		var cabecalho = document.createElement("header");
+		cabecalho.className = "financeiro-cartao-card-cabecalho";
+		var titulo = document.createElement("div");
+		titulo.className = "financeiro-cartao-card-titulo";
+		var h3 = document.createElement("h3");
+		h3.textContent = c.nome;
+		h3.title = c.nome;
+		var subtitulo = document.createElement("p");
+		var partes = [c.titularNome, c.instituicaoNome, BANDEIRA_LABEL[c.bandeira] || c.bandeira];
+		if (c.ultimosQuatroDigitos) { partes.push("**** " + c.ultimosQuatroDigitos); }
+		subtitulo.textContent = partes.filter(Boolean).join(" · ");
+		subtitulo.title = subtitulo.textContent;
+		titulo.appendChild(h3);
+		titulo.appendChild(subtitulo);
+
+		var badges = document.createElement("div");
+		badges.className = "financeiro-cartao-card-badges";
+		badges.appendChild(badgeSpan(STATUS_LABEL[c.status] || c.status, c.status.toLowerCase()));
+		if (c.bloqueadoEfetivo) { badges.appendChild(badgeSpan("Bloqueado", "bloqueado")); }
+		if (c.tipo === "VIRTUAL") { badges.appendChild(badgeSpan("Virtual", "virtual")); }
+
+		cabecalho.appendChild(titulo);
+		cabecalho.appendChild(badges);
+
+		var dados = document.createElement("dl");
+		dados.className = "financeiro-cartao-card-dados";
+		dado(dados, "Limite total", c.limiteTotal != null ? m(c.limiteTotal) : null);
+		dado(dados, "Limite utilizado", c.limiteComprometido != null ? m(c.limiteComprometido) : null,
+			c.limiteComprometido > 0 ? "criati-valor-negativo" : "criati-valor-neutro");
+		dado(dados, "Limite disponível", c.limiteDisponivel != null ? m(c.limiteDisponivel) : null,
+			"criati-valor-neutro");
+		dado(dados, "Fechamento", c.diaFechamento ? "Dia " + c.diaFechamento : null);
+		dado(dados, "Vencimento", c.diaVencimento ? "Dia " + c.diaVencimento : null);
+
+		artigo.appendChild(cabecalho);
+		artigo.appendChild(dados);
+		artigo.appendChild(cartaoAcoes(c));
+		return artigo;
 	}
 
-	function acoes(c) {
-		var td = document.createElement("td"); td.className = "criati-table-acoes";
-		td.appendChild(botao("Detalhes", function () {
+	function cartaoAcoes(c) {
+		var rodape = document.createElement("div");
+		rodape.className = "financeiro-cartao-card-acoes";
+		rodape.appendChild(botao("Detalhes", function () {
 			window.FinanceiroDetalhes.abrir("Detalhes do cartão", [
 				["Nome", c.nome], ["Titular", c.titularNome], ["Instituição", c.instituicaoNome],
 				["Bandeira", c.bandeira], ["Tipo", c.tipo === "FISICO" ? "Físico" : "Virtual"],
@@ -161,21 +186,21 @@
 				["Motivo do bloqueio", c.motivoBloqueio], ["Status", c.status]
 			]);
 		}));
-		td.appendChild(botao("Editar", function () { abrirEdicao(c); }));
+		rodape.appendChild(botao("Editar", function () { abrirEdicao(c); }));
 		if (c.tipo === "FISICO") {
-			td.appendChild(botao("Virtuais (" + c.quantidadeCartoesVirtuais + ")", function () { abrirVirtuais(c); }));
+			rodape.appendChild(botao("Virtuais (" + c.quantidadeCartoesVirtuais + ")", function () { abrirVirtuais(c); }));
 		}
 		if (c.bloqueado) {
-			td.appendChild(botao("Desbloquear", function () { desbloquear(c); }));
+			rodape.appendChild(botao("Desbloquear", function () { desbloquear(c); }));
 		} else {
-			td.appendChild(botao("Bloquear", function () { bloquear(c); }));
+			rodape.appendChild(botao("Bloquear", function () { bloquear(c); }));
 		}
 		if (c.status === "ATIVO") {
-			td.appendChild(botao("Desativar", function () { inativar(c); }));
+			rodape.appendChild(botao("Desativar", function () { inativar(c); }));
 		} else {
-			td.appendChild(botao("Reativar", function () { reativar(c); }));
+			rodape.appendChild(botao("Reativar", function () { reativar(c); }));
 		}
-		return td;
+		return rodape;
 	}
 
 	function sucesso(msg) { return function () { window.CriatiUI.showToast("sucesso", msg); carregar(); }; }

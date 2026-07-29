@@ -15,7 +15,7 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-compras-terceiros')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
@@ -24,7 +24,6 @@
 					<div><h1>Nova compra para terceiro</h1><p>A pessoa responsável pelo ressarcimento é obrigatória. Parcelas e limite do cartão seguem as mesmas regras de uma compra comum.</p></div>
 					<a class="criati-btn" href="/app/financeiro/compras-terceiros">Voltar</a>
 				</div>
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('compras-terceiros')}"></div>
 				<div id="compra-terceiro-form-mensagem" class="criati-alert" role="alert" hidden></div>
 				<section class="criati-card">
 					<form id="compra-terceiro-form" class="criati-form-grid">

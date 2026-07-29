@@ -60,6 +60,12 @@
 		return td;
 	}
 
+	function celulaMoeda(valor, natureza) {
+		var td = celula(window.FinanceiroFormatacao.moeda(valor));
+		window.FinanceiroFormatacao.aplicarSemantica(td, valor, natureza);
+		return td;
+	}
+
 	function badge(valor, labels) {
 		var td = document.createElement("td");
 		var span = document.createElement("span");
@@ -110,8 +116,8 @@
 		window.FinanceiroApi.valoresAReceberCartao.resumo().then(function (resposta) {
 			var resumo = resposta.data;
 			el("resumo-principal").textContent = window.FinanceiroFormatacao.moeda(resumo.totalPrincipal);
-			el("resumo-ressarcido").textContent = window.FinanceiroFormatacao.moeda(resumo.totalRessarcido);
-			el("resumo-saldo").textContent = window.FinanceiroFormatacao.moeda(resumo.saldoAReceber);
+			window.FinanceiroFormatacao.renderMoeda(el("resumo-ressarcido"), resumo.totalRessarcido, "ENTRADA");
+			window.FinanceiroFormatacao.renderMoeda(el("resumo-saldo"), resumo.saldoAReceber, "ENTRADA");
 			el("resumo-pendentes").textContent = resumo.quantidadePendente;
 			el("resumo-vencidas").textContent = resumo.quantidadeVencida;
 		}).catch(function (erro) {
@@ -155,7 +161,7 @@
 		tr.appendChild(celula(compra.parteFinanceiraNome));
 		tr.appendChild(celula(compra.descricao));
 		tr.appendChild(celula(compra.cartaoNome));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(compra.valorTotal)));
+		tr.appendChild(celulaMoeda(compra.valorTotal, "SAIDA"));
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(compra.dataCompra)));
 		tr.appendChild(celula(String(compra.quantidadeParcelas)));
 		tr.appendChild(badge(compra.status, STATUS_COMPRA));
@@ -329,8 +335,8 @@
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(valor.vencimento)));
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(valor.dataPrometida)));
 		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(valor.valorTotal)));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(valor.valorRecebido)));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(valor.saldoPendente)));
+		tr.appendChild(celulaMoeda(valor.valorRecebido, "ENTRADA"));
+		tr.appendChild(celulaMoeda(valor.saldoPendente, "ENTRADA"));
 		tr.appendChild(badge(valor.situacao, SITUACAO_VALOR));
 		var acoes = document.createElement("td");
 		acoes.className = "criati-table-acoes";
@@ -478,7 +484,7 @@
 	function linhaRessarcimento(ressarcimento, valor) {
 		var tr = document.createElement("tr");
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(ressarcimento.dataRessarcimento)));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(ressarcimento.valor)));
+		tr.appendChild(celulaMoeda(ressarcimento.valor, "ENTRADA"));
 		tr.appendChild(celula(ressarcimento.contaNome));
 		tr.appendChild(celula(ressarcimento.formaPagamento));
 		tr.appendChild(badge(ressarcimento.status, STATUS_RESSARCIMENTO));

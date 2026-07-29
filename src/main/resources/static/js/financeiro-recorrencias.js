@@ -64,8 +64,8 @@
 		el("resumo-recorrencias-pausadas").textContent = r.pausadas || 0;
 		el("resumo-recorrencias-encerradas").textContent = r.encerradas || 0;
 		el("resumo-recorrencias-geradas").textContent = r.ocorrenciasGeradasNaCompetencia || 0;
-		el("resumo-recorrencias-receitas").textContent = window.FinanceiroFormatacao.moeda(r.receitasRecorrentesPrevistas || 0);
-		el("resumo-recorrencias-despesas").textContent = window.FinanceiroFormatacao.moeda(r.despesasRecorrentesPrevistas || 0);
+		window.FinanceiroFormatacao.renderMoeda(el("resumo-recorrencias-receitas"), r.receitasRecorrentesPrevistas || 0, "ENTRADA");
+		window.FinanceiroFormatacao.renderMoeda(el("resumo-recorrencias-despesas"), r.despesasRecorrentesPrevistas || 0, "SAIDA");
 	}
 	function renderTabela(itens) { var tbody = el("financeiro-recorrencias-tbody"); tbody.innerHTML = "";
 		itens.forEach(function (r) { tbody.appendChild(linha(r)); }); }
@@ -73,7 +73,9 @@
 	function linha(r) {
 		var tr = document.createElement("tr"); tr.appendChild(celula(r.descricao));
 		tr.appendChild(celula(r.tipo === "RECEITA" ? "Receita" : "Despesa"));
-		tr.appendChild(celula(window.FinanceiroFormatacao.moeda(r.valorPadrao)));
+		var valor = celula(window.FinanceiroFormatacao.moeda(r.valorPadrao));
+		window.FinanceiroFormatacao.aplicarSemantica(valor, r.valorPadrao, r.tipo === "RECEITA" ? "ENTRADA" : "SAIDA");
+		tr.appendChild(valor);
 		tr.appendChild(celula(PERIODICIDADE_LABEL[r.periodicidade] || r.periodicidade));
 		tr.appendChild(celula(r.pessoaFinanceiraNome)); tr.appendChild(celula(r.categoriaNome));
 		tr.appendChild(celula(window.FinanceiroFormatacao.competenciaLabel(r.proximaCompetencia)));

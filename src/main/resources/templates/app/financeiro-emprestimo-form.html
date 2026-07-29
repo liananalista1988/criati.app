@@ -15,18 +15,17 @@
 </head>
 <body>
 	<div class="criati-app">
-		<div th:replace="~{fragments/sidebar :: sidebar('financeiro')}"></div>
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-emprestimos')}"></div>
 		<div class="criati-sidebar-overlay"></div>
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
-				<div class="criati-page-header">
+				<div class="criati-page-header financeiro-operacional-cabecalho">
 					<div><h1>Novo empréstimo concedido</h1><p>Informe os dados da concessão. Parcelas e encargos serão definidos exclusivamente pelo backend.</p></div>
 					<a class="criati-btn" href="/app/financeiro/emprestimos">Voltar</a>
 				</div>
-				<div th:replace="~{fragments/financeiro-navegacao :: navegacao('emprestimos')}"></div>
 				<div id="emprestimo-form-mensagem" class="criati-alert" role="alert" hidden></div>
-				<section class="criati-card">
+				<section class="criati-card financeiro-formulario-operacional">
 					<form id="emprestimo-form" class="criati-form-grid">
 						<div class="criati-field">
 							<label for="emprestimo-devedor">Devedor</label>
