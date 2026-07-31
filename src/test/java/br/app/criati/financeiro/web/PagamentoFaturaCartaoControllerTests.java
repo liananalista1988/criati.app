@@ -79,8 +79,9 @@ import br.app.criati.usuario.repository.UsuarioRepository;
 // o mesmo fixture de FaturaCartaoControllerTests (LES-F3-004). Datas escolhidas
 // deliberadamente no passado (relativas a "hoje") para que fechar() seja
 // sempre valido sem hacks; os dois testes que precisam distinguir
-// PARCIALMENTE_PAGA de ATRASADA usam um cartao com vencimento ainda futuro
-// (ver fixtureComCiclo).
+// PARCIALMENTE_PAGA de ATRASADA usam fixtureComFaturaFechadaNaoVencida, que
+// calcula fechamento/vencimento relativos a "hoje" em vez de um calendario
+// fixo (CRIATI-FIN-015A).
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -149,11 +150,10 @@ class PagamentoFaturaCartaoControllerTests {
 
 	@Test
 	void pagamentoParcialNaoLiberaLimiteNemAlteraParcelasIndividualmente() throws Exception {
-		Fixture f = fixtureComCiclo("62222222000502", 20, 29);
-		LocalDate competencia = LocalDate.of(2026, 7, 29);
-		criarCompraComParcela(f, new BigDecimal("100.00"), competencia);
-		var aberta = faturaService.abrir(f.principal().getId(), competencia, f.contexto());
-		faturaService.fechar(aberta.fatura().getId(), f.contexto());
+		CenarioFaturaFechadaNaoVencida cenario = fixtureComFaturaFechadaNaoVencida(
+				"62222222000502", new BigDecimal("100.00"));
+		Fixture f = cenario.fixture();
+		var aberta = cenario.fatura();
 
 		pagamentoService.registrarPagamento(aberta.fatura().getId(), f.conta().getId(), LocalDate.now(),
 				new BigDecimal("40.00"), TipoPagamentoFaturaCartao.PARCIAL, null, f.contexto());
@@ -170,11 +170,10 @@ class PagamentoFaturaCartaoControllerTests {
 
 	@Test
 	void pagamentoMinimoAcumulaIgualAoParcial() throws Exception {
-		Fixture f = fixtureComCiclo("62233333000512", 20, 29);
-		LocalDate competencia = LocalDate.of(2026, 7, 29);
-		criarCompraComParcela(f, new BigDecimal("100.00"), competencia);
-		var aberta = faturaService.abrir(f.principal().getId(), competencia, f.contexto());
-		faturaService.fechar(aberta.fatura().getId(), f.contexto());
+		CenarioFaturaFechadaNaoVencida cenario = fixtureComFaturaFechadaNaoVencida(
+				"62233333000512", new BigDecimal("100.00"));
+		Fixture f = cenario.fixture();
+		var aberta = cenario.fatura();
 
 		pagamentoService.registrarPagamento(aberta.fatura().getId(), f.conta().getId(), LocalDate.now(),
 				new BigDecimal("15.00"), TipoPagamentoFaturaCartao.MINIMO, null, f.contexto());
@@ -438,6 +437,34 @@ class PagamentoFaturaCartaoControllerTests {
 				TipoContaFinanceira.CONTA_CORRENTE, BigDecimal.ZERO, StatusCadastro.ATIVO));
 		return new Fixture(empresa, usuario, pessoa, instituicao, principal, categoria, conta,
 				new ContextoEmpresaAtual(usuario.getId(), empresa.getId(), UUID.randomUUID(), PerfilUsuario.ADMINISTRADOR));
+	}
+
+	// Fecha a fatura no mesmo dia da execucao do teste e com vencimento apenas
+	// um dia a frente (dentro do mesmo mes, clampado no proprio "hoje" quando
+	// "hoje" ja e o ultimo dia do mes) - assim fechar() permanece sempre
+	// permitido (hoje >= dataFechamento) e o status apos um pagamento
+	// parcial/minimo permanece deterministicamente PARCIALMENTE_PAGA
+	// (hoje <= dataVencimento), em vez de depender de um vencimento fixo no
+	// calendario que se torna ATRASADA assim que a execucao real ultrapassa
+	// aquela data (ver FaturaCartao#recalcularStatus). Usado apenas pelos
+	// dois testes que precisam distinguir PARCIALMENTE_PAGA de ATRASADA; os
+	// demais testes do arquivo nao fazem essa distincao e por isso toleram
+	// datas absolutas no passado sem ficarem frageis.
+	private CenarioFaturaFechadaNaoVencida fixtureComFaturaFechadaNaoVencida(String cnpj, BigDecimal valorParcela)
+			throws Exception {
+		LocalDate hoje = LocalDate.now();
+		YearMonth mesAtual = YearMonth.from(hoje);
+		int diaFechamento = hoje.getDayOfMonth();
+		int diaVencimento = Math.min(diaFechamento + 1, mesAtual.lengthOfMonth());
+		LocalDate competencia = mesAtual.atDay(diaVencimento);
+		Fixture f = fixtureComCiclo(cnpj, diaFechamento, diaVencimento);
+		criarCompraComParcela(f, valorParcela, competencia);
+		var aberta = faturaService.abrir(f.principal().getId(), competencia, f.contexto());
+		faturaService.fechar(aberta.fatura().getId(), f.contexto());
+		return new CenarioFaturaFechadaNaoVencida(f, aberta);
+	}
+
+	private record CenarioFaturaFechadaNaoVencida(Fixture fixture, FaturaCartaoService.ResultadoFatura fatura) {
 	}
 
 	private ParcelaCompraCartao criarCompraComParcela(Fixture fixture, BigDecimal valor, LocalDate competencia) {
