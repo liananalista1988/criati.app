@@ -304,6 +304,34 @@
 		}
 	};
 
+	var FATURAS_BASE = BASE + "/faturas";
+	var faturas = {
+		listar: function (filtros) {
+			return window.CriatiApi.get(FATURAS_BASE + query(filtros));
+		},
+		buscar: function (id) {
+			return window.CriatiApi.get(FATURAS_BASE + "/" + id);
+		},
+		abrir: function (dados) {
+			return window.CriatiApi.post(FATURAS_BASE, dados);
+		},
+		recompor: function (id) {
+			return window.CriatiApi.post(FATURAS_BASE + "/" + id + "/recompor");
+		},
+		fechar: function (id) {
+			return window.CriatiApi.post(FATURAS_BASE + "/" + id + "/fechar");
+		},
+		pagamentos: function (id) {
+			return window.CriatiApi.get(FATURAS_BASE + "/" + id + "/pagamentos");
+		},
+		registrarPagamento: function (id, dados) {
+			return window.CriatiApi.post(FATURAS_BASE + "/" + id + "/pagamentos", dados);
+		},
+		aplicarEncargos: function (id, dados) {
+			return window.CriatiApi.post(FATURAS_BASE + "/" + id + "/encargos", dados);
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -321,6 +349,7 @@
 		parcelasEmprestimo: parcelasEmprestimo,
 		comprasTerceiros: comprasTerceiros,
 		valoresAReceberCartao: valoresAReceberCartao,
+		faturas: faturas,
 		dashboard: dashboard
 	};
 })(window);

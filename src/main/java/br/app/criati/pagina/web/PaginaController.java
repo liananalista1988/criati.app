@@ -218,6 +218,37 @@ public class PaginaController {
 		return "app/financeiro-parcelas-cartao";
 	}
 
+	// podeGerenciarFaturas exige ADMINISTRADOR (nunca GESTOR): mesma checagem de
+	// FaturaCartaoService/PagamentoFaturaCartaoService#exigirAdministrador -
+	// abrir, recompor, fechar, registrar pagamento e aplicar encargos sao
+	// restritos ao administrador da empresa, diferente do padrao
+	// ADMINISTRADOR-ou-GESTOR usado por emprestimos e compras para terceiros.
+	@GetMapping("/app/financeiro/faturas")
+	public String financeiroFaturas(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarFaturas", contexto.perfil() == PerfilUsuario.ADMINISTRADOR);
+		return "app/financeiro-faturas-cartao";
+	}
+
+	@GetMapping("/app/financeiro/faturas/{faturaId}")
+	public String financeiroFaturaDetalhe(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarFaturas", contexto.perfil() == PerfilUsuario.ADMINISTRADOR);
+		return "app/financeiro-fatura-detalhe";
+	}
+
 	@GetMapping("/app/financeiro/contas-a-pagar")
 	public String financeiroContasAPagar(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {

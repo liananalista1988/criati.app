@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Detalhes da fatura · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-faturas')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header financeiro-operacional-cabecalho">
+					<div><h1 id="fatura-detalhe-titulo">Detalhes da fatura</h1><p>Parcelas, encargos, pagamentos e saldo devido da fatura selecionada.</p></div>
+					<a class="criati-btn" href="/app/financeiro/faturas">Voltar</a>
+				</div>
+				<div id="fatura-detalhe-mensagem" class="criati-alert" role="alert" hidden></div>
+				<p id="fatura-detalhe-carregando" aria-live="polite">Carregando detalhes...</p>
+				<div id="fatura-detalhe-nao-encontrada" class="criati-empty-state" hidden>
+					<p>Fatura não encontrada ou indisponível para a empresa atual.</p>
+					<a class="criati-btn" href="/app/financeiro/faturas">Voltar à listagem</a>
+				</div>
+
+				<div id="fatura-detalhe-conteudo" hidden>
+					<section class="criati-card financeiro-painel-operacional">
+						<div class="financeiro-cabecalho-secao">
+							<h2>Dados da fatura</h2>
+							<div class="criati-table-acoes">
+								<button th:if="${podeGerenciarFaturas}" class="criati-btn criati-btn-ghost"
+									id="fatura-recompor" type="button">Recompor</button>
+								<button th:if="${podeGerenciarFaturas}" class="criati-btn criati-btn-ghost"
+									id="fatura-encargos-abrir" type="button">Aplicar encargos</button>
+								<button th:if="${podeGerenciarFaturas}" class="criati-btn criati-btn-primary"
+									id="fatura-fechar" type="button">Fechar fatura</button>
+								<button th:if="${podeGerenciarFaturas}" class="criati-btn criati-btn-primary"
+									id="fatura-pagar-abrir" type="button">Registrar pagamento</button>
+							</div>
+						</div>
+						<dl class="financeiro-detalhes-lista" id="fatura-dados"></dl>
+						<p class="criati-card-sub">Valores, situação e operações disponíveis vêm sempre do backend financeiro; esta tela não recalcula nada.</p>
+					</section>
+
+					<section class="criati-card financeiro-painel-operacional">
+						<h2>Parcelas da fatura</h2>
+						<div id="fatura-parcelas-vazio" class="criati-empty-state" hidden><p>Nenhuma parcela compõe esta fatura.</p></div>
+						<div id="fatura-parcelas-wrap" class="criati-table-wrap financeiro-tabela-operacional-scroll" hidden>
+							<table class="criati-table">
+								<thead>
+									<tr><th>Competência</th><th>Parcela</th><th>Valor</th><th>Situação</th></tr>
+								</thead>
+								<tbody id="fatura-parcelas-tbody"></tbody>
+							</table>
+						</div>
+					</section>
+
+					<section class="criati-card financeiro-painel-operacional">
+						<h2>Histórico de pagamentos</h2>
+						<p id="fatura-pagamentos-carregando" aria-live="polite">Carregando pagamentos...</p>
+						<div id="fatura-pagamentos-vazio" class="criati-empty-state" hidden><p>Nenhum pagamento registrado para esta fatura.</p></div>
+						<div id="fatura-pagamentos-wrap" class="criati-table-wrap financeiro-tabela-operacional-scroll" hidden>
+							<table class="criati-table">
+								<thead>
+									<tr><th>Data</th><th>Valor</th><th>Tipo</th><th>Conta</th><th>Lançamento</th></tr>
+								</thead>
+								<tbody id="fatura-pagamentos-tbody"></tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="fatura-pagar-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="fatura-pagar-titulo">
+			<h2 id="fatura-pagar-titulo">Registrar pagamento</h2>
+			<p class="criati-card-sub" id="fatura-pagar-resumo"></p>
+			<form class="criati-modal-form" id="fatura-pagar-form">
+				<div class="criati-field">
+					<label for="fatura-pagar-tipo">Tipo</label>
+					<select class="criati-select" id="fatura-pagar-tipo">
+						<option value="INTEGRAL">Integral</option>
+						<option value="PARCIAL">Parcial</option>
+						<option value="MINIMO">Mínimo</option>
+					</select>
+				</div>
+				<div class="criati-field financeiro-campo-condicional" id="fatura-pagar-valor-campo" hidden>
+					<label for="fatura-pagar-valor">Valor do pagamento</label>
+					<input class="criati-input" id="fatura-pagar-valor" type="number" min="0.01" step="0.01" />
+				</div>
+				<div class="criati-field"><label for="fatura-pagar-conta">Conta de pagamento</label><select class="criati-select" id="fatura-pagar-conta" required></select></div>
+				<div class="criati-field"><label for="fatura-pagar-data">Data do pagamento</label><input class="criati-input" id="fatura-pagar-data" type="date" required /></div>
+				<div class="criati-field">
+					<label for="fatura-pagar-forma">Forma de pagamento</label>
+					<select class="criati-select" id="fatura-pagar-forma">
+						<option value="">Não informada</option><option value="PIX">Pix</option>
+						<option value="TRANSFERENCIA">Transferência</option><option value="DINHEIRO">Dinheiro</option>
+						<option value="DEBITO">Débito</option><option value="BOLETO">Boleto</option><option value="OUTRA">Outra</option>
+					</select>
+				</div>
+				<div class="criati-modal-acoes">
+					<button class="criati-btn" id="fatura-pagar-fechar" type="button">Cancelar</button>
+					<button class="criati-btn criati-btn-primary" id="fatura-pagar-salvar" type="submit">Confirmar pagamento</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="fatura-encargos-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="fatura-encargos-titulo">
+			<h2 id="fatura-encargos-titulo">Aplicar encargos</h2>
+			<p class="criati-card-sub">Os valores informados substituem os encargos vigentes da fatura; deixe em branco para tratar como zero.</p>
+			<form class="criati-modal-form" id="fatura-encargos-form">
+				<div class="criati-field"><label for="fatura-encargos-juros">Juros</label><input class="criati-input" id="fatura-encargos-juros" type="number" min="0" step="0.01" /></div>
+				<div class="criati-field"><label for="fatura-encargos-multa">Multa</label><input class="criati-input" id="fatura-encargos-multa" type="number" min="0" step="0.01" /></div>
+				<div class="criati-modal-acoes">
+					<button class="criati-btn" id="fatura-encargos-fechar" type="button">Cancelar</button>
+					<button class="criati-btn criati-btn-primary" id="fatura-encargos-salvar" type="submit">Aplicar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-faturas-cartao.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroFaturasCartao.iniciarDetalhe(/*[[${podeGerenciarFaturas}]]*/ false);
+		});
+	</script>
+</body>
+</html>
