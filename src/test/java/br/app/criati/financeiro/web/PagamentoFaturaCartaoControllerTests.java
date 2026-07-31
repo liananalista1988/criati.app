@@ -155,7 +155,7 @@ class PagamentoFaturaCartaoControllerTests {
 		Fixture f = cenario.fixture();
 		var aberta = cenario.fatura();
 
-		pagamentoService.registrarPagamento(aberta.fatura().getId(), f.conta().getId(), LocalDate.now(),
+		pagamentoService.registrarPagamento(aberta.fatura().getId(), f.conta().getId(), cenario.hoje(),
 				new BigDecimal("40.00"), TipoPagamentoFaturaCartao.PARCIAL, null, f.contexto());
 
 		FaturaCartao fatura = faturas.findByIdAndEmpresaId(aberta.fatura().getId(), f.empresa().getId()).orElseThrow();
@@ -175,7 +175,7 @@ class PagamentoFaturaCartaoControllerTests {
 		Fixture f = cenario.fixture();
 		var aberta = cenario.fatura();
 
-		pagamentoService.registrarPagamento(aberta.fatura().getId(), f.conta().getId(), LocalDate.now(),
+		pagamentoService.registrarPagamento(aberta.fatura().getId(), f.conta().getId(), cenario.hoje(),
 				new BigDecimal("15.00"), TipoPagamentoFaturaCartao.MINIMO, null, f.contexto());
 
 		FaturaCartao fatura = faturas.findByIdAndEmpresaId(aberta.fatura().getId(), f.empresa().getId()).orElseThrow();
@@ -439,9 +439,7 @@ class PagamentoFaturaCartaoControllerTests {
 				new ContextoEmpresaAtual(usuario.getId(), empresa.getId(), UUID.randomUUID(), PerfilUsuario.ADMINISTRADOR));
 	}
 
-	// Fecha a fatura no mesmo dia da execucao do teste e com vencimento apenas
-	// um dia a frente (dentro do mesmo mes, clampado no proprio "hoje" quando
-	// "hoje" ja e o ultimo dia do mes) - assim fechar() permanece sempre
+	// Usa o primeiro e o ultimo dia do mes corrente para que fechar() permaneça
 	// permitido (hoje >= dataFechamento) e o status apos um pagamento
 	// parcial/minimo permanece deterministicamente PARCIALMENTE_PAGA
 	// (hoje <= dataVencimento), em vez de depender de um vencimento fixo no
@@ -454,17 +452,18 @@ class PagamentoFaturaCartaoControllerTests {
 			throws Exception {
 		LocalDate hoje = LocalDate.now();
 		YearMonth mesAtual = YearMonth.from(hoje);
-		int diaFechamento = hoje.getDayOfMonth();
-		int diaVencimento = Math.min(diaFechamento + 1, mesAtual.lengthOfMonth());
+		int diaFechamento = 1;
+		int diaVencimento = mesAtual.lengthOfMonth();
 		LocalDate competencia = mesAtual.atDay(diaVencimento);
 		Fixture f = fixtureComCiclo(cnpj, diaFechamento, diaVencimento);
 		criarCompraComParcela(f, valorParcela, competencia);
 		var aberta = faturaService.abrir(f.principal().getId(), competencia, f.contexto());
 		faturaService.fechar(aberta.fatura().getId(), f.contexto());
-		return new CenarioFaturaFechadaNaoVencida(f, aberta);
+		return new CenarioFaturaFechadaNaoVencida(f, aberta, hoje);
 	}
 
-	private record CenarioFaturaFechadaNaoVencida(Fixture fixture, FaturaCartaoService.ResultadoFatura fatura) {
+	private record CenarioFaturaFechadaNaoVencida(Fixture fixture, FaturaCartaoService.ResultadoFatura fatura,
+			LocalDate hoje) {
 	}
 
 	private ParcelaCompraCartao criarCompraComParcela(Fixture fixture, BigDecimal valor, LocalDate competencia) {

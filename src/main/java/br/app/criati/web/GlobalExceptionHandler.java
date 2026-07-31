@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import br.app.criati.exception.AcessoNegadoException;
+import br.app.criati.exception.ArquivoImportacaoDuplicadoException;
 import br.app.criati.exception.AplicacaoInativaException;
 import br.app.criati.exception.AplicacaoNaoEncontradaException;
 import br.app.criati.exception.AutoAlteracaoNaoPermitidaException;
@@ -41,6 +42,8 @@ import br.app.criati.exception.FaturaCartaoNaoEncontradaException;
 import br.app.criati.exception.FaturaCartaoStatusInvalidoException;
 import br.app.criati.exception.LancamentoFinanceiroNaoEncontradoException;
 import br.app.criati.exception.LancamentoStatusInvalidoException;
+import br.app.criati.exception.LoteImportacaoNaoEncontradoException;
+import br.app.criati.exception.LoteImportacaoStatusInvalidoException;
 import br.app.criati.exception.InstituicaoFinanceiraNaoEncontradaException;
 import br.app.criati.exception.OcorrenciaCompromissoNaoEncontradaException;
 import br.app.criati.exception.OcorrenciaCompromissoStatusInvalidoException;
@@ -136,7 +139,9 @@ public class GlobalExceptionHandler {
 			ValorAReceberParcelaCartaoStatusInvalidoException.class,
 			RessarcimentoParcelaCartaoStatusInvalidoException.class,
 			AutoRedefinicaoSenhaNaoPermitidaException.class,
-			UsuarioStatusInvalidoException.class
+			UsuarioStatusInvalidoException.class,
+			LoteImportacaoStatusInvalidoException.class,
+			ArquivoImportacaoDuplicadoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -165,7 +170,8 @@ public class GlobalExceptionHandler {
 			RecebimentoParcelaEmprestimoNaoEncontradoException.class,
 			ValorAReceberParcelaCartaoNaoEncontradoException.class,
 			RessarcimentoParcelaCartaoNaoEncontradoException.class,
-			FaturaCartaoNaoEncontradaException.class
+			FaturaCartaoNaoEncontradaException.class,
+			LoteImportacaoNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

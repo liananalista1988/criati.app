@@ -1,0 +1,40 @@
+package br.app.criati.financeiro.web;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import br.app.criati.financeiro.model.LoteImportacaoBancaria;
+import br.app.criati.shared.enums.FormatoArquivoImportacao;
+import br.app.criati.shared.enums.StatusLoteImportacao;
+
+public record LoteImportacaoBancariaResponse(
+		UUID id,
+		UUID contaId,
+		String contaNome,
+		String hashArquivo,
+		FormatoArquivoImportacao formato,
+		String nomeOriginal,
+		long tamanhoBytes,
+		StatusLoteImportacao status,
+		int quantidadeTransacoes,
+		int quantidadeDuplicadasArquivo,
+		int quantidadePossiveisDuplicadas,
+		OffsetDateTime criadoEm,
+		UUID criadoPorUsuarioId,
+		OffsetDateTime descartadoEm,
+		UUID descartadoPorUsuarioId) {
+
+	public static LoteImportacaoBancariaResponse from(LoteImportacaoBancaria lote) {
+		return new LoteImportacaoBancariaResponse(lote.getId(), lote.getConta().getId(), lote.getConta().getNome(),
+				lote.getHashArquivo(), lote.getFormato(), lote.getNomeOriginal(), lote.getTamanhoBytes(), lote.getStatus(),
+				lote.getQuantidadeTransacoes(), lote.getQuantidadeDuplicadasArquivo(),
+				lote.getQuantidadePossiveisDuplicadas(), lote.getCriadoEm(), lote.getCriadoPor().getId(),
+				lote.getDescartadoEm(), lote.getDescartadoPor() == null ? null : lote.getDescartadoPor().getId());
+	}
+
+	@Override
+	public String toString() {
+		return "LoteImportacaoBancariaResponse[id=" + id + ", status=" + status
+				+ ", quantidadeTransacoes=" + quantidadeTransacoes + "]";
+	}
+}

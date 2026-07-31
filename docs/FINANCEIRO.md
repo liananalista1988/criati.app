@@ -159,7 +159,7 @@ Toda consulta financeira é obrigatoriamente filtrada por `empresa_id` do contex
 
 ## Limitações desta fase (fora do escopo do MVP)
 
-Registradas como evoluções futuras, não implementadas nesta tarefa: conciliação bancária, integração bancária, OFX, boleto, Pix, contas a pagar recorrentes complexas, cartão de crédito, centro de custo, fluxo de caixa projetado, cobrança, emissão fiscal, importação de planilha, anexos, aprovação em múltiplas etapas.
+Registradas como evoluções futuras, não implementadas nesta tarefa: conciliação bancária, integração bancária automática, boleto, Pix, contas a pagar recorrentes complexas, centro de custo, fluxo de caixa projetado, cobrança, emissão fiscal, importação de planilha, anexos e aprovação em múltiplas etapas. A fundação de importação manual OFX existe apenas como área de preparação segura, descrita em `docs/empresas/financeiro-les/IMPLEMENTACAO-CRIATI-FIN-014-OFX.md`; ela não categoriza, concilia ou gera lançamentos.
 
 ## Evolução LES-F2-005 — lançamentos financeiros básicos
 

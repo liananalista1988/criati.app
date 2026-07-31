@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -82,14 +83,18 @@ class FaturaCartaoControllerTests {
 	@Test
 	void aberturaSemParcelasEIdempotente() {
 		Fixture fixture = fixture("51111111000401", PerfilUsuario.ADMINISTRADOR);
+		YearMonth mesFuturo = YearMonth.from(LocalDate.now()).plusMonths(1);
+		LocalDate competencia = mesFuturo.atDay(12);
+		LocalDate fechamento = mesFuturo.atDay(5);
+		LocalDate fechamentoAnterior = mesFuturo.minusMonths(1).atDay(5);
 
-		var primeira = service.abrir(fixture.principal().getId(), LocalDate.of(2026, 8, 1), fixture.contexto());
-		var segunda = service.abrir(fixture.principal().getId(), LocalDate.of(2026, 8, 31), fixture.contexto());
+		var primeira = service.abrir(fixture.principal().getId(), mesFuturo.atDay(1), fixture.contexto());
+		var segunda = service.abrir(fixture.principal().getId(), mesFuturo.atEndOfMonth(), fixture.contexto());
 
 		assertThat(primeira.fatura().getId()).isEqualTo(segunda.fatura().getId());
-		assertThat(primeira.fatura().getCompetencia()).isEqualTo(LocalDate.of(2026, 8, 12));
-		assertThat(primeira.fatura().getPeriodoInicial()).isEqualTo(LocalDate.of(2026, 7, 6));
-		assertThat(primeira.fatura().getPeriodoFinal()).isEqualTo(LocalDate.of(2026, 8, 5));
+		assertThat(primeira.fatura().getCompetencia()).isEqualTo(competencia);
+		assertThat(primeira.fatura().getPeriodoInicial()).isEqualTo(fechamentoAnterior.plusDays(1));
+		assertThat(primeira.fatura().getPeriodoFinal()).isEqualTo(fechamento);
 		assertThat(primeira.fatura().getValorTotal()).isEqualByComparingTo("0.00");
 		assertThat(primeira.parcelas()).isEmpty();
 		assertThatThrownBy(() -> service.fechar(primeira.fatura().getId(), fixture.contexto()))
