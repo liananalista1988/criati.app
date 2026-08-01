@@ -332,6 +332,27 @@
 		}
 	};
 
+	var IMPORTACOES_BASE = BASE + "/importacoes-bancarias";
+	var importacoesBancarias = {
+		listar: function () {
+			return window.CriatiApi.get(IMPORTACOES_BASE);
+		},
+		buscar: function (id) {
+			return window.CriatiApi.get(IMPORTACOES_BASE + "/" + id);
+		},
+		// contaId vai na query string (o backend le via @RequestParam), o corpo
+		// multipart carrega somente o arquivo - nunca recalcula hash ou
+		// duplicidade aqui, isso e responsabilidade exclusiva do backend.
+		importarOfx: function (contaId, arquivo) {
+			var formData = new FormData();
+			formData.append("arquivo", arquivo);
+			return window.CriatiApi.upload(IMPORTACOES_BASE + "/ofx?contaId=" + encodeURIComponent(contaId), formData);
+		},
+		descartar: function (id) {
+			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/descartar");
+		}
+	};
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -350,6 +371,7 @@
 		comprasTerceiros: comprasTerceiros,
 		valoresAReceberCartao: valoresAReceberCartao,
 		faturas: faturas,
+		importacoesBancarias: importacoesBancarias,
 		dashboard: dashboard
 	};
 })(window);

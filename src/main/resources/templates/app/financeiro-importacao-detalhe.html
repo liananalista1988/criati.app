@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Pré-visualização OFX · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-importacoes')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header financeiro-operacional-cabecalho">
+					<div><h1 id="importacao-detalhe-titulo">Pré-visualização da importação</h1><p>Transações extraídas do arquivo OFX. Nenhum lançamento financeiro é criado a partir desta tela.</p></div>
+					<a class="criati-btn" href="/app/financeiro/importacoes">Voltar</a>
+				</div>
+				<div id="importacao-detalhe-mensagem" class="criati-alert" role="alert" hidden></div>
+				<p id="importacao-detalhe-carregando" aria-live="polite">Carregando importação...</p>
+				<div id="importacao-detalhe-nao-encontrada" class="criati-empty-state" hidden>
+					<p>Importação não encontrada ou indisponível para a empresa atual.</p>
+					<a class="criati-btn" href="/app/financeiro/importacoes">Voltar ao histórico</a>
+				</div>
+
+				<div id="importacao-detalhe-conteudo" hidden>
+					<section class="criati-card financeiro-painel-operacional">
+						<div class="financeiro-cabecalho-secao">
+							<h2>Dados do lote</h2>
+							<button th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-danger"
+								id="importacao-descartar" type="button">Descartar lote</button>
+						</div>
+						<dl class="financeiro-detalhes-lista" id="importacao-dados"></dl>
+						<p class="criati-card-sub">Duplicidades são apenas um alerta calculado pelo backend; nenhuma transação é excluída ou conciliada automaticamente.</p>
+					</section>
+
+					<section class="criati-card financeiro-painel-operacional">
+						<h2>Transações do arquivo</h2>
+						<div id="importacao-transacoes-vazio" class="criati-empty-state" hidden><p>Nenhuma transação extraída deste arquivo.</p></div>
+						<div id="importacao-transacoes-wrap" class="criati-table-wrap financeiro-tabela-operacional-scroll" hidden>
+							<table class="criati-table">
+								<thead>
+									<tr><th>#</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Alertas</th></tr>
+								</thead>
+								<tbody id="importacao-transacoes-tbody"></tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-importacoes.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroImportacoes.iniciarDetalhe(/*[[${podeGerenciarImportacoes}]]*/ false);
+		});
+	</script>
+</body>
+</html>

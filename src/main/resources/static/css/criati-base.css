@@ -295,6 +295,13 @@ button {
 	transition: transform 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
 }
 
+/* .criati-btn (classe) tem especificidade maior que o [hidden] padrao do
+   browser (atributo) - sem isso, telas que escondem um criati-btn via JS
+   (el.hidden = true) o mantinham visivel indevidamente. */
+.criati-btn[hidden] {
+	display: none;
+}
+
 .criati-btn:disabled {
 	cursor: not-allowed;
 	opacity: 0.6;

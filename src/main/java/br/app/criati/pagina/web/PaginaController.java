@@ -249,6 +249,50 @@ public class PaginaController {
 		return "app/financeiro-fatura-detalhe";
 	}
 
+	// podeGerenciarImportacoes segue o mesmo padrao ADMINISTRADOR-ou-GESTOR de
+	// emprestimos/compras-terceiros (ImportacaoBancariaService#exigirEscrita),
+	// nao o padrao ADMINISTRADOR-apenas usado por faturas.
+	@GetMapping("/app/financeiro/importacoes")
+	public String financeiroImportacoes(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarImportacoes", podeEscreverFinanceiro(contexto));
+		return "app/financeiro-importacoes";
+	}
+
+	@GetMapping("/app/financeiro/importacoes/nova")
+	public String financeiroImportacaoNova(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		if (!podeEscreverFinanceiro(contexto)) {
+			throw new AcessoNegadoException();
+		}
+		return "app/financeiro-importacao-nova";
+	}
+
+	@GetMapping("/app/financeiro/importacoes/{loteId}")
+	public String financeiroImportacaoDetalhe(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		model.addAttribute("podeGerenciarImportacoes", podeEscreverFinanceiro(contexto));
+		return "app/financeiro-importacao-detalhe";
+	}
+
 	@GetMapping("/app/financeiro/contas-a-pagar")
 	public String financeiroContasAPagar(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {

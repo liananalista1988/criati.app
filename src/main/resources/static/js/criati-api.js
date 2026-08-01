@@ -46,11 +46,15 @@
 		options = options || {};
 		var method = (options.method || "GET").toUpperCase();
 		var redirectOn401 = options.redirectOn401 !== false;
+		var isMultipart = options.formData !== undefined;
 
 		var headers = {
 			Accept: "application/json"
 		};
-		if (options.body !== undefined) {
+		// multipart/form-data nunca define Content-Type manualmente: o browser
+		// precisa gerar o boundary sozinho a partir do FormData (fetch faz isso
+		// automaticamente quando o header e omitido, nunca quando setado a mao).
+		if (!isMultipart && options.body !== undefined) {
 			headers["Content-Type"] = "application/json";
 		}
 		if (isMutating(method)) {
@@ -65,7 +69,8 @@
 			method: method,
 			headers: headers,
 			credentials: "same-origin",
-			body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+			body: isMultipart ? options.formData
+				: (options.body !== undefined ? JSON.stringify(options.body) : undefined)
 		})
 			.catch(function () {
 				throw new CriatiApiError(0, { message: "Sem conexao com o servidor." }, true);
@@ -108,6 +113,12 @@
 		},
 		delete: function (path, options) {
 			return request(path, Object.assign({}, options, { method: "DELETE" }));
+		},
+		// Upload multipart/form-data (ex.: importacao OFX). formData deve ser um
+		// FormData ja pronto; CSRF continua sendo enviado normalmente, igual a
+		// qualquer outra chamada mutante.
+		upload: function (path, formData, options) {
+			return request(path, Object.assign({}, options, { method: "POST", formData: formData }));
 		},
 		Error: CriatiApiError
 	};

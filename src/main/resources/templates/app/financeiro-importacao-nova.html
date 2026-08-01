@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Nova importação OFX · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-importacoes')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header financeiro-operacional-cabecalho">
+					<div><h1>Nova importação OFX</h1><p>Selecione a conta e envie o arquivo. O backend valida, extrai as transações e devolve uma prévia — nada é lançado ainda.</p></div>
+					<a class="criati-btn" href="/app/financeiro/importacoes">Voltar</a>
+				</div>
+				<div id="importacao-form-mensagem" class="criati-alert" role="alert" hidden></div>
+				<section class="criati-card financeiro-formulario-operacional">
+					<form id="importacao-form" class="criati-form-grid">
+						<div class="criati-field">
+							<label for="importacao-conta">Conta financeira</label>
+							<select class="criati-select" id="importacao-conta" required><option value="">Carregando contas...</option></select>
+							<p class="criati-card-sub">Somente contas ativas. As transações do extrato serão associadas a esta conta.</p>
+						</div>
+						<div class="criati-field financeiro-campo-largo">
+							<label for="importacao-arquivo">Arquivo OFX</label>
+							<input class="criati-input" id="importacao-arquivo" type="file" accept=".ofx" required />
+							<p class="criati-card-sub" id="importacao-arquivo-info">Somente arquivos .ofx, até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final).</p>
+						</div>
+						<div class="financeiro-acoes-formulario">
+							<a class="criati-btn" href="/app/financeiro/importacoes">Cancelar</a>
+							<button class="criati-btn criati-btn-primary" id="importacao-enviar" type="submit">Enviar e pré-visualizar</button>
+						</div>
+					</form>
+				</section>
+			</main>
+		</div>
+	</div>
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/financeiro-api.js}"></script>
+	<script th:src="@{/js/financeiro-formatacao.js}"></script>
+	<script th:src="@{/js/financeiro-importacoes.js}"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			FinanceiroImportacoes.iniciarFormulario();
+		});
+	</script>
+</body>
+</html>

@@ -67,7 +67,9 @@ class PaginaFinanceiroSegurancaTests {
 				"/app/financeiro/recorrencias", "/app/financeiro/contas-a-pagar",
 				"/app/financeiro/cartoes", "/app/financeiro/compras-cartao",
 				"/app/financeiro/parcelas-cartao", "/app/financeiro/emprestimos",
-				"/app/financeiro/faturas", "/app/financeiro/faturas/" + UUID.randomUUID()
+				"/app/financeiro/faturas", "/app/financeiro/faturas/" + UUID.randomUUID(),
+				"/app/financeiro/importacoes", "/app/financeiro/importacoes/nova",
+				"/app/financeiro/importacoes/" + UUID.randomUUID()
 		};
 		for (String rota : rotas) {
 			mockMvc.perform(get(rota))
@@ -114,6 +116,12 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/faturas").session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 		mockMvc.perform(get("/app/financeiro/faturas/" + UUID.randomUUID()).session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/importacoes").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(session))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(session))
 				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
 	}
 
@@ -237,6 +245,19 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("fatura-detalhe-nao-encontrada")))
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("fatura-pagar-abrir"))));
+		mockMvc.perform(get("/app/financeiro/importacoes").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Importação OFX")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("importacoes-tabela-wrap")))
+				// Usuario com perfil USUARIO: link de escrita nao pode ser renderizado,
+				// mesma regra de ImportacaoBancariaService#exigirEscrita no backend.
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("/app/financeiro/importacoes/nova"))));
+		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(session))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("importacao-detalhe-nao-encontrada")))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("id=\"importacao-descartar\""))));
 	}
 
 	@Test
@@ -275,6 +296,36 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/faturas").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("faturas-abrir-botao"))));
+	}
+
+	@Test
+	void administradorEGestorAcessamAcoesDeGerenciamentoDeImportacoes() throws Exception {
+		Empresa empresa = criarEmpresa("88888888000258");
+		aplicacaoService.habilitar(empresa.getId(), "FINANCEIRO");
+		Usuario administrador = criarUsuario("pagina.fin.importacoes.admin@criati.test");
+		UsuarioEmpresa vinculoAdmin = criarVinculo(administrador, empresa, StatusCadastro.ATIVO);
+		ReflectionTestUtils.setField(vinculoAdmin, "perfil", PerfilUsuario.ADMINISTRADOR);
+		usuarioEmpresaRepository.saveAndFlush(vinculoAdmin);
+		MockHttpSession sessaoAdmin = autenticarNaEmpresa(administrador.getEmail(), empresa.getId());
+
+		mockMvc.perform(get("/app/financeiro/importacoes").session(sessaoAdmin)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/importacoes/nova")));
+		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(sessaoAdmin)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-conta\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-arquivo\"")));
+		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(sessaoAdmin))
+				.andExpect(status().isOk());
+
+		Usuario gestor = criarUsuario("pagina.fin.importacoes.gestor@criati.test");
+		UsuarioEmpresa vinculoGestor = criarVinculo(gestor, empresa, StatusCadastro.ATIVO);
+		ReflectionTestUtils.setField(vinculoGestor, "perfil", PerfilUsuario.GESTOR);
+		usuarioEmpresaRepository.saveAndFlush(vinculoGestor);
+		MockHttpSession sessaoGestor = autenticarNaEmpresa(gestor.getEmail(), empresa.getId());
+
+		// GESTOR gerencia importacoes OFX, diferente de faturas (exigem
+		// especificamente ADMINISTRADOR) - mesma regra de
+		// ImportacaoBancariaService#exigirEscrita (ADMINISTRADOR ou GESTOR).
+		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(sessaoGestor)).andExpect(status().isOk());
 	}
 
 	@Test
