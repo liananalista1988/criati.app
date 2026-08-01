@@ -157,7 +157,7 @@ public class ImportacaoBancariaService {
 	@Transactional
 	public PreviaImportacaoBancaria descartar(UUID loteId, ContextoEmpresaAtual contexto) {
 		exigirEscrita(contexto);
-		LoteImportacaoBancaria lote = buscarLote(loteId, contexto.empresaId());
+		LoteImportacaoBancaria lote = buscarLoteParaAtualizar(loteId, contexto.empresaId());
 		if (lote.getStatus() == StatusLoteImportacao.DESCARTADO) {
 			throw new LoteImportacaoStatusInvalidoException("Lote de importacao ja esta descartado");
 		}
@@ -184,6 +184,14 @@ public class ImportacaoBancariaService {
 			throw new LoteImportacaoNaoEncontradoException();
 		}
 		return loteRepository.findByIdAndEmpresaId(loteId, empresaId)
+				.orElseThrow(LoteImportacaoNaoEncontradoException::new);
+	}
+
+	private LoteImportacaoBancaria buscarLoteParaAtualizar(UUID loteId, UUID empresaId) {
+		if (loteId == null) {
+			throw new LoteImportacaoNaoEncontradoException();
+		}
+		return loteRepository.findForUpdateByIdAndEmpresaId(loteId, empresaId)
 				.orElseThrow(LoteImportacaoNaoEncontradoException::new);
 	}
 

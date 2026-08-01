@@ -248,6 +248,16 @@ public class LancamentoFinanceiro {
 		return lancamento;
 	}
 
+	public static LancamentoFinanceiro gerarDeImportacao(Empresa empresa, ContaFinanceira conta,
+			CategoriaFinanceira categoria, TipoFinanceiro tipo, String descricao, BigDecimal valor,
+			LocalDate dataTransacao, Usuario autor) {
+		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, null, null,
+				tipo, descricao, valor, dataTransacao, dataTransacao, dataTransacao,
+				StatusLancamentoFinanceiro.LIQUIDADO, null, null, autor);
+		lancamento.origem = OrigemLancamentoFinanceiro.IMPORTACAO;
+		return lancamento;
+	}
+
 	public void atualizarDados(
 			ContaFinanceira conta,
 			CategoriaFinanceira categoria,
