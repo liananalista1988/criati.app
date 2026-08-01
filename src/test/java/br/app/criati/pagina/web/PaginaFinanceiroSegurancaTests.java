@@ -257,7 +257,16 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("importacao-detalhe-nao-encontrada")))
 				.andExpect(content().string(org.hamcrest.Matchers.not(
-						org.hamcrest.Matchers.containsString("id=\"importacao-descartar\""))));
+						org.hamcrest.Matchers.containsString("id=\"importacao-descartar\""))))
+				// Usuario com perfil USUARIO: nenhum controle de confirmacao (selecao
+				// em massa, checkbox "selecionar todas") pode ser renderizado, mesma
+				// regra de ConfirmacaoImportacaoBancariaService#exigirEscrita no backend.
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("id=\"importacao-transacoes-toolbar\""))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("id=\"importacao-confirmar-selecionadas\""))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("id=\"importacao-selecionar-todas\""))));
 	}
 
 	@Test
@@ -314,7 +323,13 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-conta\"")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-arquivo\"")));
 		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(sessaoAdmin))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				// Controles de confirmacao (toolbar de selecao em massa e checkbox
+				// "selecionar todas") sao renderizados para quem pode escrever,
+				// mesma regra de ConfirmacaoImportacaoBancariaService#exigirEscrita.
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-transacoes-toolbar\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-confirmar-selecionadas\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-selecionar-todas\"")));
 
 		Usuario gestor = criarUsuario("pagina.fin.importacoes.gestor@criati.test");
 		UsuarioEmpresa vinculoGestor = criarVinculo(gestor, empresa, StatusCadastro.ATIVO);
@@ -326,6 +341,9 @@ class PaginaFinanceiroSegurancaTests {
 		// especificamente ADMINISTRADOR) - mesma regra de
 		// ImportacaoBancariaService#exigirEscrita (ADMINISTRADOR ou GESTOR).
 		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(sessaoGestor)).andExpect(status().isOk());
+		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(sessaoGestor))
+				.andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-confirmar-selecionadas\"")));
 	}
 
 	@Test

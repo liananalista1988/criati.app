@@ -928,6 +928,26 @@
 	text-overflow: ellipsis;
 }
 
+/* Confirmacao de transacoes OFX (CRIATI-FIN-018): campos de categoria/
+   descricao final ficam dentro de celulas da tabela e precisam ocupar toda
+   a largura disponivel, diferente do uso padrao de .criati-select/
+   .criati-input dentro de .criati-field (flex, que ja estica os filhos). */
+.financeiro-tabela-confirmacao-ofx select.criati-select,
+.financeiro-tabela-confirmacao-ofx input.criati-input {
+	width: 100%;
+	min-width: 160px;
+}
+
+.financeiro-campo-duplicidade {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 6px;
+	font-size: var(--criati-font-size-xs);
+	font-weight: 400;
+	text-transform: none;
+}
+
 .financeiro-modal-operacional {
 	max-width: 620px;
 }

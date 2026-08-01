@@ -350,6 +350,18 @@
 		},
 		descartar: function (id) {
 			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/descartar");
+		},
+		resumo: function (id) {
+			return window.CriatiApi.get(IMPORTACOES_BASE + "/" + id + "/resumo");
+		},
+		// comandos: [{transacaoId, categoriaId, descricaoFinal, confirmarDuplicidade}].
+		// O backend e o unico responsavel por criar o LancamentoFinanceiro,
+		// decidir receita/despesa pelo sinal do valor e validar duplicidade.
+		confirmar: function (id, comandos) {
+			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/confirmacoes", { transacoes: comandos });
+		},
+		ignorar: function (id, transacaoId) {
+			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/transacoes/" + encodeURIComponent(transacaoId) + "/ignorar");
 		}
 	};
 

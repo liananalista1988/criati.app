@@ -1,8 +1,13 @@
-/* Telas operacionais de importacao bancaria OFX (CRIATI-FIN-016).
-   Fundacao apenas: upload, listagem, pre-visualizacao e descarte logico de
-   lotes. Valores, contadores, status e sinalizacao de duplicidade vem sempre
-   do backend (ImportacaoBancariaService); este arquivo nao recalcula hash,
-   duplicidade nem nenhum valor financeiro, e nunca cria LancamentoFinanceiro. */
+/* Telas operacionais de importacao bancaria OFX (CRIATI-FIN-016) e
+   confirmacao de transacoes (CRIATI-FIN-018). Upload, listagem,
+   pre-visualizacao, descarte logico e confirmacao/ignorar transacoes.
+   Valores, contadores, status, tipo financeiro (receita/despesa) e
+   sinalizacao de duplicidade vem sempre do backend
+   (ImportacaoBancariaService/ConfirmacaoImportacaoBancariaService); este
+   arquivo nao recalcula hash, duplicidade nem nenhum valor ou natureza
+   financeira, e nunca cria LancamentoFinanceiro diretamente - apenas envia
+   a selecao e os dados editaveis (categoria/descricao) para os endpoints
+   existentes. */
 (function (window, document) {
 	"use strict";
 
@@ -15,7 +20,10 @@
 	var TAMANHO_MAXIMO_ADVISORIO_BYTES = 1048576;
 
 	var loteAtual = null;
+	var resumoAtual = null;
 	var podeGerenciarAtual = false;
+	var categoriasAtivas = [];
+	var selecionadas = new Set();
 
 	var STATUS_LOTE = {
 		PREVIA_DISPONIVEL: "Pré-visualização disponível",
@@ -24,6 +32,16 @@
 	var STATUS_LOTE_CLASSE = {
 		PREVIA_DISPONIVEL: "ativo",
 		DESCARTADO: "cancelado"
+	};
+	var SITUACAO_TRANSACAO = {
+		PENDENTE: "Pendente",
+		CONFIRMADA: "Confirmada",
+		IGNORADA: "Ignorada"
+	};
+	var SITUACAO_TRANSACAO_CLASSE = {
+		PENDENTE: "pendente",
+		CONFIRMADA: "pago",
+		IGNORADA: "cancelado"
 	};
 	var TIPO_BANCARIO_LABEL = {
 		DEBIT: "Débito",
@@ -67,14 +85,17 @@
 		}
 	}
 
-	function celula(valor) {
+	function celula(valor, rotulo) {
 		var td = document.createElement("td");
 		td.textContent = valor === null || valor === undefined || valor === "" ? "—" : String(valor);
+		if (rotulo) {
+			td.dataset.label = rotulo;
+		}
 		return td;
 	}
 
-	function celulaMoeda(valor) {
-		var td = celula(formatacao.moeda(valor));
+	function celulaMoeda(valor, rotulo) {
+		var td = celula(formatacao.moeda(valor), rotulo);
 		formatacao.aplicarSemantica(td, valor, "SALDO");
 		return td;
 	}
@@ -86,8 +107,11 @@
 		return span;
 	}
 
-	function celulaBadge(valor, labels, classes) {
+	function celulaBadge(valor, labels, classes, rotulo) {
 		var td = document.createElement("td");
+		if (rotulo) {
+			td.dataset.label = rotulo;
+		}
 		td.appendChild(badge(valor, labels[valor] || valor, classes[valor] || "cancelado"));
 		return td;
 	}
@@ -229,8 +253,30 @@
 		if (el("importacao-descartar")) {
 			el("importacao-descartar").addEventListener("click", descartarLote);
 		}
+		if (el("importacao-confirmar-selecionadas")) {
+			el("importacao-confirmar-selecionadas").addEventListener("click", confirmarSelecionadas);
+		}
+		if (el("importacao-selecionar-todas")) {
+			el("importacao-selecionar-todas").addEventListener("change", alternarSelecionarTodas);
+		}
 		var criado = new URLSearchParams(window.location.search).get("criado") === "1";
-		carregarDetalhe(criado ? "Arquivo importado com sucesso. Revise a pré-visualização antes de decidir os próximos passos." : null);
+		var mensagemInicial = criado
+			? "Arquivo importado com sucesso. Revise a pré-visualização antes de decidir os próximos passos."
+			: null;
+		if (podeGerenciarAtual) {
+			// Categorias so sao necessarias para quem pode confirmar transacoes;
+			// usuarios somente leitura nao fazem essa chamada extra.
+			api.categorias.listar({ status: "ATIVO" }).then(function (resposta) {
+				categoriasAtivas = resposta.data || [];
+			}).catch(function () {
+				categoriasAtivas = [];
+				window.CriatiUI.showToast("erro", "Não foi possível carregar as categorias financeiras.");
+			}).then(function () {
+				carregarDetalhe(mensagemInicial);
+			});
+		} else {
+			carregarDetalhe(mensagemInicial);
+		}
 	}
 
 	function carregarDetalhe(mensagemSucesso) {
@@ -238,10 +284,14 @@
 		el("importacao-detalhe-carregando").hidden = false;
 		el("importacao-detalhe-nao-encontrada").hidden = true;
 		el("importacao-detalhe-conteudo").hidden = true;
-		api.importacoesBancarias.buscar(idLoteDaRota()).then(function (resposta) {
-			loteAtual = resposta.data;
+		var id = idLoteDaRota();
+		Promise.all([api.importacoesBancarias.buscar(id), api.importacoesBancarias.resumo(id)]).then(function (respostas) {
+			loteAtual = respostas[0].data;
+			resumoAtual = respostas[1].data;
 			renderizarLote();
+			renderizarResumo();
 			renderizarTransacoes();
+			renderizarLinksUteis();
 			el("importacao-detalhe-carregando").hidden = true;
 			el("importacao-detalhe-conteudo").hidden = false;
 			if (mensagemSucesso) {
@@ -294,31 +344,269 @@
 		}
 	}
 
+	function renderizarResumo() {
+		var painel = el("importacao-resumo");
+		if (!painel || !resumoAtual) {
+			return;
+		}
+		painel.hidden = false;
+		el("resumo-importacao-pendentes").textContent = String(resumoAtual.pendentes);
+		el("resumo-importacao-confirmadas").textContent = String(resumoAtual.confirmadas);
+		el("resumo-importacao-ignoradas").textContent = String(resumoAtual.ignoradas);
+		el("resumo-importacao-duplicadas").textContent = String(resumoAtual.duplicadas);
+	}
+
+	function renderizarLinksUteis() {
+		var secao = el("importacao-links-uteis");
+		if (!secao) {
+			return;
+		}
+		secao.hidden = !(resumoAtual && resumoAtual.confirmadas > 0);
+	}
+
+	function linhaTransacao(transacao) {
+		var lote = loteAtual.lote;
+		var podeSelecionar = podeGerenciarAtual && transacao.situacao === "PENDENTE" && lote.status !== "DESCARTADO";
+		var sinalizada = transacao.duplicadaNoArquivo || transacao.possivelmenteJaImportada;
+
+		var tr = document.createElement("tr");
+		tr.dataset.transacaoId = transacao.id;
+		tr.dataset.sequencia = String(transacao.sequencia);
+
+		var celulaSelecao = celula(null, "Selecionar");
+		celulaSelecao.textContent = "";
+		if (podeSelecionar) {
+			var checkSelecao = document.createElement("input");
+			checkSelecao.type = "checkbox";
+			checkSelecao.className = "importacao-transacao-selecionar";
+			checkSelecao.setAttribute("aria-label", "Selecionar transação " + transacao.sequencia);
+			checkSelecao.addEventListener("change", function () {
+				if (checkSelecao.checked) {
+					selecionadas.add(transacao.id);
+				} else {
+					selecionadas.delete(transacao.id);
+				}
+				atualizarBarraSelecao();
+			});
+			celulaSelecao.appendChild(checkSelecao);
+		} else {
+			celulaSelecao.textContent = "—";
+		}
+		tr.appendChild(celulaSelecao);
+
+		tr.appendChild(celula(transacao.sequencia, "#"));
+		tr.appendChild(celula(formatacao.dataBr(transacao.data), "Data"));
+		tr.appendChild(celula(transacao.descricao, "Descrição do banco"));
+		tr.appendChild(celula(TIPO_BANCARIO_LABEL[transacao.tipoBancario] || transacao.tipoBancario, "Tipo bancário"));
+		tr.appendChild(celulaMoeda(transacao.valor, "Valor"));
+		tr.appendChild(celulaBadge(transacao.situacao, SITUACAO_TRANSACAO, SITUACAO_TRANSACAO_CLASSE, "Situação"));
+
+		var alertas = celula(null, "Alertas");
+		alertas.textContent = "";
+		if (transacao.duplicadaNoArquivo) {
+			alertas.appendChild(badge(null, "Duplicada no arquivo", "pendente"));
+		}
+		if (transacao.possivelmenteJaImportada) {
+			alertas.appendChild(badge(null, "Possível duplicidade", "atrasada"));
+		}
+		if (sinalizada && podeSelecionar) {
+			var rotuloDuplicidade = document.createElement("label");
+			rotuloDuplicidade.className = "financeiro-campo-duplicidade";
+			var checkDuplicidade = document.createElement("input");
+			checkDuplicidade.type = "checkbox";
+			checkDuplicidade.className = "importacao-transacao-confirmar-duplicidade";
+			rotuloDuplicidade.appendChild(checkDuplicidade);
+			rotuloDuplicidade.appendChild(document.createTextNode(" Confirmo que não é duplicidade"));
+			alertas.appendChild(rotuloDuplicidade);
+		}
+		if (!sinalizada) {
+			alertas.textContent = "—";
+		}
+		tr.appendChild(alertas);
+
+		var celulaCategoria = celula(null, "Categoria");
+		celulaCategoria.textContent = "";
+		if (podeSelecionar) {
+			var selectCategoria = document.createElement("select");
+			selectCategoria.className = "criati-select importacao-transacao-categoria";
+			selectCategoria.setAttribute("aria-label", "Categoria da transação " + transacao.sequencia);
+			var opcaoVazia = document.createElement("option");
+			opcaoVazia.value = "";
+			opcaoVazia.textContent = "Selecione a categoria";
+			selectCategoria.appendChild(opcaoVazia);
+			categoriasAtivas.forEach(function (categoria) {
+				var opcao = document.createElement("option");
+				opcao.value = categoria.id;
+				opcao.textContent = categoria.nome + " — " + (categoria.tipo === "RECEITA" ? "Receita" : "Despesa");
+				selectCategoria.appendChild(opcao);
+			});
+			celulaCategoria.appendChild(selectCategoria);
+		} else {
+			celulaCategoria.textContent = transacao.situacao === "CONFIRMADA" ? "Lançada" : "—";
+		}
+		tr.appendChild(celulaCategoria);
+
+		var celulaDescricaoFinal = celula(null, "Descrição final");
+		celulaDescricaoFinal.textContent = "";
+		if (podeSelecionar) {
+			var inputDescricao = document.createElement("input");
+			inputDescricao.type = "text";
+			inputDescricao.className = "criati-input importacao-transacao-descricao";
+			inputDescricao.maxLength = 200;
+			inputDescricao.value = transacao.descricao || "";
+			inputDescricao.setAttribute("aria-label", "Descrição final da transação " + transacao.sequencia);
+			celulaDescricaoFinal.appendChild(inputDescricao);
+		} else {
+			celulaDescricaoFinal.textContent = "—";
+		}
+		tr.appendChild(celulaDescricaoFinal);
+
+		var celulaAcoes = celula(null, "Ações");
+		celulaAcoes.textContent = "";
+		celulaAcoes.className = "criati-table-acoes";
+		if (podeSelecionar) {
+			var botaoIgnorar = document.createElement("button");
+			botaoIgnorar.type = "button";
+			botaoIgnorar.className = "criati-btn criati-btn-ghost";
+			botaoIgnorar.textContent = "Ignorar";
+			botaoIgnorar.addEventListener("click", function () {
+				ignorarTransacao(transacao);
+			});
+			celulaAcoes.appendChild(botaoIgnorar);
+		} else {
+			celulaAcoes.textContent = "—";
+		}
+		tr.appendChild(celulaAcoes);
+
+		return tr;
+	}
+
 	function renderizarTransacoes() {
 		var transacoes = loteAtual.transacoes || [];
 		el("importacao-transacoes-vazio").hidden = Boolean(transacoes.length);
 		el("importacao-transacoes-wrap").hidden = !transacoes.length;
+		selecionadas.clear();
 		var tbody = el("importacao-transacoes-tbody");
 		tbody.replaceChildren();
 		transacoes.forEach(function (transacao) {
-			var tr = document.createElement("tr");
-			tr.appendChild(celula(transacao.sequencia));
-			tr.appendChild(celula(formatacao.dataBr(transacao.data)));
-			tr.appendChild(celula(transacao.descricao));
-			tr.appendChild(celula(TIPO_BANCARIO_LABEL[transacao.tipoBancario] || transacao.tipoBancario));
-			tr.appendChild(celulaMoeda(transacao.valor));
-			var alertas = document.createElement("td");
-			if (transacao.duplicadaNoArquivo) {
-				alertas.appendChild(badge(null, "Duplicada no arquivo", "pendente"));
+			tbody.appendChild(linhaTransacao(transacao));
+		});
+		if (el("importacao-selecionar-todas")) {
+			el("importacao-selecionar-todas").checked = false;
+		}
+		var existePendenteSelecionavel = podeGerenciarAtual && loteAtual.lote.status !== "DESCARTADO"
+			&& transacoes.some(function (t) { return t.situacao === "PENDENTE"; });
+		if (el("importacao-transacoes-toolbar")) {
+			el("importacao-transacoes-toolbar").hidden = !existePendenteSelecionavel;
+		}
+		atualizarBarraSelecao();
+	}
+
+	function alternarSelecionarTodas() {
+		var marcado = el("importacao-selecionar-todas").checked;
+		document.querySelectorAll("#importacao-transacoes-tbody .importacao-transacao-selecionar").forEach(function (checkbox) {
+			checkbox.checked = marcado;
+			var linha = checkbox.closest("tr");
+			var transacaoId = linha ? linha.dataset.transacaoId : null;
+			if (!transacaoId) {
+				return;
 			}
-			if (transacao.possivelmenteJaImportada) {
-				alertas.appendChild(badge(null, "Possível duplicidade", "atrasada"));
+			if (marcado) {
+				selecionadas.add(transacaoId);
+			} else {
+				selecionadas.delete(transacaoId);
 			}
-			if (!transacao.duplicadaNoArquivo && !transacao.possivelmenteJaImportada) {
-				alertas.textContent = "—";
+		});
+		atualizarBarraSelecao();
+	}
+
+	function atualizarBarraSelecao() {
+		var contador = el("importacao-selecionadas-contador");
+		if (contador) {
+			contador.textContent = String(selecionadas.size);
+		}
+		var botaoConfirmar = el("importacao-confirmar-selecionadas");
+		if (botaoConfirmar) {
+			botaoConfirmar.disabled = selecionadas.size === 0;
+		}
+	}
+
+	function linhaDaTransacao(transacaoId) {
+		return document.querySelector('#importacao-transacoes-tbody tr[data-transacao-id="' + transacaoId + '"]');
+	}
+
+	// Monta os comandos a partir do que o usuario preencheu em cada linha
+	// selecionada; nenhuma natureza financeira (receita/despesa) e decidida
+	// aqui - isso cabe exclusivamente a ConfirmacaoImportacaoBancariaService,
+	// que compara o sinal do valor com o tipo da categoria escolhida.
+	function confirmarSelecionadas() {
+		var comandos = [];
+		var erroValidacao = null;
+		selecionadas.forEach(function (transacaoId) {
+			if (erroValidacao) {
+				return;
 			}
-			tr.appendChild(alertas);
-			tbody.appendChild(tr);
+			var linha = linhaDaTransacao(transacaoId);
+			if (!linha) {
+				return;
+			}
+			var sequencia = linha.dataset.sequencia;
+			var selectCategoria = linha.querySelector(".importacao-transacao-categoria");
+			var inputDescricao = linha.querySelector(".importacao-transacao-descricao");
+			var checkDuplicidade = linha.querySelector(".importacao-transacao-confirmar-duplicidade");
+			var categoriaId = selectCategoria ? selectCategoria.value : "";
+			var descricaoFinal = inputDescricao ? inputDescricao.value.trim() : "";
+			if (!categoriaId) {
+				erroValidacao = "Selecione a categoria da transação #" + sequencia + " antes de confirmar.";
+				return;
+			}
+			if (!descricaoFinal) {
+				erroValidacao = "Informe a descrição final da transação #" + sequencia + " antes de confirmar.";
+				return;
+			}
+			if (checkDuplicidade && !checkDuplicidade.checked) {
+				erroValidacao = "Confirme explicitamente a duplicidade sinalizada da transação #" + sequencia + " antes de confirmar.";
+				return;
+			}
+			comandos.push({
+				transacaoId: transacaoId,
+				categoriaId: categoriaId,
+				descricaoFinal: descricaoFinal,
+				confirmarDuplicidade: Boolean(checkDuplicidade && checkDuplicidade.checked)
+			});
+		});
+		if (erroValidacao) {
+			window.CriatiUI.showToast("erro", erroValidacao);
+			return;
+		}
+		if (!comandos.length) {
+			return;
+		}
+		var mensagemConfirmacao = comandos.length === 1
+			? "Confirmar 1 transação selecionada? Um lançamento financeiro correspondente será criado."
+			: "Confirmar " + comandos.length + " transações selecionadas? Um lançamento financeiro será criado para cada uma.";
+		if (!window.confirm(mensagemConfirmacao)) {
+			return;
+		}
+		var botao = el("importacao-confirmar-selecionadas");
+		window.CriatiUI.setButtonLoading(botao, true, "Confirmando...");
+		api.importacoesBancarias.confirmar(loteAtual.lote.id, comandos).then(function () {
+			carregarDetalhe(comandos.length === 1 ? "Transação confirmada com sucesso." : "Transações confirmadas com sucesso.");
+		}).catch(function (erro) {
+			window.CriatiUI.showToast("erro", mensagemErro(erro, "Não foi possível confirmar as transações selecionadas."));
+		}).finally(function () {
+			window.CriatiUI.setButtonLoading(botao, false);
+		});
+	}
+
+	function ignorarTransacao(transacao) {
+		if (!window.confirm("Ignorar a transação #" + transacao.sequencia + "? Ela deixará de estar pendente e não poderá mais ser confirmada.")) {
+			return;
+		}
+		api.importacoesBancarias.ignorar(loteAtual.lote.id, transacao.id).then(function () {
+			carregarDetalhe("Transação ignorada com sucesso.");
+		}).catch(function (erro) {
+			window.CriatiUI.showToast("erro", mensagemErro(erro, "Não foi possível ignorar a transação."));
 		});
 	}
 

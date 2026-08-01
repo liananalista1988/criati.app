@@ -42,16 +42,67 @@
 						<p class="criati-card-sub">Duplicidades são apenas um alerta calculado pelo backend; nenhuma transação é excluída ou conciliada automaticamente.</p>
 					</section>
 
+					<section class="criati-card financeiro-painel-operacional" id="importacao-resumo" aria-live="polite" hidden>
+						<h2>Resumo da confirmação</h2>
+						<div class="financeiro-operacional-cards">
+							<div class="financeiro-stat-card">
+								<p class="financeiro-stat-card-rotulo">Pendentes</p>
+								<p class="criati-card-value" id="resumo-importacao-pendentes">0</p>
+							</div>
+							<div class="financeiro-stat-card">
+								<p class="financeiro-stat-card-rotulo">Confirmadas</p>
+								<p class="criati-card-value" id="resumo-importacao-confirmadas">0</p>
+							</div>
+							<div class="financeiro-stat-card">
+								<p class="financeiro-stat-card-rotulo">Ignoradas</p>
+								<p class="criati-card-value" id="resumo-importacao-ignoradas">0</p>
+							</div>
+							<div class="financeiro-stat-card">
+								<p class="financeiro-stat-card-rotulo">Sinalizadas como duplicidade</p>
+								<p class="criati-card-value" id="resumo-importacao-duplicadas">0</p>
+							</div>
+						</div>
+					</section>
+
 					<section class="criati-card financeiro-painel-operacional">
-						<h2>Transações do arquivo</h2>
+						<div class="financeiro-cabecalho-secao">
+							<h2>Transações do arquivo</h2>
+							<div th:if="${podeGerenciarImportacoes}" class="criati-table-acoes" id="importacao-transacoes-toolbar" hidden>
+								<span aria-live="polite"><span id="importacao-selecionadas-contador">0</span> selecionada(s)</span>
+								<button class="criati-btn criati-btn-primary" id="importacao-confirmar-selecionadas"
+									type="button" disabled>Confirmar selecionadas</button>
+							</div>
+						</div>
 						<div id="importacao-transacoes-vazio" class="criati-empty-state" hidden><p>Nenhuma transação extraída deste arquivo.</p></div>
-						<div id="importacao-transacoes-wrap" class="criati-table-wrap financeiro-tabela-operacional-scroll" hidden>
-							<table class="criati-table">
+						<div id="importacao-transacoes-wrap" class="criati-table-wrap financeiro-tabela-operacional financeiro-tabela-confirmacao-ofx" hidden>
+							<table class="criati-table" aria-label="Transações da importação">
 								<thead>
-									<tr><th>#</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Alertas</th></tr>
+									<tr>
+										<th scope="col"><input th:if="${podeGerenciarImportacoes}" type="checkbox" id="importacao-selecionar-todas" aria-label="Selecionar todas as transações pendentes" /></th>
+										<th scope="col">#</th>
+										<th scope="col">Data</th>
+										<th scope="col">Descrição</th>
+										<th scope="col">Tipo</th>
+										<th scope="col">Valor</th>
+										<th scope="col">Situação</th>
+										<th scope="col">Alertas</th>
+										<th scope="col">Categoria</th>
+										<th scope="col">Descrição final</th>
+										<th scope="col">Ações</th>
+									</tr>
 								</thead>
 								<tbody id="importacao-transacoes-tbody"></tbody>
 							</table>
+						</div>
+					</section>
+
+					<section class="criati-card financeiro-painel-operacional" id="importacao-links-uteis" hidden>
+						<h2>Próximos passos</h2>
+						<p class="criati-card-sub">Transações confirmadas já geraram lançamentos financeiros.</p>
+						<div class="criati-table-acoes">
+							<a class="criati-btn criati-btn-ghost" href="/app/financeiro/lancamentos">Ver lançamentos</a>
+							<a class="criati-btn criati-btn-ghost" href="/app/financeiro/contas">Ver saldo das contas</a>
+							<a class="criati-btn criati-btn-ghost" href="/app/financeiro">Ir para o dashboard</a>
 						</div>
 					</section>
 				</div>
