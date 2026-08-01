@@ -30,6 +30,8 @@ public class CsvBancarioParser {
 
 	private static final byte[] BOM_UTF8 = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
 	private static final Pattern VALOR_SEGURO = Pattern.compile("[+-]?\\d{1,17}(?:[.,]\\d{1,2})?");
+	private static final Pattern VALOR_BRASILEIRO = Pattern.compile(
+			"[+-]?(?:\\d{1,3}(?:\\.\\d{3})*|\\d{1,17})(?:,\\d{1,2})?");
 	private static final DateTimeFormatter DATA_BR = DateTimeFormatter.ofPattern("dd/MM/uuuu")
 			.withResolverStyle(ResolverStyle.STRICT);
 	private static final DateTimeFormatter DATA_BR_HIFEN = DateTimeFormatter.ofPattern("dd-MM-uuuu")
@@ -38,6 +40,7 @@ public class CsvBancarioParser {
 	private static final Set<String> SAIDAS = Set.of("saida", "despesa", "debito", "debit", "d", "-");
 
 	private static final Map<String, Coluna> CABECALHOS = criarCabecalhos();
+	private static final List<PerfilCsv> PERFIS = List.of(new PerfilCsvBancoInter(), new PerfilCsvGenerico());
 
 	private final int maximoLinhas;
 	private final int maximoColunas;
@@ -67,28 +70,36 @@ public class CsvBancarioParser {
 		if (escolhido == null) {
 			throw erroMaisEspecifico(virgula.erro(), pontoEVirgula.erro());
 		}
-		return extrair(escolhido.registros(), escolhido.indices());
+		return extrair(escolhido.registros(), escolhido.plano());
 	}
 
 	private Candidato analisar(String texto, char separador) {
 		try {
 			List<List<String>> registros = lerRegistros(texto, separador);
-			return new Candidato(registros, mapearCabecalho(registros.get(0)), null);
+			for (PerfilCsv perfil : PERFIS) {
+				PlanoCsv plano = perfil.identificar(registros);
+				if (plano != null) {
+					validarRegistrosDeDados(registros, plano);
+					return new Candidato(registros, plano, null);
+				}
+			}
+			throw new DadosInvalidosException("CSV deve possuir cabecalhos univocos para data, descricao e valor");
 		} catch (DadosInvalidosException excecao) {
 			return new Candidato(null, null, excecao);
 		}
 	}
 
-	private List<TransacaoBancariaExtraida> extrair(List<List<String>> registros, Map<Coluna, Integer> indices) {
+	private List<TransacaoBancariaExtraida> extrair(List<List<String>> registros, PlanoCsv plano) {
 		List<TransacaoBancariaExtraida> transacoes = new ArrayList<>();
-		for (int linha = 1; linha < registros.size(); linha++) {
+		Map<Coluna, Integer> indices = plano.indices();
+		for (int linha = plano.indiceCabecalho() + 1; linha < registros.size(); linha++) {
 			List<String> registro = registros.get(linha);
 			String dataBruta = campo(registro, indices, Coluna.DATA);
-			String descricao = normalizarTexto(campo(registro, indices, Coluna.DESCRICAO), "Descricao CSV obrigatoria");
+			String descricao = descricao(registro, plano);
 			String valorBruto = campo(registro, indices, Coluna.VALOR).trim();
 			validarFormula(dataBruta);
 			validarFormula(descricao);
-			BigDecimal valor = parseValor(valorBruto);
+			BigDecimal valor = plano.valorBrasileiro() ? parseValorBrasileiro(valorBruto) : parseValor(valorBruto);
 			String tipo = campoOpcional(registro, indices, Coluna.TIPO);
 			if (tipo != null) {
 				if (!tipo.trim().equals("+") && !tipo.trim().equals("-")) {
@@ -110,6 +121,31 @@ public class CsvBancarioParser {
 			throw new DadosInvalidosException("Arquivo CSV nao possui transacoes bancarias");
 		}
 		return List.copyOf(transacoes);
+	}
+
+	private String descricao(List<String> registro, PlanoCsv plano) {
+		String descricao = campo(registro, plano.indices(), Coluna.DESCRICAO);
+		validarFormula(descricao);
+		String descricaoNormalizada = normalizarOpcional(descricao);
+		Integer indiceHistorico = plano.indiceHistorico();
+		if (indiceHistorico == null) {
+			return normalizarTexto(descricao, "Descricao CSV obrigatoria");
+		}
+		String historico = registro.get(indiceHistorico);
+		validarFormula(historico);
+		String historicoNormalizado = normalizarOpcional(historico);
+		String combinada;
+		if (historicoNormalizado == null) {
+			combinada = descricaoNormalizada;
+		} else if (descricaoNormalizada == null || historicoNormalizado.equalsIgnoreCase(descricaoNormalizada)) {
+			combinada = historicoNormalizado;
+		} else {
+			combinada = historicoNormalizado + " - " + descricaoNormalizada;
+		}
+		if (combinada == null) {
+			throw new DadosInvalidosException("Descricao CSV obrigatoria");
+		}
+		return limitar(combinada, 500, "Descricao CSV excede o limite de 500 caracteres");
 	}
 
 	private List<List<String>> lerRegistros(String texto, char separador) {
@@ -169,16 +205,19 @@ public class CsvBancarioParser {
 		if (registros.isEmpty()) {
 			throw new DadosInvalidosException("Arquivo CSV esta vazio");
 		}
-		int colunas = registros.get(0).size();
-		if (colunas < 3) {
+		if (registros.stream().noneMatch(item -> item.size() >= 3)) {
 			throw new DadosInvalidosException("Nao foi possivel detectar com seguranca o separador CSV");
 		}
-		for (List<String> item : registros) {
-			if (item.size() != colunas) {
+		return registros;
+	}
+
+	private void validarRegistrosDeDados(List<List<String>> registros, PlanoCsv plano) {
+		int colunas = registros.get(plano.indiceCabecalho()).size();
+		for (int indice = plano.indiceCabecalho() + 1; indice < registros.size(); indice++) {
+			if (registros.get(indice).size() != colunas) {
 				throw new DadosInvalidosException("CSV possui quantidade inconsistente de colunas");
 			}
 		}
-		return registros;
 	}
 
 	private void adicionarCaractere(StringBuilder campo, char valor) {
@@ -206,12 +245,12 @@ public class CsvBancarioParser {
 		}
 	}
 
-	private Map<Coluna, Integer> mapearCabecalho(List<String> cabecalho) {
+	private static Map<Coluna, Integer> mapearCabecalho(List<String> cabecalho) {
 		Map<Coluna, Integer> indices = new HashMap<>();
 		Set<String> nomes = new HashSet<>();
 		for (int indice = 0; indice < cabecalho.size(); indice++) {
 			String original = cabecalho.get(indice);
-			validarFormula(original);
+			validarFormulaEstatica(original);
 			String normalizado = normalizarCabecalho(original);
 			if (normalizado.isEmpty() || !nomes.add(normalizado)) {
 				throw new DadosInvalidosException("CSV possui cabecalhos vazios ou duplicados");
@@ -255,6 +294,22 @@ public class CsvBancarioParser {
 		}
 		try {
 			BigDecimal resultado = new BigDecimal(valor.replace(',', '.')).setScale(2, RoundingMode.UNNECESSARY);
+			if (resultado.signum() == 0 || resultado.precision() > 19) {
+				throw new ArithmeticException();
+			}
+			return resultado;
+		} catch (ArithmeticException | NumberFormatException excecao) {
+			throw new DadosInvalidosException("Valor invalido em transacao CSV");
+		}
+	}
+
+	private BigDecimal parseValorBrasileiro(String valor) {
+		if (!VALOR_BRASILEIRO.matcher(valor).matches()) {
+			throw new DadosInvalidosException("Valor invalido em transacao CSV");
+		}
+		try {
+			BigDecimal resultado = new BigDecimal(valor.replace(".", "").replace(',', '.'))
+					.setScale(2, RoundingMode.UNNECESSARY);
 			if (resultado.signum() == 0 || resultado.precision() > 19) {
 				throw new ArithmeticException();
 			}
@@ -322,6 +377,10 @@ public class CsvBancarioParser {
 	}
 
 	private void validarFormula(String valor) {
+		validarFormulaEstatica(valor);
+	}
+
+	private static void validarFormulaEstatica(String valor) {
 		if (valor == null) {
 			return;
 		}
@@ -350,7 +409,7 @@ public class CsvBancarioParser {
 		return valor;
 	}
 
-	private String normalizarCabecalho(String valor) {
+	private static String normalizarCabecalho(String valor) {
 		String semAcentos = Normalizer.normalize(valor == null ? "" : valor, Normalizer.Form.NFD)
 				.replaceAll("\\p{M}+", "");
 		return semAcentos.trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_")
@@ -401,7 +460,57 @@ public class CsvBancarioParser {
 		}
 	}
 
-	private record Candidato(List<List<String>> registros, Map<Coluna, Integer> indices,
+	private interface PerfilCsv {
+		PlanoCsv identificar(List<List<String>> registros);
+	}
+
+	private static final class PerfilCsvBancoInter implements PerfilCsv {
+		private static final Set<String> CABECALHOS_INTER = Set.of(
+				"data_lancamento", "historico", "descricao", "valor", "saldo");
+
+		@Override
+		public PlanoCsv identificar(List<List<String>> registros) {
+			PlanoCsv encontrado = null;
+			for (int linha = 0; linha < registros.size(); linha++) {
+				List<String> registro = registros.get(linha);
+				Map<String, Integer> indices = new HashMap<>();
+				for (int coluna = 0; coluna < registro.size(); coluna++) {
+					String original = registro.get(coluna);
+					String nome = normalizarCabecalho(original);
+					if (CABECALHOS_INTER.contains(nome) && indices.putIfAbsent(nome, coluna) != null) {
+						throw new DadosInvalidosException("CSV Inter possui cabecalhos duplicados");
+					}
+				}
+				if (!indices.keySet().containsAll(CABECALHOS_INTER)) {
+					continue;
+				}
+				registro.forEach(CsvBancarioParser::validarFormulaEstatica);
+				if (encontrado != null) {
+					throw new DadosInvalidosException("CSV Inter possui mais de um cabecalho compativel");
+				}
+				Map<Coluna, Integer> colunas = Map.of(
+						Coluna.DATA, indices.get("data_lancamento"),
+						Coluna.DESCRICAO, indices.get("descricao"),
+						Coluna.VALOR, indices.get("valor"));
+				encontrado = new PlanoCsv(linha, colunas, indices.get("historico"), true);
+			}
+			return encontrado;
+		}
+	}
+
+	private static final class PerfilCsvGenerico implements PerfilCsv {
+		@Override
+		public PlanoCsv identificar(List<List<String>> registros) {
+			Map<Coluna, Integer> indices = mapearCabecalho(registros.get(0));
+			return new PlanoCsv(0, indices, null, false);
+		}
+	}
+
+	private record PlanoCsv(int indiceCabecalho, Map<Coluna, Integer> indices,
+			Integer indiceHistorico, boolean valorBrasileiro) {
+	}
+
+	private record Candidato(List<List<String>> registros, PlanoCsv plano,
 			DadosInvalidosException erro) {
 		boolean valido() {
 			return erro == null;

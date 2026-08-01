@@ -44,6 +44,56 @@ class OfxParserTests {
 	}
 
 	@Test
+	void perfilBancoBrasilIgnoraSaldosInformativosComDataInvalidaEFitidVazio() {
+		var transacoes = parser.parse(ofxBb("""
+				<STMTTRN><DTPOSTED>DATA-INVALIDA<TRNAMT>0<FITID><NAME>Saldo Anterior</STMTTRN>
+				<STMTTRN><DTPOSTED>INVALIDA<TRNAMT>0<MEMO>Saldo do dia</STMTTRN>
+				<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260801120000[-3:BRT]<TRNAMT>25.50
+				<FITID>BB-SAN-1<NAME>PIX<MEMO>Recebimento sanitizado</STMTTRN>
+				"""));
+
+		assertThat(transacoes).singleElement().satisfies(transacao -> {
+			assertThat(transacao.data()).isEqualTo(LocalDate.of(2026, 8, 1));
+			assertThat(transacao.valor()).isEqualByComparingTo("25.50");
+			assertThat(transacao.identificadorBancario()).isEqualTo("BB-SAN-1");
+			assertThat(transacao.descricao()).isEqualTo("PIX - Recebimento sanitizado");
+		});
+	}
+
+	@Test
+	void perfilBancoBrasilPreservaPixTarifaJurosIofESinais() {
+		var transacoes = parser.parse(ofxBb("""
+				<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260804<TRNAMT>100.00<FITID>BB-PIX
+				<NAME>PIX<MEMO>Credito sanitizado</STMTTRN>
+				<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260803<TRNAMT>-10.00<FITID>BB-TARIFA
+				<NAME>Tarifa<MEMO>Servico sanitizado</STMTTRN>
+				<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260802<TRNAMT>-2.50<FITID>BB-JUROS
+				<NAME>Juros<MEMO>Encargo sanitizado</STMTTRN>
+				<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260801<TRNAMT>-1.25<FITID>BB-IOF
+				<NAME>IOF<MEMO>Tributo sanitizado</STMTTRN>
+				"""));
+
+		assertThat(transacoes).extracting(TransacaoBancariaExtraida::valor)
+				.containsExactly(new java.math.BigDecimal("100.00"), new java.math.BigDecimal("-10.00"),
+						new java.math.BigDecimal("-2.50"), new java.math.BigDecimal("-1.25"));
+		assertThat(transacoes).extracting(TransacaoBancariaExtraida::tipoBancario)
+				.containsExactly("CREDIT", "DEBIT", "DEBIT", "DEBIT");
+		assertThat(transacoes).extracting(TransacaoBancariaExtraida::descricao)
+				.containsExactly("PIX - Credito sanitizado", "Tarifa - Servico sanitizado",
+						"Juros - Encargo sanitizado", "IOF - Tributo sanitizado");
+	}
+
+	@Test
+	void perfilBancoBrasilExigeDataEFitidNasMovimentacoesReais() {
+		assertThatThrownBy(() -> parser.parse(ofxBb(
+				"<STMTTRN><DTPOSTED>20260230<TRNAMT>-1.00<FITID>BB-DATA<MEMO>Tarifa</STMTTRN>")))
+				.isInstanceOf(DadosInvalidosException.class).hasMessageContaining("Data invalida");
+		assertThatThrownBy(() -> parser.parse(ofxBb(
+				"<STMTTRN><DTPOSTED>20260801<TRNAMT>-1.00<MEMO>Tarifa</STMTTRN>")))
+				.isInstanceOf(DadosInvalidosException.class).hasMessageContaining("sem FITID");
+	}
+
+	@Test
 	void rejeitaConteudoInvalidoOuMalformado() {
 		assertThatThrownBy(() -> parser.parse("nao e ofx".getBytes(StandardCharsets.UTF_8)))
 				.isInstanceOf(DadosInvalidosException.class);
@@ -74,6 +124,12 @@ class OfxParserTests {
 
 	private byte[] ofx(String transacoes) {
 		return ("OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><BANKTRANLIST>" + transacoes
+				+ "</BANKTRANLIST></OFX>").getBytes(StandardCharsets.UTF_8);
+	}
+
+	private byte[] ofxBb(String transacoes) {
+		return ("OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><BANKACCTFROM><BANKID>001</BANKACCTFROM>"
+				+ "<BANKTRANLIST><DTSTART>INVALIDO<DTEND>INVALIDO" + transacoes
 				+ "</BANKTRANLIST></OFX>").getBytes(StandardCharsets.UTF_8);
 	}
 

@@ -7,6 +7,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ public class OfxParser {
 			"(?is)<STMTTRN\\b[^>]*>(.*?)(?=<STMTTRN\\b|</BANKTRANLIST>|</OFX>)");
 	private static final Pattern CABECALHO_ENCODING = Pattern.compile("(?im)^\\s*ENCODING\\s*:\\s*([^\\r\\n]+)");
 	private static final Pattern CABECALHO_CHARSET = Pattern.compile("(?im)^\\s*CHARSET\\s*:\\s*([^\\r\\n]+)");
+	private static final List<PerfilOfx> PERFIS = List.of(new PerfilOfxBancoBrasil(), new PerfilOfxGenerico());
 
 	public List<TransacaoBancariaExtraida> parse(byte[] conteudo) {
 		String texto = decodificar(conteudo).replace("\uFEFF", "");
@@ -36,11 +38,16 @@ public class OfxParser {
 		if (!caixaAlta.contains("<OFX>") || !caixaAlta.contains("<BANKTRANLIST>")) {
 			throw invalido();
 		}
+		PerfilOfx perfil = PERFIS.stream().filter(item -> item.reconhece(texto)).findFirst()
+				.orElseThrow(this::invalido);
 
 		List<TransacaoBancariaExtraida> transacoes = new ArrayList<>();
 		Matcher matcher = BLOCO_TRANSACAO.matcher(texto);
 		while (matcher.find()) {
-			transacoes.add(extrairTransacao(matcher.group(1)));
+			DadosTransacaoOfx dados = lerDados(matcher.group(1));
+			if (!perfil.ignorar(dados)) {
+				transacoes.add(extrairTransacao(dados, perfil));
+			}
 		}
 		if (transacoes.isEmpty()) {
 			throw new DadosInvalidosException("Arquivo OFX nao possui transacoes bancarias");
@@ -48,25 +55,30 @@ public class OfxParser {
 		return List.copyOf(transacoes);
 	}
 
-	private TransacaoBancariaExtraida extrairTransacao(String bloco) {
-		String dataBruta = tag(bloco, "DTPOSTED");
-		String valorBruto = tag(bloco, "TRNAMT");
+	private DadosTransacaoOfx lerDados(String bloco) {
+		return new DadosTransacaoOfx(tag(bloco, "DTPOSTED"), tag(bloco, "TRNAMT"),
+				tag(bloco, "TRNTYPE"), tag(bloco, "NAME"), tag(bloco, "MEMO"),
+				tag(bloco, "FITID"), tag(bloco, "CHECKNUM"), tag(bloco, "REFNUM"));
+	}
+
+	private TransacaoBancariaExtraida extrairTransacao(DadosTransacaoOfx dados, PerfilOfx perfil) {
+		String dataBruta = dados.data();
+		String valorBruto = dados.valor();
 		if (dataBruta == null || valorBruto == null) {
 			throw new DadosInvalidosException("Transacao OFX sem data ou valor");
 		}
 		LocalDate data = parseData(dataBruta);
 		BigDecimal valor = parseValor(valorBruto);
-		String tipo = limitar(normalizar(tag(bloco, "TRNTYPE")), 40);
+		String tipo = limitar(normalizar(dados.tipo()), 40);
 		if (tipo == null) {
 			tipo = valor.signum() < 0 ? "DEBIT" : "CREDIT";
 		}
-		String memo = normalizar(tag(bloco, "MEMO"));
-		String nome = normalizar(tag(bloco, "NAME"));
-		String descricao = limitar(memo != null ? memo : nome, 500);
-		String identificador = limitar(normalizar(tag(bloco, "FITID")), 150);
-		String documento = normalizar(tag(bloco, "CHECKNUM"));
+		String descricao = limitar(perfil.descricao(dados), 500);
+		String identificador = limitar(normalizar(dados.fitid()), 150);
+		perfil.validarMovimentacao(identificador);
+		String documento = normalizar(dados.checknum());
 		if (documento == null) {
-			documento = normalizar(tag(bloco, "REFNUM"));
+			documento = normalizar(dados.refnum());
 		}
 		return new TransacaoBancariaExtraida(data, valor, tipo.toUpperCase(Locale.ROOT), descricao,
 				identificador, limitar(documento, 100));
@@ -97,7 +109,7 @@ public class OfxParser {
 		}
 	}
 
-	private String tag(String bloco, String tag) {
+	private static String tag(String bloco, String tag) {
 		Pattern pattern = Pattern.compile("(?is)<" + tag + "\\b[^>]*>\\s*([^<\\r\\n]+)");
 		Matcher matcher = pattern.matcher(bloco);
 		return matcher.find() ? decodificarEntidades(matcher.group(1)) : null;
@@ -145,16 +157,107 @@ public class OfxParser {
 		return valor.trim().replaceAll("\\s+", " ");
 	}
 
+	private static String normalizarComparacao(String valor) {
+		if (valor == null || valor.isBlank()) {
+			return "";
+		}
+		return Normalizer.normalize(valor, Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
+				.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+	}
+
+	private static String combinar(String nome, String memo) {
+		String nomeNormalizado = normalizarEstatico(nome);
+		String memoNormalizado = normalizarEstatico(memo);
+		if (nomeNormalizado == null) {
+			return memoNormalizado;
+		}
+		if (memoNormalizado == null || nomeNormalizado.equalsIgnoreCase(memoNormalizado)) {
+			return nomeNormalizado;
+		}
+		return nomeNormalizado + " - " + memoNormalizado;
+	}
+
+	private static String normalizarEstatico(String valor) {
+		return valor == null || valor.isBlank() ? null : valor.trim().replaceAll("\\s+", " ");
+	}
+
 	private String limitar(String valor, int limite) {
 		return valor == null || valor.length() <= limite ? valor : valor.substring(0, limite);
 	}
 
-	private String decodificarEntidades(String valor) {
+	private static String decodificarEntidades(String valor) {
 		return valor.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
 				.replace("&quot;", "\"").replace("&apos;", "'");
 	}
 
 	private DadosInvalidosException invalido() {
 		return new DadosInvalidosException("Conteudo do arquivo OFX e invalido ou incompativel");
+	}
+
+	private interface PerfilOfx {
+		boolean reconhece(String documento);
+
+		boolean ignorar(DadosTransacaoOfx dados);
+
+		String descricao(DadosTransacaoOfx dados);
+
+		void validarMovimentacao(String fitid);
+	}
+
+	private static final class PerfilOfxBancoBrasil implements PerfilOfx {
+		@Override
+		public boolean reconhece(String documento) {
+			String bankId = normalizarEstatico(tag(documento, "BANKID"));
+			return bankId != null && bankId.replaceFirst("^0+", "").equals("1");
+		}
+
+		@Override
+		public boolean ignorar(DadosTransacaoOfx dados) {
+			return informativo(dados.nome()) || informativo(dados.memo());
+		}
+
+		private boolean informativo(String valor) {
+			String normalizado = normalizarComparacao(valor);
+			return normalizado.equals("saldo anterior") || normalizado.equals("saldo do dia");
+		}
+
+		@Override
+		public String descricao(DadosTransacaoOfx dados) {
+			return combinar(dados.nome(), dados.memo());
+		}
+
+		@Override
+		public void validarMovimentacao(String fitid) {
+			if (fitid == null) {
+				throw new DadosInvalidosException("Movimentacao OFX do Banco do Brasil sem FITID");
+			}
+		}
+	}
+
+	private static final class PerfilOfxGenerico implements PerfilOfx {
+		@Override
+		public boolean reconhece(String documento) {
+			return true;
+		}
+
+		@Override
+		public boolean ignorar(DadosTransacaoOfx dados) {
+			return false;
+		}
+
+		@Override
+		public String descricao(DadosTransacaoOfx dados) {
+			String memo = normalizarEstatico(dados.memo());
+			return memo != null ? memo : normalizarEstatico(dados.nome());
+		}
+
+		@Override
+		public void validarMovimentacao(String fitid) {
+			// O fallback generico preserva a compatibilidade com OFX sem FITID.
+		}
+	}
+
+	private record DadosTransacaoOfx(String data, String valor, String tipo, String nome,
+			String memo, String fitid, String checknum, String refnum) {
 	}
 }

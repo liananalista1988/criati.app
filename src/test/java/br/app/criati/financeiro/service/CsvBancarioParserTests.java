@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +54,39 @@ class CsvBancarioParserTests {
 				.containsExactly(new BigDecimal("10.25"), new BigDecimal("-7.30"));
 		assertThat(transacoes.get(0).documento()).isEqualTo("DOC-1");
 		assertThat(transacoes.get(0).identificadorBancario()).isEqualTo("ID-1");
+	}
+
+	@Test
+	void aceitaCsvInterComPreambuloCabecalhoRealValoresBrasileirosEOrdemDecrescente() {
+		CsvBancarioParser parserInter = new CsvBancarioParser(10, 8, 100);
+		String csv = "Extrato sanitizado;sem dados bancarios\n"
+				+ "Periodo consultado;informacao ignorada\n"
+				+ "Data Lançamento;Histórico;Descrição;Valor;Saldo\n"
+				+ "03/08/2026;PIX recebido;Origem sanitizada;1.234,56;9.999,99\n"
+				+ "02/08/2026;Tarifa;Pacote mensal;-12,34;9.987,65\n";
+
+		var transacoes = parserInter.parse(bytes(csv));
+
+		assertThat(transacoes).hasSize(2);
+		assertThat(transacoes).extracting(TransacaoBancariaExtraida::data)
+				.containsExactly(LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 2));
+		assertThat(transacoes).extracting(TransacaoBancariaExtraida::valor)
+				.containsExactly(new BigDecimal("1234.56"), new BigDecimal("-12.34"));
+		assertThat(transacoes).extracting(TransacaoBancariaExtraida::descricao)
+				.containsExactly("PIX recebido - Origem sanitizada", "Tarifa - Pacote mensal");
+	}
+
+	@Test
+	void aceitaCsvInterSemPreambuloENaoImportaSaldoComoTransacao() {
+		String csv = "Data Lançamento;Histórico;Descrição;Valor;Saldo\n"
+				+ "01/08/2026;Rendimento;Credito sanitizado;10,00;1.010,00\n";
+
+		var transacoes = parser.parse(bytes(csv));
+
+		assertThat(transacoes).singleElement().satisfies(transacao -> {
+			assertThat(transacao.valor()).isEqualByComparingTo("10.00");
+			assertThat(transacao.descricao()).isEqualTo("Rendimento - Credito sanitizado");
+		});
 	}
 
 	@Test

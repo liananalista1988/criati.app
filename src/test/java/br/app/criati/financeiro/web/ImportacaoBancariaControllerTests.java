@@ -524,6 +524,56 @@ class ImportacaoBancariaControllerTests {
 	}
 
 	@Test
+	void perfilInterPreservaHashDuplicidadesIsolamentoERemaneceSemLancamento() throws Exception {
+		Cenario a = cenario("97777777000631", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("98888888000632", PerfilUsuario.ADMINISTRADOR);
+		String csv = "Extrato sanitizado;sem dados reais\n"
+				+ "Data Lançamento;Histórico;Descrição;Valor;Saldo\n"
+				+ "03/08/2026;PIX;Origem sanitizada;1.234,56;9.999,99\n"
+				+ "03/08/2026;PIX;Origem sanitizada;1.234,56;9.999,99\n";
+
+		mockMvc.perform(uploadCsv(a, arquivoCsv("inter-sanitizado.csv", csv)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.hashArquivo").value(sha256(csv)))
+				.andExpect(jsonPath("$.lote.quantidadeDuplicadasArquivo").value(1))
+				.andExpect(jsonPath("$.transacoes[0].descricao").value("PIX - Origem sanitizada"))
+				.andExpect(jsonPath("$.transacoes[0].valor").value(1234.56));
+		mockMvc.perform(uploadCsv(b, arquivoCsv("inter-sanitizado.csv", csv)))
+				.andExpect(status().isCreated());
+
+		String historico = "Geracao posterior\nData Lançamento;Histórico;Descrição;Valor;Saldo\n"
+				+ "03/08/2026;PIX;Origem sanitizada;1.234,56;8.765,43\n";
+		mockMvc.perform(uploadCsv(a, arquivoCsv("inter-historico.csv", historico)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.quantidadePossiveisDuplicadas").value(1))
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
+		assertThat(lancamentoRepository.findAllByEmpresaId(a.empresa().getId())).isEmpty();
+		assertThat(lancamentoRepository.findAllByEmpresaId(b.empresa().getId())).isEmpty();
+	}
+
+	@Test
+	void perfilBancoBrasilIgnoraSaldosInformativosERejeitaMovimentacaoInvalidaComRollback() throws Exception {
+		Cenario c = cenario("99999999000633", PerfilUsuario.GESTOR);
+		String valido = ofxBb("<STMTTRN><DTPOSTED>INVALIDA<TRNAMT>0<FITID><NAME>Saldo Anterior</STMTTRN>"
+				+ "<STMTTRN><DTPOSTED>INVALIDA<TRNAMT>0<MEMO>Saldo do dia</STMTTRN>"
+				+ "<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260801120000[-3:BRT]<TRNAMT>-7.50"
+				+ "<FITID>BB-SAN-HTTP<NAME>Tarifa<MEMO>Servico sanitizado</STMTTRN>");
+
+		mockMvc.perform(upload(c, arquivo("bb-sanitizado.ofx", valido)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.quantidadeTransacoes").value(1))
+				.andExpect(jsonPath("$.transacoes[0].identificadorBancario").value("BB-SAN-HTTP"))
+				.andExpect(jsonPath("$.transacoes[0].descricao").value("Tarifa - Servico sanitizado"));
+
+		String invalido = ofxBb("<STMTTRN><DTPOSTED>20260230<TRNAMT>-1.00"
+				+ "<FITID>BB-DATA-INVALIDA<MEMO>Movimentacao real</STMTTRN>");
+		mockMvc.perform(upload(c, arquivo("bb-invalido.ofx", invalido))).andExpect(status().isBadRequest());
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(c.empresa().getId())).hasSize(1);
+		assertThat(transacaoRepository.countByEmpresaId(c.empresa().getId())).isEqualTo(1);
+		assertThat(lancamentoRepository.findAllByEmpresaId(c.empresa().getId())).isEmpty();
+	}
+
+	@Test
 	void xlsxValidoCriaPreviaRastreavelSemLancamentoAutomatico() throws Exception {
 		Cenario c = cenario("91111111000625", PerfilUsuario.ADMINISTRADOR);
 		byte[] xlsx = xlsx("XLSX-1", "XLSX-2");
@@ -770,6 +820,11 @@ class ImportacaoBancariaControllerTests {
 
 	private String rodape() {
 		return "</BANKTRANLIST></OFX>";
+	}
+
+	private String ofxBb(String transacoes) {
+		return "OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><BANKACCTFROM><BANKID>001</BANKACCTFROM>"
+				+ "<BANKTRANLIST><DTSTART>INVALIDO<DTEND>INVALIDO" + transacoes + rodape();
 	}
 
 	private Cenario cenario(String cnpj, PerfilUsuario perfil) throws Exception {
