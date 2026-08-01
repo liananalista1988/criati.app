@@ -62,6 +62,17 @@ public class ImportacaoBancariaController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
 	}
 
+	@PostMapping(value = "/xlsx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<PreviaImportacaoBancariaResponse> importarXlsx(
+			@RequestParam UUID contaId,
+			@RequestPart("arquivo") MultipartFile arquivo,
+			HttpSession session,
+			@AuthenticationPrincipal UsuarioPrincipal principal) {
+		PreviaImportacaoBancariaResponse resposta = PreviaImportacaoBancariaResponse.from(
+				service.importarXlsx(contaId, arquivo, exigirAcesso(session, principal)));
+		return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+	}
+
 	@GetMapping
 	public List<LoteImportacaoBancariaResponse> listar(
 			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {

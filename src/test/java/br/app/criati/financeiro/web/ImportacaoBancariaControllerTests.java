@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,6 +25,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -79,7 +84,14 @@ import br.app.criati.usuario.repository.UsuarioRepository;
 		"criati.financeiro.importacao-csv.tamanho-maximo-bytes=512",
 		"criati.financeiro.importacao-csv.maximo-linhas=3",
 		"criati.financeiro.importacao-csv.maximo-colunas=8",
-		"criati.financeiro.importacao-csv.maximo-caracteres-campo=100"
+		"criati.financeiro.importacao-csv.maximo-caracteres-campo=100",
+		"criati.financeiro.importacao-xlsx.tamanho-maximo-bytes=16384",
+		"criati.financeiro.importacao-xlsx.maximo-planilhas=3",
+		"criati.financeiro.importacao-xlsx.maximo-linhas=3",
+		"criati.financeiro.importacao-xlsx.maximo-colunas=8",
+		"criati.financeiro.importacao-xlsx.maximo-caracteres-celula=100",
+		"criati.financeiro.importacao-xlsx.maximo-entradas-zip=100",
+		"criati.financeiro.importacao-xlsx.maximo-bytes-descompactados=4194304"
 })
 @Transactional
 class ImportacaoBancariaControllerTests {
@@ -126,9 +138,12 @@ class ImportacaoBancariaControllerTests {
 	}
 
 	private String sha256(String conteudo) {
+		return sha256(conteudo.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private String sha256(byte[] conteudo) {
 		try {
-			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-					.digest(conteudo.getBytes(StandardCharsets.UTF_8)));
+			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(conteudo));
 		} catch (NoSuchAlgorithmException excecao) {
 			throw new IllegalStateException(excecao);
 		}
@@ -509,6 +524,86 @@ class ImportacaoBancariaControllerTests {
 	}
 
 	@Test
+	void xlsxValidoCriaPreviaRastreavelSemLancamentoAutomatico() throws Exception {
+		Cenario c = cenario("91111111000625", PerfilUsuario.ADMINISTRADOR);
+		byte[] xlsx = xlsx("XLSX-1", "XLSX-2");
+
+		MvcResult criado = mockMvc.perform(uploadXlsx(c, arquivoXlsx("extrato.xlsx", xlsx)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.formato").value("XLSX"))
+				.andExpect(jsonPath("$.lote.hashArquivo").value(sha256(xlsx)))
+				.andExpect(jsonPath("$.lote.quantidadeTransacoes").value(2))
+				.andExpect(jsonPath("$.transacoes[0].valor").value(100.50))
+				.andExpect(jsonPath("$.transacoes[0].tipoBancario").value("CREDIT"))
+				.andExpect(jsonPath("$.transacoes[1].valor").value(-25.30))
+				.andExpect(jsonPath("$.transacoes[1].tipoBancario").value("DEBIT"))
+				.andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+		mockMvc.perform(get(URL + "/" + loteId).session(c.session())).andExpect(status().isOk())
+				.andExpect(jsonPath("$.transacoes.length()").value(2));
+		assertThat(lancamentoRepository.findAllByEmpresaId(c.empresa().getId())).isEmpty();
+	}
+
+	@Test
+	void xlsxHashDuplicidadeInternaECruzadaComCsvEOfxSaoSinalizados() throws Exception {
+		Cenario a = cenario("92222222000626", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("93333333000627", PerfilUsuario.ADMINISTRADOR);
+		byte[] repetido = xlsx("CRUZADA-1", "CRUZADA-1");
+
+		mockMvc.perform(uploadXlsx(a, arquivoXlsx("repetido.xlsx", repetido)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.quantidadeDuplicadasArquivo").value(1))
+				.andExpect(jsonPath("$.transacoes[1].duplicadaNoArquivo").value(true));
+		mockMvc.perform(uploadXlsx(a, arquivoXlsx("repetido.xlsx", repetido))).andExpect(status().isConflict());
+		mockMvc.perform(uploadXlsx(b, arquivoXlsx("repetido.xlsx", repetido))).andExpect(status().isCreated());
+
+		String csv = "data,descricao,valor,identificador\n2026-08-03,CSV,-12.00,CRUZADA-1\n";
+		mockMvc.perform(uploadCsv(a, arquivoCsv("cruzada.csv", csv)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
+		mockMvc.perform(upload(a, arquivo("cruzada.ofx", umaTransacao("CRUZADA-1", "OFX"))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
+	}
+
+	@Test
+	void xlsxInvalidoNomeInseguroExtensaoFalsaEVazioFazemRollback() throws Exception {
+		Cenario c = cenario("94444444000628", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(uploadXlsx(c, arquivoXlsx("vazio.xlsx", new byte[0]))).andExpect(status().isBadRequest());
+		mockMvc.perform(uploadXlsx(c, arquivoXlsx("malformado.xlsx", new byte[] {0x50, 0x4b, 1, 2})))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(uploadXlsx(c, arquivoXlsx("falso.xlsx", "nao-xlsx".getBytes(StandardCharsets.UTF_8))))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(uploadXlsx(c, arquivoXlsx("../extrato.xlsx", xlsx("PATH-1", "PATH-2"))))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(uploadXlsx(c, arquivoXlsx("extrato.xls", xlsx("XLS-1", "XLS-2"))))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(uploadXlsx(c, arquivoXlsx("grande.xlsx", new byte[16_385])))
+				.andExpect(status().isBadRequest());
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(c.empresa().getId())).isEmpty();
+		assertThat(transacaoRepository.countByEmpresaId(c.empresa().getId())).isZero();
+	}
+
+	@Test
+	void uploadXlsxRejeitaContaAlheiaEExigeAutenticacaoCsrfEPerfilDeEscrita() throws Exception {
+		Cenario a = cenario("95555555000629", PerfilUsuario.USUARIO);
+		Cenario b = cenario("96666666000630", PerfilUsuario.ADMINISTRADOR);
+		byte[] xlsx = xlsx("SEG-1", "SEG-2");
+		mockMvc.perform(multipart(URL + "/xlsx").file(arquivoXlsx("seguranca.xlsx", xlsx))
+				.param("contaId", a.conta().getId().toString()).with(csrf()))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(multipart(URL + "/xlsx").file(arquivoXlsx("seguranca.xlsx", xlsx))
+				.param("contaId", a.conta().getId().toString()).session(a.session()))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(uploadXlsx(a, arquivoXlsx("seguranca.xlsx", xlsx))).andExpect(status().isForbidden());
+		mockMvc.perform(multipart(URL + "/xlsx").file(arquivoXlsx("alheia.xlsx", xlsx))
+				.param("contaId", a.conta().getId().toString()).session(b.session()).with(csrf()))
+				.andExpect(status().isNotFound());
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(a.empresa().getId())).isEmpty();
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(b.empresa().getId())).isEmpty();
+	}
+
+	@Test
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	void confirmacoesConcorrentesGeramNoMaximoUmLancamento() throws Exception {
 		Cenario c = cenario("77777777000616", PerfilUsuario.ADMINISTRADOR);
@@ -604,6 +699,12 @@ class ImportacaoBancariaControllerTests {
 				.session(cenario.session()).with(csrf());
 	}
 
+	private org.springframework.test.web.servlet.RequestBuilder uploadXlsx(
+			Cenario cenario, MockMultipartFile arquivo) {
+		return multipart(URL + "/xlsx").file(arquivo).param("contaId", cenario.conta().getId().toString())
+				.session(cenario.session()).with(csrf());
+	}
+
 	private MockMultipartFile arquivo(String nome, String conteudo) {
 		return new MockMultipartFile("arquivo", nome, "application/x-ofx", conteudo.getBytes(StandardCharsets.UTF_8));
 	}
@@ -614,6 +715,38 @@ class ImportacaoBancariaControllerTests {
 
 	private MockMultipartFile arquivoCsv(String nome, byte[] conteudo) {
 		return new MockMultipartFile("arquivo", nome, "text/csv", conteudo);
+	}
+
+	private MockMultipartFile arquivoXlsx(String nome, byte[] conteudo) {
+		return new MockMultipartFile("arquivo", nome,
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", conteudo);
+	}
+
+	private byte[] xlsx(String primeiroId, String segundoId) throws IOException {
+		try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+			Sheet sheet = workbook.createSheet("Movimentos");
+			Row cabecalho = sheet.createRow(0);
+			cabecalho.createCell(0).setCellValue("Data");
+			cabecalho.createCell(1).setCellValue("Descricao");
+			cabecalho.createCell(2).setCellValue("Valor");
+			cabecalho.createCell(3).setCellValue("Sinal");
+			cabecalho.createCell(4).setCellValue("Documento");
+			cabecalho.createCell(5).setCellValue("Identificador");
+			preencherXlsx(sheet.createRow(1), "2026-08-01", "Entrada XLSX", 100.50, "+", primeiroId);
+			preencherXlsx(sheet.createRow(2), "02/08/2026", "Saida XLSX", 25.30, "-", segundoId);
+			ByteArrayOutputStream saida = new ByteArrayOutputStream();
+			workbook.write(saida);
+			return saida.toByteArray();
+		}
+	}
+
+	private void preencherXlsx(Row row, String data, String descricao, double valor, String sinal, String id) {
+		row.createCell(0).setCellValue(data);
+		row.createCell(1).setCellValue(descricao);
+		row.createCell(2).setCellValue(valor);
+		row.createCell(3).setCellValue(sinal);
+		row.createCell(4).setCellValue("DOC-" + id);
+		row.createCell(5).setCellValue(id);
 	}
 
 	private String duasTransacoes() {

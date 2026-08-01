@@ -56,8 +56,10 @@ public class ImportacaoBancariaService {
 	private final UsuarioRepository usuarioRepository;
 	private final OfxParser ofxParser;
 	private final CsvBancarioParser csvParser;
+	private final XlsxBancarioParser xlsxParser;
 	private final long tamanhoMaximoOfxBytes;
 	private final long tamanhoMaximoCsvBytes;
+	private final long tamanhoMaximoXlsxBytes;
 
 	public ImportacaoBancariaService(
 			LoteImportacaoBancariaRepository loteRepository,
@@ -67,8 +69,10 @@ public class ImportacaoBancariaService {
 			UsuarioRepository usuarioRepository,
 			OfxParser ofxParser,
 			CsvBancarioParser csvParser,
+			XlsxBancarioParser xlsxParser,
 			@Value("${criati.financeiro.importacao-ofx.tamanho-maximo-bytes:1048576}") long tamanhoMaximoOfxBytes,
-			@Value("${criati.financeiro.importacao-csv.tamanho-maximo-bytes:1048576}") long tamanhoMaximoCsvBytes) {
+			@Value("${criati.financeiro.importacao-csv.tamanho-maximo-bytes:1048576}") long tamanhoMaximoCsvBytes,
+			@Value("${criati.financeiro.importacao-xlsx.tamanho-maximo-bytes:2097152}") long tamanhoMaximoXlsxBytes) {
 		this.loteRepository = loteRepository;
 		this.transacaoRepository = transacaoRepository;
 		this.contaRepository = contaRepository;
@@ -76,11 +80,13 @@ public class ImportacaoBancariaService {
 		this.usuarioRepository = usuarioRepository;
 		this.ofxParser = ofxParser;
 		this.csvParser = csvParser;
-		if (tamanhoMaximoOfxBytes <= 0 || tamanhoMaximoCsvBytes <= 0) {
+		this.xlsxParser = xlsxParser;
+		if (tamanhoMaximoOfxBytes <= 0 || tamanhoMaximoCsvBytes <= 0 || tamanhoMaximoXlsxBytes <= 0) {
 			throw new IllegalArgumentException("Limites de importacao bancaria devem ser positivos");
 		}
 		this.tamanhoMaximoOfxBytes = tamanhoMaximoOfxBytes;
 		this.tamanhoMaximoCsvBytes = tamanhoMaximoCsvBytes;
+		this.tamanhoMaximoXlsxBytes = tamanhoMaximoXlsxBytes;
 	}
 
 	@Transactional
@@ -93,6 +99,12 @@ public class ImportacaoBancariaService {
 	public PreviaImportacaoBancaria importarCsv(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
 		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.CSV, ".csv",
 				tamanhoMaximoCsvBytes, csvParser::parse);
+	}
+
+	@Transactional
+	public PreviaImportacaoBancaria importarXlsx(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
+		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.XLSX, ".xlsx",
+				tamanhoMaximoXlsxBytes, xlsxParser::parse);
 	}
 
 	private PreviaImportacaoBancaria importar(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto,
