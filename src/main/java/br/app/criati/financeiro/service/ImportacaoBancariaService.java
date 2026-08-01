@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -38,6 +39,7 @@ import br.app.criati.financeiro.model.TransacaoBancariaImportada;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
 import br.app.criati.financeiro.repository.LoteImportacaoBancariaRepository;
 import br.app.criati.financeiro.repository.TransacaoBancariaImportadaRepository;
+import br.app.criati.shared.enums.FormatoArquivoImportacao;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusLoteImportacao;
 import br.app.criati.tenant.ContextoEmpresaAtual;
@@ -52,8 +54,10 @@ public class ImportacaoBancariaService {
 	private final ContaFinanceiraRepository contaRepository;
 	private final EmpresaRepository empresaRepository;
 	private final UsuarioRepository usuarioRepository;
-	private final OfxParser parser;
-	private final long tamanhoMaximoBytes;
+	private final OfxParser ofxParser;
+	private final CsvBancarioParser csvParser;
+	private final long tamanhoMaximoOfxBytes;
+	private final long tamanhoMaximoCsvBytes;
 
 	public ImportacaoBancariaService(
 			LoteImportacaoBancariaRepository loteRepository,
@@ -61,44 +65,62 @@ public class ImportacaoBancariaService {
 			ContaFinanceiraRepository contaRepository,
 			EmpresaRepository empresaRepository,
 			UsuarioRepository usuarioRepository,
-			OfxParser parser,
-			@Value("${criati.financeiro.importacao-ofx.tamanho-maximo-bytes:1048576}") long tamanhoMaximoBytes) {
+			OfxParser ofxParser,
+			CsvBancarioParser csvParser,
+			@Value("${criati.financeiro.importacao-ofx.tamanho-maximo-bytes:1048576}") long tamanhoMaximoOfxBytes,
+			@Value("${criati.financeiro.importacao-csv.tamanho-maximo-bytes:1048576}") long tamanhoMaximoCsvBytes) {
 		this.loteRepository = loteRepository;
 		this.transacaoRepository = transacaoRepository;
 		this.contaRepository = contaRepository;
 		this.empresaRepository = empresaRepository;
 		this.usuarioRepository = usuarioRepository;
-		this.parser = parser;
-		if (tamanhoMaximoBytes <= 0) {
-			throw new IllegalArgumentException("Limite de importacao OFX deve ser positivo");
+		this.ofxParser = ofxParser;
+		this.csvParser = csvParser;
+		if (tamanhoMaximoOfxBytes <= 0 || tamanhoMaximoCsvBytes <= 0) {
+			throw new IllegalArgumentException("Limites de importacao bancaria devem ser positivos");
 		}
-		this.tamanhoMaximoBytes = tamanhoMaximoBytes;
+		this.tamanhoMaximoOfxBytes = tamanhoMaximoOfxBytes;
+		this.tamanhoMaximoCsvBytes = tamanhoMaximoCsvBytes;
 	}
 
 	@Transactional
 	public PreviaImportacaoBancaria importar(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
+		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.OFX, ".ofx",
+				tamanhoMaximoOfxBytes, ofxParser::parse);
+	}
+
+	@Transactional
+	public PreviaImportacaoBancaria importarCsv(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
+		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.CSV, ".csv",
+				tamanhoMaximoCsvBytes, csvParser::parse);
+	}
+
+	private PreviaImportacaoBancaria importar(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto,
+			FormatoArquivoImportacao formato, String extensao, long tamanhoMaximoBytes,
+			Function<byte[], List<TransacaoBancariaExtraida>> parser) {
 		exigirEscrita(contexto);
 		ContaFinanceira conta = buscarConta(contaId, contexto.empresaId());
-		String nomeOriginal = validarNomeOriginal(arquivo == null ? null : arquivo.getOriginalFilename());
+		String nomeOriginal = validarNomeOriginal(arquivo == null ? null : arquivo.getOriginalFilename(), formato,
+				extensao);
 		if (arquivo == null || arquivo.isEmpty() || arquivo.getSize() == 0) {
-			throw new DadosInvalidosException("Arquivo OFX esta vazio");
+			throw new DadosInvalidosException("Arquivo " + formato + " esta vazio");
 		}
 		if (arquivo.getSize() > tamanhoMaximoBytes) {
-			throw new DadosInvalidosException("Arquivo OFX excede o tamanho maximo permitido");
+			throw new DadosInvalidosException("Arquivo " + formato + " excede o tamanho maximo permitido");
 		}
-		byte[] bytes = lerBytes(arquivo);
+		byte[] bytes = lerBytes(arquivo, formato);
 		if (bytes.length == 0) {
-			throw new DadosInvalidosException("Arquivo OFX esta vazio");
+			throw new DadosInvalidosException("Arquivo " + formato + " esta vazio");
 		}
 		if (bytes.length > tamanhoMaximoBytes) {
-			throw new DadosInvalidosException("Arquivo OFX excede o tamanho maximo permitido");
+			throw new DadosInvalidosException("Arquivo " + formato + " excede o tamanho maximo permitido");
 		}
 
 		String hashArquivo = sha256(bytes);
 		if (loteRepository.existsByEmpresaIdAndHashArquivo(contexto.empresaId(), hashArquivo)) {
 			throw new ArquivoImportacaoDuplicadoException();
 		}
-		List<TransacaoOfxExtraida> extraidas = parser.parse(bytes);
+		List<TransacaoBancariaExtraida> extraidas = parser.apply(bytes);
 		Empresa empresa = empresaRepository.findById(contexto.empresaId())
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 		Usuario autor = buscarAutor(contexto.usuarioId());
@@ -108,7 +130,7 @@ public class ImportacaoBancariaService {
 		int duplicadasArquivo = 0;
 		int possiveisDuplicadas = 0;
 		for (int indice = 0; indice < extraidas.size(); indice++) {
-			TransacaoOfxExtraida extraida = extraidas.get(indice);
+			TransacaoBancariaExtraida extraida = extraidas.get(indice);
 			String chave = chaveDuplicidade(extraida);
 			boolean duplicadaNoArquivo = !chavesNoArquivo.add(chave);
 			boolean possivelmenteJaImportada = transacaoRepository
@@ -124,7 +146,7 @@ public class ImportacaoBancariaService {
 					possivelmenteJaImportada));
 		}
 
-		LoteImportacaoBancaria lote = new LoteImportacaoBancaria(empresa, conta, hashArquivo, nomeOriginal,
+		LoteImportacaoBancaria lote = new LoteImportacaoBancaria(empresa, conta, formato, hashArquivo, nomeOriginal,
 				bytes.length, preparadas.size(), duplicadasArquivo, possiveisDuplicadas, autor);
 		try {
 			lote = loteRepository.saveAndFlush(lote);
@@ -133,7 +155,7 @@ public class ImportacaoBancariaService {
 		}
 		List<TransacaoBancariaImportada> transacoes = new ArrayList<>();
 		for (TransacaoPreparada preparada : preparadas) {
-			TransacaoOfxExtraida item = preparada.extraida();
+			TransacaoBancariaExtraida item = preparada.extraida();
 			transacoes.add(new TransacaoBancariaImportada(empresa, lote, conta, preparada.sequencia(), item.data(),
 					item.valor(), item.tipoBancario(), item.descricao(), item.identificadorBancario(), item.documento(),
 					preparada.chave(), preparada.duplicadaNoArquivo(), preparada.possivelmenteJaImportada()));
@@ -195,28 +217,28 @@ public class ImportacaoBancariaService {
 				.orElseThrow(LoteImportacaoNaoEncontradoException::new);
 	}
 
-	private String validarNomeOriginal(String nome) {
+	private String validarNomeOriginal(String nome, FormatoArquivoImportacao formato, String extensao) {
 		if (nome == null || nome.isBlank()) {
-			throw new DadosInvalidosException("Nome do arquivo OFX e obrigatorio");
+			throw new DadosInvalidosException("Nome do arquivo " + formato + " e obrigatorio");
 		}
 		String normalizado = nome.trim();
 		if (normalizado.length() > 255 || normalizado.contains("/") || normalizado.contains("\\")
 				|| normalizado.contains("..") || normalizado.chars().anyMatch(Character::isISOControl)
-				|| !normalizado.toLowerCase(Locale.ROOT).endsWith(".ofx")) {
-			throw new DadosInvalidosException("Arquivo deve possuir nome seguro e extensao .ofx");
+				|| !normalizado.toLowerCase(Locale.ROOT).endsWith(extensao)) {
+			throw new DadosInvalidosException("Arquivo deve possuir nome seguro e extensao " + extensao);
 		}
 		return normalizado;
 	}
 
-	private byte[] lerBytes(MultipartFile arquivo) {
+	private byte[] lerBytes(MultipartFile arquivo, FormatoArquivoImportacao formato) {
 		try {
 			return arquivo.getBytes();
 		} catch (IOException excecao) {
-			throw new DadosInvalidosException("Nao foi possivel ler o arquivo OFX");
+			throw new DadosInvalidosException("Nao foi possivel ler o arquivo " + formato);
 		}
 	}
 
-	private String chaveDuplicidade(TransacaoOfxExtraida transacao) {
+	private String chaveDuplicidade(TransacaoBancariaExtraida transacao) {
 		String identificador = normalizarChave(transacao.identificadorBancario());
 		String material = identificador != null
 				? "FITID|" + identificador
@@ -261,7 +283,7 @@ public class ImportacaoBancariaService {
 		}
 	}
 
-	private record TransacaoPreparada(int sequencia, TransacaoOfxExtraida extraida, String chave,
+	private record TransacaoPreparada(int sequencia, TransacaoBancariaExtraida extraida, String chave,
 			boolean duplicadaNoArquivo, boolean possivelmenteJaImportada) {
 	}
 }

@@ -85,13 +85,14 @@ public class LoteImportacaoBancaria {
 	@JoinColumn(name = "descartado_por_usuario_id")
 	private Usuario descartadoPor;
 
-	public LoteImportacaoBancaria(Empresa empresa, ContaFinanceira conta, String hashArquivo,
+	public LoteImportacaoBancaria(Empresa empresa, ContaFinanceira conta, FormatoArquivoImportacao formato,
+			String hashArquivo,
 			String nomeOriginal, long tamanhoBytes, int quantidadeTransacoes, int quantidadeDuplicadasArquivo,
 			int quantidadePossiveisDuplicadas, Usuario autor) {
 		this.empresa = Objects.requireNonNull(empresa, "empresa nao pode ser nula");
 		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
 		this.hashArquivo = Objects.requireNonNull(hashArquivo, "hashArquivo nao pode ser nulo");
-		this.formato = FormatoArquivoImportacao.OFX;
+		this.formato = Objects.requireNonNull(formato, "formato nao pode ser nulo");
 		this.nomeOriginal = Objects.requireNonNull(nomeOriginal, "nomeOriginal nao pode ser nulo");
 		this.tamanhoBytes = tamanhoBytes;
 		this.status = StatusLoteImportacao.PREVIA_DISPONIVEL;

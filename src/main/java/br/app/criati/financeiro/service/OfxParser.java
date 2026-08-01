@@ -27,7 +27,7 @@ public class OfxParser {
 	private static final Pattern CABECALHO_ENCODING = Pattern.compile("(?im)^\\s*ENCODING\\s*:\\s*([^\\r\\n]+)");
 	private static final Pattern CABECALHO_CHARSET = Pattern.compile("(?im)^\\s*CHARSET\\s*:\\s*([^\\r\\n]+)");
 
-	public List<TransacaoOfxExtraida> parse(byte[] conteudo) {
+	public List<TransacaoBancariaExtraida> parse(byte[] conteudo) {
 		String texto = decodificar(conteudo).replace("\uFEFF", "");
 		String caixaAlta = texto.toUpperCase(Locale.ROOT);
 		if (texto.indexOf('\0') >= 0 || caixaAlta.contains("<!DOCTYPE") || caixaAlta.contains("<!ENTITY")) {
@@ -37,7 +37,7 @@ public class OfxParser {
 			throw invalido();
 		}
 
-		List<TransacaoOfxExtraida> transacoes = new ArrayList<>();
+		List<TransacaoBancariaExtraida> transacoes = new ArrayList<>();
 		Matcher matcher = BLOCO_TRANSACAO.matcher(texto);
 		while (matcher.find()) {
 			transacoes.add(extrairTransacao(matcher.group(1)));
@@ -48,7 +48,7 @@ public class OfxParser {
 		return List.copyOf(transacoes);
 	}
 
-	private TransacaoOfxExtraida extrairTransacao(String bloco) {
+	private TransacaoBancariaExtraida extrairTransacao(String bloco) {
 		String dataBruta = tag(bloco, "DTPOSTED");
 		String valorBruto = tag(bloco, "TRNAMT");
 		if (dataBruta == null || valorBruto == null) {
@@ -68,7 +68,7 @@ public class OfxParser {
 		if (documento == null) {
 			documento = normalizar(tag(bloco, "REFNUM"));
 		}
-		return new TransacaoOfxExtraida(data, valor, tipo.toUpperCase(Locale.ROOT), descricao,
+		return new TransacaoBancariaExtraida(data, valor, tipo.toUpperCase(Locale.ROOT), descricao,
 				identificador, limitar(documento, 100));
 	}
 

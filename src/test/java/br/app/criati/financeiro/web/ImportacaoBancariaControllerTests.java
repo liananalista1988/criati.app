@@ -74,7 +74,13 @@ import br.app.criati.usuario.repository.UsuarioRepository;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestPropertySource(properties = "criati.financeiro.importacao-ofx.tamanho-maximo-bytes=512")
+@TestPropertySource(properties = {
+		"criati.financeiro.importacao-ofx.tamanho-maximo-bytes=512",
+		"criati.financeiro.importacao-csv.tamanho-maximo-bytes=512",
+		"criati.financeiro.importacao-csv.maximo-linhas=3",
+		"criati.financeiro.importacao-csv.maximo-colunas=8",
+		"criati.financeiro.importacao-csv.maximo-caracteres-campo=100"
+})
 @Transactional
 class ImportacaoBancariaControllerTests {
 
@@ -379,6 +385,130 @@ class ImportacaoBancariaControllerTests {
 	}
 
 	@Test
+	void csvComVirgulaCriaPreviaRastreavelSemLancamentoEReutilizaHistorico() throws Exception {
+		Cenario c = cenario("81111111000617", PerfilUsuario.ADMINISTRADOR);
+		String csv = "Data,Descrição,Valor,Documento,Identificador\n"
+				+ "2026-08-01,Salário,100.50,DOC-1,CSV-1\n"
+				+ "01/08/2026,Mercado,-25.50,DOC-2,CSV-2\n";
+
+		MvcResult criado = mockMvc.perform(uploadCsv(c, arquivoCsv("extrato.csv", csv)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.formato").value("CSV"))
+				.andExpect(jsonPath("$.lote.hashArquivo").value(sha256(csv)))
+				.andExpect(jsonPath("$.transacoes[0].valor").value(100.50))
+				.andExpect(jsonPath("$.transacoes[0].tipoBancario").value("CREDIT"))
+				.andExpect(jsonPath("$.transacoes[0].identificadorBancario").value("CSV-1"))
+				.andExpect(jsonPath("$.transacoes[1].valor").value(-25.50))
+				.andExpect(jsonPath("$.transacoes[1].tipoBancario").value("DEBIT"))
+				.andExpect(jsonPath("$.transacoes[1].situacao").value("PENDENTE"))
+				.andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+		mockMvc.perform(get(URL).session(c.session())).andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].formato").value("CSV"));
+		mockMvc.perform(get(URL + "/" + loteId).session(c.session())).andExpect(status().isOk())
+				.andExpect(jsonPath("$.transacoes.length()").value(2));
+		assertThat(lancamentoRepository.findAllByEmpresaId(c.empresa().getId())).isEmpty();
+	}
+
+	@Test
+	void csvComPontoEVirgulaUtf8BomETipoDefineSinal() throws Exception {
+		Cenario c = cenario("82222222000618", PerfilUsuario.GESTOR);
+		String csv = "data;histórico;amount;type;referência;transaction_id\n"
+				+ "01-08-2026;Crédito café;10,25;entrada;DOC-1;ID-1\n"
+				+ "20260801;Débito mercado;7,30;saída;DOC-2;ID-2\n";
+		byte[] texto = csv.getBytes(StandardCharsets.UTF_8);
+		byte[] comBom = new byte[texto.length + 3];
+		comBom[0] = (byte) 0xEF;
+		comBom[1] = (byte) 0xBB;
+		comBom[2] = (byte) 0xBF;
+		System.arraycopy(texto, 0, comBom, 3, texto.length);
+
+		mockMvc.perform(uploadCsv(c, arquivoCsv("utf8.csv", comBom)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.transacoes[0].descricao").value("Crédito café"))
+				.andExpect(jsonPath("$.transacoes[0].valor").value(10.25))
+				.andExpect(jsonPath("$.transacoes[0].documento").value("DOC-1"))
+				.andExpect(jsonPath("$.transacoes[1].valor").value(-7.30));
+		assertThat(lancamentoRepository.findAllByEmpresaId(c.empresa().getId())).isEmpty();
+	}
+
+	@Test
+	void csvHashDuplicidadesInternasEHistoricasSaoIsoladosPorEmpresa() throws Exception {
+		Cenario a = cenario("83333333000619", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("84444444000620", PerfilUsuario.ADMINISTRADOR);
+		String repetidas = "data,descricao,valor,identificador\n"
+				+ "2026-08-01,Primeira,-10.00,CSV-REPETIDA\n"
+				+ "2026-08-02,Segunda,-11.00,CSV-REPETIDA\n";
+
+		mockMvc.perform(uploadCsv(a, arquivoCsv("repetidas.csv", repetidas)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.quantidadeDuplicadasArquivo").value(1))
+				.andExpect(jsonPath("$.transacoes[1].duplicadaNoArquivo").value(true));
+		mockMvc.perform(uploadCsv(a, arquivoCsv("repetidas.csv", repetidas))).andExpect(status().isConflict());
+		mockMvc.perform(uploadCsv(b, arquivoCsv("repetidas.csv", repetidas))).andExpect(status().isCreated());
+
+		String historico = "data,descricao,valor,identificador\n"
+				+ "2026-08-03,Historico diferente,-12.00,CSV-REPETIDA\n";
+		mockMvc.perform(uploadCsv(a, arquivoCsv("historico.csv", historico)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.quantidadePossiveisDuplicadas").value(1))
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
+	}
+
+	@Test
+	void csvInvalidoRejeitaSemPersistirParteDoLote() throws Exception {
+		Cenario c = cenario("85555555000621", PerfilUsuario.ADMINISTRADOR);
+		String[] invalidos = {
+				"data,descricao\n2026-08-01,Sem valor\n",
+				"data,descricao,valor,amount\n2026-08-01,Ambiguo,10,10\n",
+				"data,descricao,valor\n31/02/2026,Data invalida,10\n",
+				"data,descricao,valor\n2026-08-01,Valor invalido,1.234\n",
+				"data,descricao,valor\n2026-08-01,=2+2,10\n",
+				"<OFX><BANKTRANLIST></BANKTRANLIST></OFX>"
+		};
+		for (int indice = 0; indice < invalidos.length; indice++) {
+			mockMvc.perform(uploadCsv(c, arquivoCsv("invalido-" + indice + ".csv", invalidos[indice])))
+					.andExpect(status().isBadRequest());
+		}
+		mockMvc.perform(uploadCsv(c, arquivoCsv("../extrato.csv", "data,descricao,valor\n2026-08-01,A,1\n")))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(uploadCsv(c, arquivoCsv("extrato.ofx", "data,descricao,valor\n2026-08-01,A,1\n")))
+				.andExpect(status().isBadRequest());
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(c.empresa().getId())).isEmpty();
+		assertThat(transacaoRepository.countByEmpresaId(c.empresa().getId())).isZero();
+	}
+
+	@Test
+	void csvVazioGrandeComMuitasLinhasEContaAlheiaSaoRejeitados() throws Exception {
+		Cenario a = cenario("86666666000622", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("87777777000623", PerfilUsuario.ADMINISTRADOR);
+		mockMvc.perform(uploadCsv(a, arquivoCsv("vazio.csv", ""))).andExpect(status().isBadRequest());
+		mockMvc.perform(uploadCsv(a, arquivoCsv("grande.csv", new byte[513]))).andExpect(status().isBadRequest());
+		String muitas = "data,descricao,valor\n2026-08-01,A,1\n2026-08-02,B,2\n"
+				+ "2026-08-03,C,3\n2026-08-04,D,4\n";
+		mockMvc.perform(uploadCsv(a, arquivoCsv("muitas.csv", muitas))).andExpect(status().isBadRequest());
+		mockMvc.perform(multipart(URL + "/csv").file(arquivoCsv("alheia.csv",
+				"data,descricao,valor\n2026-08-01,A,1\n"))
+				.param("contaId", b.conta().getId().toString()).session(a.session()).with(csrf()))
+				.andExpect(status().isNotFound());
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(a.empresa().getId())).isEmpty();
+	}
+
+	@Test
+	void uploadCsvExigeAutenticacaoCsrfEPerfilDeEscrita() throws Exception {
+		Cenario usuario = cenario("88888888000624", PerfilUsuario.USUARIO);
+		String csv = "data,descricao,valor\n2026-08-01,Seguranca,10\n";
+		mockMvc.perform(multipart(URL + "/csv").file(arquivoCsv("seguranca.csv", csv))
+				.param("contaId", usuario.conta().getId().toString()).with(csrf()))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(multipart(URL + "/csv").file(arquivoCsv("seguranca.csv", csv))
+				.param("contaId", usuario.conta().getId().toString()).session(usuario.session()))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(uploadCsv(usuario, arquivoCsv("seguranca.csv", csv))).andExpect(status().isForbidden());
+		assertThat(loteRepository.findAllByEmpresaIdOrderByCriadoEmDesc(usuario.empresa().getId())).isEmpty();
+	}
+
+	@Test
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	void confirmacoesConcorrentesGeramNoMaximoUmLancamento() throws Exception {
 		Cenario c = cenario("77777777000616", PerfilUsuario.ADMINISTRADOR);
@@ -468,8 +598,22 @@ class ImportacaoBancariaControllerTests {
 				.session(cenario.session()).with(csrf());
 	}
 
+	private org.springframework.test.web.servlet.RequestBuilder uploadCsv(
+			Cenario cenario, MockMultipartFile arquivo) {
+		return multipart(URL + "/csv").file(arquivo).param("contaId", cenario.conta().getId().toString())
+				.session(cenario.session()).with(csrf());
+	}
+
 	private MockMultipartFile arquivo(String nome, String conteudo) {
 		return new MockMultipartFile("arquivo", nome, "application/x-ofx", conteudo.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private MockMultipartFile arquivoCsv(String nome, String conteudo) {
+		return arquivoCsv(nome, conteudo.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private MockMultipartFile arquivoCsv(String nome, byte[] conteudo) {
+		return new MockMultipartFile("arquivo", nome, "text/csv", conteudo);
 	}
 
 	private String duasTransacoes() {

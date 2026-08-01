@@ -3,7 +3,7 @@ package br.app.criati.financeiro.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public record TransacaoOfxExtraida(
+public record TransacaoBancariaExtraida(
 		LocalDate data,
 		BigDecimal valor,
 		String tipoBancario,

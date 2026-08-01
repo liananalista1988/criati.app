@@ -1,5 +1,6 @@
 package br.app.criati.shared.enums;
 
 public enum FormatoArquivoImportacao {
-	OFX
+	OFX,
+	CSV
 }
