@@ -1,8 +1,9 @@
-/* Telas operacionais de importacao bancaria OFX (CRIATI-FIN-016) e
-   confirmacao de transacoes (CRIATI-FIN-018). Upload, listagem,
-   pre-visualizacao, descarte logico e confirmacao/ignorar transacoes.
-   Valores, contadores, status, tipo financeiro (receita/despesa) e
-   sinalizacao de duplicidade vem sempre do backend
+/* Telas operacionais de importacao bancaria OFX/CSV (CRIATI-FIN-016/FIN-020) e
+   confirmacao de transacoes (CRIATI-FIN-018). Upload (com escolha de
+   formato), listagem, pre-visualizacao, descarte logico e
+   confirmacao/ignorar transacoes - uma unica jornada para os dois formatos,
+   sem paginas duplicadas. Valores, contadores, status, tipo financeiro
+   (receita/despesa) e sinalizacao de duplicidade vem sempre do backend
    (ImportacaoBancariaService/ConfirmacaoImportacaoBancariaService); este
    arquivo nao recalcula hash, duplicidade nem nenhum valor ou natureza
    financeira, e nunca cria LancamentoFinanceiro diretamente - apenas envia
@@ -15,9 +16,26 @@
 	var formatacao = window.FinanceiroFormatacao;
 
 	// Espelha o padrao configuravel no backend (application.properties /
-	// CRIATI_IMPORTACAO_OFX_TAMANHO_MAXIMO_BYTES) apenas como aviso leve ao
+	// CRIATI_IMPORTACAO_OFX_TAMANHO_MAXIMO_BYTES / CRIATI_IMPORTACAO_CSV_
+	// TAMANHO_MAXIMO_BYTES, ambos 1 MiB por padrao) apenas como aviso leve ao
 	// usuario antes do upload; o backend permanece a unica validacao real.
 	var TAMANHO_MAXIMO_ADVISORIO_BYTES = 1048576;
+
+	// Rotulo/instrucao/extensao por formato - o unico efeito real no upload e
+	// qual endpoint e chamado (FinanceiroApi.importacoesBancarias.importar);
+	// parser, limites e validacao continuam exclusivamente no backend.
+	var FORMATO_INFO = {
+		OFX: {
+			extensao: ".ofx",
+			rotulo: "Arquivo OFX",
+			dica: "Somente arquivos .ofx, até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final)."
+		},
+		CSV: {
+			extensao: ".csv",
+			rotulo: "Arquivo CSV",
+			dica: "Somente arquivos .csv (separado por vírgula ou ponto e vírgula, UTF-8), até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final)."
+		}
+	};
 
 	var loteAtual = null;
 	var resumoAtual = null;
@@ -140,6 +158,7 @@
 		var tr = document.createElement("tr");
 		tr.appendChild(celula(lote.contaNome));
 		tr.appendChild(celula(lote.nomeOriginal));
+		tr.appendChild(celula(lote.formato));
 		tr.appendChild(celula(dataHoraBr(lote.criadoEm)));
 		tr.appendChild(celula(lote.quantidadeTransacoes));
 		tr.appendChild(celula(lote.quantidadeDuplicadasArquivo));
@@ -190,8 +209,37 @@
 
 	// ---- Novo upload ----
 
-	function extensaoValida(nome) {
-		return /\.ofx$/i.test(nome || "");
+	function extensaoValida(nome, formato) {
+		var extensao = (FORMATO_INFO[formato] || FORMATO_INFO.OFX).extensao;
+		var regex = new RegExp("\\" + extensao + "$", "i");
+		return regex.test(nome || "");
+	}
+
+	function formatoSelecionado() {
+		var radios = document.getElementsByName("importacao-formato");
+		for (var i = 0; i < radios.length; i++) {
+			if (radios[i].checked) {
+				return radios[i].value;
+			}
+		}
+		return "OFX";
+	}
+
+	function atualizarFormatoSelecionado() {
+		var info = FORMATO_INFO[formatoSelecionado()] || FORMATO_INFO.OFX;
+		if (el("importacao-arquivo-label")) {
+			el("importacao-arquivo-label").textContent = info.rotulo;
+		}
+		if (el("importacao-arquivo")) {
+			el("importacao-arquivo").accept = info.extensao;
+			// Uma selecao feita no formato anterior pode nao valer mais (ex.:
+			// .ofx escolhido, depois o usuario troca para CSV); limpar evita
+			// enviar um arquivo com extensao incompativel com o formato atual.
+			el("importacao-arquivo").value = "";
+		}
+		if (el("importacao-arquivo-info")) {
+			el("importacao-arquivo-info").innerHTML = info.dica;
+		}
 	}
 
 	function iniciarFormulario() {
@@ -202,12 +250,18 @@
 		}).catch(function (erro) {
 			mostrarMensagem("importacao-form-mensagem", mensagemErro(erro, "Não foi possível carregar as contas."), "erro");
 		});
+		Array.prototype.forEach.call(document.getElementsByName("importacao-formato"), function (radio) {
+			radio.addEventListener("change", atualizarFormatoSelecionado);
+		});
+		atualizarFormatoSelecionado();
 		el("importacao-form").addEventListener("submit", enviarUpload);
 	}
 
 	function enviarUpload(evento) {
 		evento.preventDefault();
 		ocultarMensagem("importacao-form-mensagem");
+		var formato = formatoSelecionado();
+		var info = FORMATO_INFO[formato] || FORMATO_INFO.OFX;
 		var contaId = el("importacao-conta").value;
 		var arquivos = el("importacao-arquivo").files;
 		var arquivo = arquivos && arquivos.length ? arquivos[0] : null;
@@ -216,11 +270,11 @@
 			return;
 		}
 		if (!arquivo) {
-			mostrarMensagem("importacao-form-mensagem", "Selecione um arquivo .ofx.", "erro");
+			mostrarMensagem("importacao-form-mensagem", "Selecione um arquivo " + info.extensao + ".", "erro");
 			return;
 		}
-		if (!extensaoValida(arquivo.name)) {
-			mostrarMensagem("importacao-form-mensagem", "O arquivo deve ter extensão .ofx.", "erro");
+		if (!extensaoValida(arquivo.name, formato)) {
+			mostrarMensagem("importacao-form-mensagem", "O arquivo deve ter extensão " + info.extensao + ".", "erro");
 			return;
 		}
 		if (arquivo.size > TAMANHO_MAXIMO_ADVISORIO_BYTES) {
@@ -230,7 +284,7 @@
 		}
 		var botao = el("importacao-enviar");
 		window.CriatiUI.setButtonLoading(botao, true, "Enviando...");
-		api.importacoesBancarias.importarOfx(contaId, arquivo).then(function (resposta) {
+		api.importacoesBancarias.importar(contaId, arquivo, formato).then(function (resposta) {
 			window.location.href = "/app/financeiro/importacoes/" + encodeURIComponent(resposta.data.lote.id) + "?criado=1";
 		}).catch(function (erro) {
 			mostrarMensagem("importacao-form-mensagem", mensagemErro(erro, "Não foi possível importar o arquivo."), "erro");

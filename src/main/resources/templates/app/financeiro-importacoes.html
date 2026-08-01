@@ -7,7 +7,7 @@
 	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
-	<title>Importação OFX · Financeiro · Criati</title>
+	<title>Importações bancárias · Financeiro · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
@@ -22,8 +22,8 @@
 			<main class="criati-content">
 				<div class="criati-page-header financeiro-operacional-cabecalho">
 					<div>
-						<h1>Importação OFX</h1>
-						<p>Histórico de arquivos OFX enviados para pré-visualização. Nenhum lançamento é criado nesta etapa.</p>
+						<h1>Importações bancárias</h1>
+						<p>Histórico de arquivos OFX e CSV enviados para pré-visualização. Nenhum lançamento é criado nesta etapa.</p>
 					</div>
 					<a th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-primary"
 						href="/app/financeiro/importacoes/nova">Nova importação</a>
@@ -38,15 +38,15 @@
 					</div>
 					<div id="importacoes-vazio" class="criati-empty-state" hidden>
 						<p>Nenhuma importação realizada ainda.</p>
-						<p>Envie um arquivo OFX para pré-visualizar as transações do extrato.</p>
+						<p>Envie um arquivo OFX ou CSV para pré-visualizar as transações do extrato.</p>
 						<a th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-primary"
 							href="/app/financeiro/importacoes/nova">Nova importação</a>
 					</div>
 					<div id="importacoes-tabela-wrap" class="criati-table-wrap financeiro-tabela-operacional-scroll" hidden>
-						<table class="criati-table" aria-label="Histórico de importações OFX">
+						<table class="criati-table" aria-label="Histórico de importações bancárias">
 							<thead>
 								<tr>
-									<th>Conta</th><th>Arquivo</th><th>Enviado em</th>
+									<th>Conta</th><th>Arquivo</th><th>Formato</th><th>Enviado em</th>
 									<th>Transações</th><th>Duplicadas</th><th>Possíveis duplicidades</th>
 									<th>Situação</th><th>Ações</th>
 								</tr>

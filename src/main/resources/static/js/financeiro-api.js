@@ -341,12 +341,16 @@
 			return window.CriatiApi.get(IMPORTACOES_BASE + "/" + id);
 		},
 		// contaId vai na query string (o backend le via @RequestParam), o corpo
-		// multipart carrega somente o arquivo - nunca recalcula hash ou
-		// duplicidade aqui, isso e responsabilidade exclusiva do backend.
-		importarOfx: function (contaId, arquivo) {
+		// multipart carrega somente o arquivo - nunca recalcula hash, duplicidade
+		// ou natureza financeira aqui, isso e responsabilidade exclusiva do
+		// backend. formato ("OFX" ou "CSV") so escolhe o endpoint de upload;
+		// os dois usam o mesmo parser/servico/contrato de resposta no backend.
+		importar: function (contaId, arquivo, formato) {
+			var caminho = formato === "CSV" ? "/csv" : "/ofx";
 			var formData = new FormData();
 			formData.append("arquivo", arquivo);
-			return window.CriatiApi.upload(IMPORTACOES_BASE + "/ofx?contaId=" + encodeURIComponent(contaId), formData);
+			return window.CriatiApi.upload(
+					IMPORTACOES_BASE + caminho + "?contaId=" + encodeURIComponent(contaId), formData);
 		},
 		descartar: function (id) {
 			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/descartar");

@@ -7,7 +7,7 @@
 	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
-	<title>Nova importação OFX · Financeiro · Criati</title>
+	<title>Nova importação bancária · Financeiro · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
@@ -21,19 +21,32 @@
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
 				<div class="criati-page-header financeiro-operacional-cabecalho">
-					<div><h1>Nova importação OFX</h1><p>Selecione a conta e envie o arquivo. O backend valida, extrai as transações e devolve uma prévia — nada é lançado ainda.</p></div>
+					<div><h1>Nova importação bancária</h1><p>Escolha o formato, selecione a conta e envie o arquivo. O backend valida, extrai as transações e devolve uma prévia — nada é lançado ainda.</p></div>
 					<a class="criati-btn" href="/app/financeiro/importacoes">Voltar</a>
 				</div>
 				<div id="importacao-form-mensagem" class="criati-alert" role="alert" hidden></div>
 				<section class="criati-card financeiro-formulario-operacional">
 					<form id="importacao-form" class="criati-form-grid">
+						<div class="criati-field financeiro-campo-largo">
+							<label id="importacao-formato-legenda">Formato do arquivo</label>
+							<div role="radiogroup" aria-labelledby="importacao-formato-legenda">
+								<label>
+									<input type="radio" name="importacao-formato" id="importacao-formato-ofx" value="OFX" checked />
+									OFX
+								</label>
+								<label>
+									<input type="radio" name="importacao-formato" id="importacao-formato-csv" value="CSV" />
+									CSV
+								</label>
+							</div>
+						</div>
 						<div class="criati-field">
 							<label for="importacao-conta">Conta financeira</label>
 							<select class="criati-select" id="importacao-conta" required><option value="">Carregando contas...</option></select>
 							<p class="criati-card-sub">Somente contas ativas. As transações do extrato serão associadas a esta conta.</p>
 						</div>
 						<div class="criati-field financeiro-campo-largo">
-							<label for="importacao-arquivo">Arquivo OFX</label>
+							<label for="importacao-arquivo" id="importacao-arquivo-label">Arquivo OFX</label>
 							<input class="criati-input" id="importacao-arquivo" type="file" accept=".ofx" required />
 							<p class="criati-card-sub" id="importacao-arquivo-info">Somente arquivos .ofx, até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final).</p>
 						</div>

@@ -246,8 +246,11 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("fatura-pagar-abrir"))));
 		mockMvc.perform(get("/app/financeiro/importacoes").session(session)).andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Importação OFX")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Importações bancárias")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("importacoes-tabela-wrap")))
+				// Coluna "Formato" (CRIATI-FIN-020): historico precisa distinguir
+				// lotes OFX e CSV sem depender de paginas separadas por formato.
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("<th>Formato</th>")))
 				// Usuario com perfil USUARIO: link de escrita nao pode ser renderizado,
 				// mesma regra de ImportacaoBancariaService#exigirEscrita no backend.
 				.andExpect(content().string(org.hamcrest.Matchers.not(
@@ -321,7 +324,11 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("/app/financeiro/importacoes/nova")));
 		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(sessaoAdmin)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-conta\"")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-arquivo\"")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-arquivo\"")))
+				// Seletor de formato (CRIATI-FIN-020): os dois radios existem na
+				// mesma tela/rota, sem pagina duplicada por formato.
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-formato-ofx\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-formato-csv\"")));
 		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(sessaoAdmin))
 				.andExpect(status().isOk())
 				// Controles de confirmacao (toolbar de selecao em massa e checkbox
