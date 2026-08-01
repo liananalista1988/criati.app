@@ -23,7 +23,7 @@
 				<div class="criati-page-header financeiro-operacional-cabecalho">
 					<div>
 						<h1>Importações bancárias</h1>
-						<p>Histórico de arquivos OFX e CSV enviados para pré-visualização. Nenhum lançamento é criado nesta etapa.</p>
+						<p>Histórico de arquivos OFX, CSV e XLSX enviados para pré-visualização. Nenhum lançamento é criado nesta etapa.</p>
 					</div>
 					<a th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-primary"
 						href="/app/financeiro/importacoes/nova">Nova importação</a>
@@ -38,7 +38,7 @@
 					</div>
 					<div id="importacoes-vazio" class="criati-empty-state" hidden>
 						<p>Nenhuma importação realizada ainda.</p>
-						<p>Envie um arquivo OFX ou CSV para pré-visualizar as transações do extrato.</p>
+						<p>Envie um arquivo OFX, CSV ou XLSX para pré-visualizar as transações do extrato.</p>
 						<a th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-primary"
 							href="/app/financeiro/importacoes/nova">Nova importação</a>
 					</div>

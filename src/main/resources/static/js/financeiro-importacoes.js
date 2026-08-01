@@ -1,9 +1,10 @@
-/* Telas operacionais de importacao bancaria OFX/CSV (CRIATI-FIN-016/FIN-020) e
-   confirmacao de transacoes (CRIATI-FIN-018). Upload (com escolha de
-   formato), listagem, pre-visualizacao, descarte logico e
-   confirmacao/ignorar transacoes - uma unica jornada para os dois formatos,
-   sem paginas duplicadas. Valores, contadores, status, tipo financeiro
-   (receita/despesa) e sinalizacao de duplicidade vem sempre do backend
+/* Telas operacionais de importacao bancaria OFX/CSV/XLSX
+   (CRIATI-FIN-016/FIN-020/FIN-022) e confirmacao de transacoes
+   (CRIATI-FIN-018). Upload (com escolha de formato), listagem,
+   pre-visualizacao, descarte logico e confirmacao/ignorar transacoes - uma
+   unica jornada para os tres formatos, sem paginas duplicadas. Valores,
+   contadores, status, tipo financeiro (receita/despesa) e sinalizacao de
+   duplicidade vem sempre do backend
    (ImportacaoBancariaService/ConfirmacaoImportacaoBancariaService); este
    arquivo nao recalcula hash, duplicidade nem nenhum valor ou natureza
    financeira, e nunca cria LancamentoFinanceiro diretamente - apenas envia
@@ -15,25 +16,30 @@
 	var api = window.FinanceiroApi;
 	var formatacao = window.FinanceiroFormatacao;
 
-	// Espelha o padrao configuravel no backend (application.properties /
-	// CRIATI_IMPORTACAO_OFX_TAMANHO_MAXIMO_BYTES / CRIATI_IMPORTACAO_CSV_
-	// TAMANHO_MAXIMO_BYTES, ambos 1 MiB por padrao) apenas como aviso leve ao
-	// usuario antes do upload; o backend permanece a unica validacao real.
-	var TAMANHO_MAXIMO_ADVISORIO_BYTES = 1048576;
-
-	// Rotulo/instrucao/extensao por formato - o unico efeito real no upload e
-	// qual endpoint e chamado (FinanceiroApi.importacoesBancarias.importar);
-	// parser, limites e validacao continuam exclusivamente no backend.
+	// Rotulo/instrucao/extensao/limite por formato - o unico efeito real no
+	// upload e qual endpoint e chamado (FinanceiroApi.importacoesBancarias.
+	// importar); parser, limites e validacao continuam exclusivamente no
+	// backend. tamanhoMaximoAdvisorioBytes so espelha o padrao configuravel
+	// (application.properties / CRIATI_IMPORTACAO_*_TAMANHO_MAXIMO_BYTES) como
+	// aviso leve antes do upload.
 	var FORMATO_INFO = {
 		OFX: {
 			extensao: ".ofx",
 			rotulo: "Arquivo OFX",
-			dica: "Somente arquivos .ofx, até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final)."
+			dica: "Somente arquivos .ofx, até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final).",
+			tamanhoMaximoAdvisorioBytes: 1048576
 		},
 		CSV: {
 			extensao: ".csv",
 			rotulo: "Arquivo CSV",
-			dica: "Somente arquivos .csv (separado por vírgula ou ponto e vírgula, UTF-8), até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final)."
+			dica: "Somente arquivos .csv (separado por vírgula ou ponto e vírgula, UTF-8), até 1&nbsp;MiB (limite padrão; o backend é sempre a validação final).",
+			tamanhoMaximoAdvisorioBytes: 1048576
+		},
+		XLSX: {
+			extensao: ".xlsx",
+			rotulo: "Arquivo XLSX",
+			dica: "Somente arquivos .xlsx (não .xls), até 2&nbsp;MiB (limite padrão; o backend é sempre a validação final). Planilhas com fórmulas, abas ocultas ou macros são rejeitadas.",
+			tamanhoMaximoAdvisorioBytes: 2097152
 		}
 	};
 
@@ -277,9 +283,10 @@
 			mostrarMensagem("importacao-form-mensagem", "O arquivo deve ter extensão " + info.extensao + ".", "erro");
 			return;
 		}
-		if (arquivo.size > TAMANHO_MAXIMO_ADVISORIO_BYTES) {
+		if (arquivo.size > info.tamanhoMaximoAdvisorioBytes) {
+			var limiteMiB = info.tamanhoMaximoAdvisorioBytes / 1048576;
 			mostrarMensagem("importacao-form-mensagem",
-				"Arquivo maior que o limite padrão (1 MiB). O backend fará a validação definitiva.", "erro");
+				"Arquivo maior que o limite padrão (" + limiteMiB + " MiB). O backend fará a validação definitiva.", "erro");
 			return;
 		}
 		var botao = el("importacao-enviar");

@@ -343,10 +343,11 @@
 		// contaId vai na query string (o backend le via @RequestParam), o corpo
 		// multipart carrega somente o arquivo - nunca recalcula hash, duplicidade
 		// ou natureza financeira aqui, isso e responsabilidade exclusiva do
-		// backend. formato ("OFX" ou "CSV") so escolhe o endpoint de upload;
-		// os dois usam o mesmo parser/servico/contrato de resposta no backend.
+		// backend. formato ("OFX", "CSV" ou "XLSX") so escolhe o endpoint de
+		// upload; os tres usam o mesmo parser/servico/contrato de resposta no
+		// backend.
 		importar: function (contaId, arquivo, formato) {
-			var caminho = formato === "CSV" ? "/csv" : "/ofx";
+			var caminho = formato === "CSV" ? "/csv" : formato === "XLSX" ? "/xlsx" : "/ofx";
 			var formData = new FormData();
 			formData.append("arquivo", arquivo);
 			return window.CriatiApi.upload(

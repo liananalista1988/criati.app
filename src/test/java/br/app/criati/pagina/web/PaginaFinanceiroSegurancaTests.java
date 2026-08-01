@@ -325,10 +325,11 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/importacoes/nova").session(sessaoAdmin)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-conta\"")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-arquivo\"")))
-				// Seletor de formato (CRIATI-FIN-020): os dois radios existem na
-				// mesma tela/rota, sem pagina duplicada por formato.
+				// Seletor de formato (CRIATI-FIN-020/FIN-022): os tres radios
+				// existem na mesma tela/rota, sem pagina duplicada por formato.
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-formato-ofx\"")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-formato-csv\"")));
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-formato-csv\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"importacao-formato-xlsx\"")));
 		mockMvc.perform(get("/app/financeiro/importacoes/" + UUID.randomUUID()).session(sessaoAdmin))
 				.andExpect(status().isOk())
 				// Controles de confirmacao (toolbar de selecao em massa e checkbox
