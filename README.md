@@ -188,7 +188,7 @@ CRIATI_BOOTSTRAP_EMAIL
 CRIATI_BOOTSTRAP_PASSWORD
 ```
 
-Só têm efeito se ainda não existir nenhum Superadministrador cadastrado; não há senha padrão. Ver [Decisões](docs/DECISOES.MD).
+Só têm efeito se ainda não existir nenhum Superadministrador cadastrado; não há senha padrão. Ver [Decisões](docs/DECISOES.md).
 
 Variável opcional para expiração de convites (qualquer perfil):
 
@@ -336,7 +336,7 @@ POST   /api/convites/{token}/aceitar     (público)
 GET    /convites/{token}                 (público; página de aceite)
 ```
 
-O convidado define sua própria senha ao aceitar; nenhuma senha é enviada por e-mail nem criada pelo administrador. Não há integração de e-mail real nesta fase — o token do convite só é retornado na resposta de criação em `local`/`test` (`criati.convite.expor-token-bruto`). Detalhes completos (token, expiração, política de duplicidade, tratamento de e-mail já cadastrado) em [Decisões](docs/DECISOES.MD).
+O convidado define sua própria senha ao aceitar; nenhuma senha é enviada por e-mail nem criada pelo administrador. Não há integração de e-mail real nesta fase — o token do convite só é retornado na resposta de criação em `local`/`test` (`criati.convite.expor-token-bruto`). Detalhes completos (token, expiração, política de duplicidade, tratamento de e-mail já cadastrado) em [Decisões](docs/DECISOES.md).
 
 `GET /convites/{token}` é a página pública onde o convidado informa nome e define a senha. Fluxo: a página valida o convite (`GET /api/convites/{token}`), mostra empresa/e-mail mascarado/perfil/expiração quando válido, envia o aceite (`POST /api/convites/{token}/aceitar`) e, em caso de sucesso, mostra confirmação com um botão para `/login?motivo=convite-aceito` — **sem autenticar automaticamente** (nenhuma sessão é criada). O token nunca é gravado em `localStorage`/`sessionStorage` nem logado; a página nunca mostra a mensagem literal de "e-mail já cadastrado" (409), apenas um texto genérico. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Página pública de aceite de convite".
 
@@ -353,7 +353,7 @@ POST   /api/contexto/usuarios/{id}/reativar    (ADMINISTRADOR, empresa ativa)
 DELETE /api/contexto/usuarios/{id}             (ADMINISTRADOR, empresa ativa)
 ```
 
-Suspensão e remoção são lógicas (o vínculo vira `INATIVO`; nunca há `DELETE` físico), preservam o `Usuario` global e os vínculos com outras empresas, e são bloqueadas quando afetariam o próprio vínculo do chamador ou o último `ADMINISTRADOR` ativo da empresa. Detalhes completos em [Decisões](docs/DECISOES.MD), seção "Gestão de acessos por empresa".
+Suspensão e remoção são lógicas (o vínculo vira `INATIVO`; nunca há `DELETE` físico), preservam o `Usuario` global e os vínculos com outras empresas, e são bloqueadas quando afetariam o próprio vínculo do chamador ou o último `ADMINISTRADOR` ativo da empresa. Detalhes completos em [Decisões](docs/DECISOES.md), seção "Gestão de acessos por empresa".
 
 ## Telas de Usuários e Convites
 
@@ -446,13 +446,14 @@ Antes de trabalhar no projeto, leia:
 
 - [Visão do Produto](docs/VISAO_DO_PRODUTO.md)
 - [Decisões](docs/DECISOES.md)
-- [Arquitetura](docs/ARQUITETURA.md)
+- [Arquitetura](docs/ARQUITETURA.MD)
 - [Modelo Multiempresa](docs/MODELO_MULTIEMPRESA.md)
 - [Escopo do MVP](docs/ESCOPO_MVP.md)
 - [Banco de Dados](docs/BANCO_DE_DADOS.md)
-- [Segurança](docs/SEGURANCA.md)
+- [Segurança](docs/SEGURANCA.MD)
 - [Financeiro](docs/FINANCEIRO.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Protocolo operacional multiagente](docs/engenharia/CRIATI_PROTOCOL.md)
 - [Regras para agentes](AGENTS.md)
 
 ## Segurança
@@ -470,36 +471,13 @@ Regras essenciais:
 - registrar ações críticas;
 - testar isolamento entre empresas.
 
-Consulte [SEGURANCA.md](docs/SEGURANCA.md).
+Consulte [SEGURANCA.MD](docs/SEGURANCA.MD).
 
 ## Fluxo de trabalho
 
-Antes de alterar:
-
-```cmd
-git status
-```
-
-Depois de alterar:
-
-```cmd
-git diff
-git status
-```
-
-Antes de concluir:
-
-```cmd
-mvnw.cmd test
-```
-
-Commits deverão ser pequenos e descritivos.
-
-Exemplo:
-
-```text
-Configura integração com PostgreSQL e Flyway
-```
+O fluxo de trabalho, as regras de Git, os critérios de validação e o protocolo
+multiagente estão centralizados no
+[CRIATI Protocol](docs/engenharia/CRIATI_PROTOCOL.md).
 
 ## Branch principal
 
@@ -554,7 +532,9 @@ Consulte [ROADMAP.md](docs/ROADMAP.md).
 
 Este é um projeto privado.
 
-Qualquer pessoa ou agente que trabalhar no projeto deverá seguir o arquivo [AGENTS.md](AGENTS.md).
+Qualquer pessoa ou agente que trabalhar no projeto deverá seguir o
+[CRIATI Protocol](docs/engenharia/CRIATI_PROTOCOL.md). `AGENTS.md` e `CLAUDE.md`
+são pontos de entrada específicos das ferramentas.
 
 Mudanças estruturais exigem aprovação e atualização da documentação.
 
