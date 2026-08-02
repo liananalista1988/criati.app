@@ -61,7 +61,11 @@ import br.app.criati.exception.RecorrenciaFinanceiraStatusInvalidoException;
 import br.app.criati.exception.RegraClassificacaoImportacaoNaoEncontradaException;
 import br.app.criati.exception.RessarcimentoParcelaCartaoNaoEncontradoException;
 import br.app.criati.exception.RessarcimentoParcelaCartaoStatusInvalidoException;
+import br.app.criati.exception.ProcessoTrabalhoNaoEncontradoException;
+import br.app.criati.exception.TarefaTrabalhoNaoEncontradaException;
+import br.app.criati.exception.TrabalhoStatusInvalidoException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
+import br.app.criati.exception.UsuarioEmpresaNaoEncontradoException;
 import br.app.criati.exception.UsuarioJaVinculadoPessoaFinanceiraException;
 import br.app.criati.exception.UsuarioEmpresaJaVinculadoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
@@ -145,7 +149,8 @@ public class GlobalExceptionHandler {
 			UsuarioStatusInvalidoException.class,
 			LoteImportacaoStatusInvalidoException.class,
 			TransacaoImportadaStatusInvalidoException.class,
-			ArquivoImportacaoDuplicadoException.class
+			ArquivoImportacaoDuplicadoException.class,
+			TrabalhoStatusInvalidoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarConflito(
 			RuntimeException exception,
@@ -177,7 +182,10 @@ public class GlobalExceptionHandler {
 			FaturaCartaoNaoEncontradaException.class,
 			LoteImportacaoNaoEncontradoException.class,
 			TransacaoImportadaNaoEncontradaException.class,
-			RegraClassificacaoImportacaoNaoEncontradaException.class
+			RegraClassificacaoImportacaoNaoEncontradaException.class,
+			ProcessoTrabalhoNaoEncontradoException.class,
+			TarefaTrabalhoNaoEncontradaException.class,
+			UsuarioEmpresaNaoEncontradoException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,
