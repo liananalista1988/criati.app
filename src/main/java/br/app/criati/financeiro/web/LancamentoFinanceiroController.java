@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.time.YearMonth;
+import java.math.BigDecimal;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -64,6 +65,32 @@ public class LancamentoFinanceiroController {
 				.map(LancamentoFinanceiroResponse::from)
 				.toList();
 		return ResponseEntity.ok(resposta);
+	}
+
+	@GetMapping("/pagina")
+	public ResponseEntity<PaginaLancamentosResponse> listarPagina(
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate competenciaInicial,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate competenciaFinal,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate liquidacaoInicial,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate liquidacaoFinal,
+			@RequestParam(required = false) TipoFinanceiro tipo,
+			@RequestParam(required = false) StatusLancamentoFinanceiro status,
+			@RequestParam(required = false) UUID contaId,
+			@RequestParam(required = false) UUID categoriaId,
+			@RequestParam(required = false) UUID pessoaId,
+			@RequestParam(required = false) Boolean vencido,
+			@RequestParam(required = false) String descricao,
+			@RequestParam(required = false) BigDecimal valorMinimo,
+			@RequestParam(required = false) BigDecimal valorMaximo,
+			@RequestParam(defaultValue = "0") int pagina,
+			@RequestParam(defaultValue = "25") int tamanho,
+			@RequestParam(defaultValue = "competencia") String ordenarPor,
+			@RequestParam(defaultValue = "desc") String direcao,
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return ResponseEntity.ok(PaginaLancamentosResponse.from(lancamentoFinanceiroService.listarPagina(contexto,
+				competenciaInicial, competenciaFinal, liquidacaoInicial, liquidacaoFinal, tipo, status, contaId,
+				categoriaId, pessoaId, vencido, descricao, valorMinimo, valorMaximo, pagina, tamanho, ordenarPor, direcao)));
 	}
 
 	@PostMapping

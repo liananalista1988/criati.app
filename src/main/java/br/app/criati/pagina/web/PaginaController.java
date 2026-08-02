@@ -189,10 +189,15 @@ public class PaginaController {
 	}
 
 	@GetMapping("/app/financeiro/lancamentos")
-	public String financeiroLancamentos(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
-		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {
+	public String financeiroLancamentos(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal,
+			Model model) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
 			return "redirect:/app/aplicacoes";
 		}
+		model.addAttribute("podeEscreverFinanceiro", podeEscreverFinanceiro(contexto));
+		model.addAttribute("podeDesliquidarFinanceiro", contexto.perfil() == PerfilUsuario.ADMINISTRADOR);
 		return "app/financeiro-lancamentos";
 	}
 

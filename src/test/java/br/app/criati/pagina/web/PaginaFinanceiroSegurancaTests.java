@@ -177,13 +177,20 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("Nova conta")));
 		mockMvc.perform(get("/app/financeiro/categorias").session(session)).andExpect(status().isOk());
 		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-filtros-recolhiveis")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-filtros-painel hidden")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Novo lançamento")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-lancamentos-periodo")))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(
+						"Organize receitas e despesas por competência, vencimento e liquidação."))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Resumo do período"))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Novo lançamento"))))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-operacional-cards")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("resumo-quantidade-lancamentos")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Aplicar filtros")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString("Limpar filtros")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-lancamentos-filtros-colunas")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-filtro-descricao")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-filtro-valor-minimo")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-filtro-liquidacao-inicial")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-limpar-filtro=\"categoria\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Limpar todos")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-lancamentos-paginacao")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("financeiro-tabela-operacional")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("role=\"dialog\"")))
 				.andExpect(content().string(org.hamcrest.Matchers.not(
@@ -290,6 +297,10 @@ class PaginaFinanceiroSegurancaTests {
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"fatura-encargos-abrir\"")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"fatura-fechar\"")))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"fatura-recompor\"")));
+		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"financeiro-lancamentos-nova-receita\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"financeiro-lancamentos-nova-despesa\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-pode-desliquidar=\"true\"")));
 	}
 
 	@Test
@@ -308,6 +319,9 @@ class PaginaFinanceiroSegurancaTests {
 		mockMvc.perform(get("/app/financeiro/faturas").session(session)).andExpect(status().isOk())
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("faturas-abrir-botao"))));
+		mockMvc.perform(get("/app/financeiro/lancamentos").session(session)).andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"financeiro-lancamentos-nova-receita\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("data-pode-desliquidar=\"false\"")));
 	}
 
 	@Test

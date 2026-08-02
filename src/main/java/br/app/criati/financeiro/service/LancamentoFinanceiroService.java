@@ -10,6 +10,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
@@ -90,6 +94,73 @@ public class LancamentoFinanceiroService {
 				.filter(l -> termo.isBlank() || l.getDescricao().toLowerCase(Locale.ROOT).contains(termo))
 				.sorted((a, b) -> b.getDataCompetencia().compareTo(a.getDataCompetencia()))
 				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public PaginaLancamentosFinanceiros listarPagina(ContextoEmpresaAtual contexto, LocalDate competenciaInicial,
+			LocalDate competenciaFinal, LocalDate liquidacaoInicial, LocalDate liquidacaoFinal,
+			TipoFinanceiro tipo, StatusLancamentoFinanceiro status, UUID contaId, UUID categoriaId,
+			UUID pessoaId, Boolean vencido, String descricao, BigDecimal valorMinimo, BigDecimal valorMaximo,
+			int pagina, int tamanho, String ordenarPor, String direcao) {
+		if (pagina < 0) throw new DadosInvalidosException("Pagina deve ser maior ou igual a zero");
+		if (tamanho < 1 || tamanho > 100) throw new DadosInvalidosException("Tamanho da pagina deve estar entre 1 e 100");
+		if ((valorMinimo != null && valorMinimo.signum() < 0) || (valorMaximo != null && valorMaximo.signum() < 0))
+			throw new DadosInvalidosException("Intervalo de valor nao pode ser negativo");
+		if (valorMinimo != null && valorMaximo != null && valorMinimo.compareTo(valorMaximo) > 0)
+			throw new DadosInvalidosException("Valor minimo nao pode ser maior que o valor maximo");
+		if (competenciaInicial != null && competenciaFinal != null && competenciaInicial.isAfter(competenciaFinal))
+			throw new DadosInvalidosException("Competencia inicial nao pode ser posterior a final");
+		if (liquidacaoInicial != null && liquidacaoFinal != null && liquidacaoInicial.isAfter(liquidacaoFinal))
+			throw new DadosInvalidosException("Liquidacao inicial nao pode ser posterior a final");
+
+		String propriedadeOrdenacao = propriedadeOrdenacao(ordenarPor);
+		Sort.Direction sentido = "asc".equalsIgnoreCase(direcao) ? Sort.Direction.ASC :
+				"desc".equalsIgnoreCase(direcao) ? Sort.Direction.DESC : null;
+		if (sentido == null) throw new DadosInvalidosException("Direcao de ordenacao invalida");
+		String termo = descricao == null ? "" : descricao.trim().toLowerCase(Locale.ROOT);
+		LocalDate hoje = LocalDate.now();
+
+		Specification<LancamentoFinanceiro> especificacao = (raiz, consulta, cb) -> cb.and(
+				cb.equal(raiz.get("empresa").get("id"), contexto.empresaId()),
+				competenciaInicial == null ? cb.conjunction() : cb.greaterThanOrEqualTo(raiz.get("dataCompetencia"), competenciaInicial),
+				competenciaFinal == null ? cb.conjunction() : cb.lessThanOrEqualTo(raiz.get("dataCompetencia"), competenciaFinal),
+				liquidacaoInicial == null ? cb.conjunction() : cb.greaterThanOrEqualTo(raiz.get("dataPagamento"), liquidacaoInicial),
+				liquidacaoFinal == null ? cb.conjunction() : cb.lessThanOrEqualTo(raiz.get("dataPagamento"), liquidacaoFinal),
+				tipo == null ? cb.conjunction() : cb.equal(raiz.get("tipo"), tipo),
+				status == null ? cb.conjunction() : status == StatusLancamentoFinanceiro.LIQUIDADO
+						? raiz.get("status").in(StatusLancamentoFinanceiro.LIQUIDADO, StatusLancamentoFinanceiro.PAGO)
+						: cb.equal(raiz.get("status"), status),
+				contaId == null ? cb.conjunction() : cb.equal(raiz.get("conta").get("id"), contaId),
+				categoriaId == null ? cb.conjunction() : cb.equal(raiz.get("categoria").get("id"), categoriaId),
+				pessoaId == null ? cb.conjunction() : cb.equal(raiz.get("pessoaFinanceira").get("id"), pessoaId),
+				valorMinimo == null ? cb.conjunction() : cb.greaterThanOrEqualTo(raiz.get("valor"), valorMinimo),
+				valorMaximo == null ? cb.conjunction() : cb.lessThanOrEqualTo(raiz.get("valor"), valorMaximo),
+				termo.isBlank() ? cb.conjunction() : cb.like(cb.lower(raiz.get("descricao")), "%" + termo + "%"),
+				vencido == null ? cb.conjunction() : vencido
+						? cb.and(cb.equal(raiz.get("status"), StatusLancamentoFinanceiro.PENDENTE),
+								cb.lessThan(raiz.get("dataVencimento"), hoje))
+						: cb.or(cb.notEqual(raiz.get("status"), StatusLancamentoFinanceiro.PENDENTE),
+								cb.isNull(raiz.get("dataVencimento")), cb.greaterThanOrEqualTo(raiz.get("dataVencimento"), hoje)));
+		Page<LancamentoFinanceiro> resultado = lancamentoRepository.findAll(especificacao,
+				PageRequest.of(pagina, tamanho, Sort.by(sentido, propriedadeOrdenacao).and(Sort.by(Sort.Direction.DESC, "id"))));
+		return new PaginaLancamentosFinanceiros(resultado.getContent(), pagina, tamanho,
+				resultado.getTotalElements(), resultado.getTotalPages(), ordenarPor, sentido.name().toLowerCase(Locale.ROOT));
+	}
+
+	private String propriedadeOrdenacao(String ordenarPor) {
+		return switch (ordenarPor == null ? "competencia" : ordenarPor) {
+			case "competencia" -> "dataCompetencia";
+			case "descricao" -> "descricao";
+			case "categoria" -> "categoria.nome";
+			case "conta" -> "conta.nome";
+			case "pessoa" -> "pessoaFinanceira.nome";
+			case "tipo" -> "tipo";
+			case "valor" -> "valor";
+			case "situacao" -> "status";
+			case "vencimento" -> "dataVencimento";
+			case "liquidacao" -> "dataPagamento";
+			default -> throw new DadosInvalidosException("Campo de ordenacao invalido");
+		};
 	}
 
 	@Transactional(readOnly = true)

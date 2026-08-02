@@ -566,6 +566,71 @@ class LancamentoFinanceiroControllerTests {
 	}
 
 	@Test
+	void paginaFiltraPorColunasCombinaFiltrosEOrdenaSemPerderPaginacao() throws Exception {
+		Empresa empresa = criarEmpresaComFinanceiro("28111111000237");
+		Usuario admin = criarUsuario("lanc.colunas@criati.test");
+		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR);
+		PessoaFinanceira pessoaA = criarPessoa(empresa, admin, "Ana");
+		PessoaFinanceira pessoaB = criarPessoa(empresa, admin, "Bruno");
+		ContaFinanceira contaA = criarConta(empresa, "Conta A");
+		ContaFinanceira contaB = criarConta(empresa, "Conta B");
+		CategoriaFinanceira receita = criarCategoria(empresa, "Salários", TipoFinanceiro.RECEITA);
+		CategoriaFinanceira despesa = criarCategoria(empresa, "Mercado", TipoFinanceiro.DESPESA);
+		MockHttpSession session = autenticarNaEmpresa(admin.getEmail(), empresa.getId());
+		criarLancamentoFiltravel(session, contaA, receita, pessoaA, "RECEITA", "Salário agosto", "500.00",
+				"2026-08-01", "2026-08-05", "LIQUIDADO", "2026-08-02");
+		criarLancamentoFiltravel(session, contaB, despesa, pessoaB, "DESPESA", "Mercado mensal", "80.00",
+				"2026-07-01", "2026-07-01", "PENDENTE", null);
+		criarLancamentoFiltravel(session, contaA, despesa, pessoaA, "DESPESA", "Escola", "200.00",
+				"2026-08-03", "2026-08-10", "LIQUIDADO", "2026-08-04");
+
+		mockMvc.perform(get(URL_BASE + "/pagina").session(session).param("descricao", "salário"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.totalElementos").value(1))
+				.andExpect(jsonPath("$.itens[0].descricao").value("Salário agosto"));
+		mockMvc.perform(get(URL_BASE + "/pagina").session(session).param("pessoaId", pessoaB.getId().toString())
+				.param("categoriaId", despesa.getId().toString()).param("tipo", "DESPESA")
+				.param("contaId", contaB.getId().toString()).param("vencido", "true"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.totalElementos").value(1))
+				.andExpect(jsonPath("$.itens[0].descricao").value("Mercado mensal"));
+		mockMvc.perform(get(URL_BASE + "/pagina").session(session)
+				.param("competenciaInicial", "2026-08-01").param("competenciaFinal", "2026-08-31")
+				.param("liquidacaoInicial", "2026-08-03").param("liquidacaoFinal", "2026-08-05")
+				.param("valorMinimo", "150.00").param("valorMaximo", "250.00").param("status", "LIQUIDADO"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.totalElementos").value(1))
+				.andExpect(jsonPath("$.itens[0].descricao").value("Escola"));
+		mockMvc.perform(get(URL_BASE + "/pagina").session(session).param("tamanho", "1").param("pagina", "1")
+				.param("ordenarPor", "valor").param("direcao", "desc"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.pagina").value(1))
+				.andExpect(jsonPath("$.tamanho").value(1)).andExpect(jsonPath("$.totalElementos").value(3))
+				.andExpect(jsonPath("$.totalPaginas").value(3)).andExpect(jsonPath("$.itens[0].valor").value(200.00));
+	}
+
+	@Test
+	void paginaValidaParametrosEIsolaEmpresa() throws Exception {
+		Empresa empresaA = criarEmpresaComFinanceiro("29111111000238");
+		Empresa empresaB = criarEmpresaComFinanceiro("30111111000239");
+		Usuario adminA = criarUsuario("lanc.pagina.a@criati.test");
+		Usuario adminB = criarUsuario("lanc.pagina.b@criati.test");
+		criarVinculo(adminA, empresaA, PerfilUsuario.ADMINISTRADOR);
+		criarVinculo(adminB, empresaB, PerfilUsuario.ADMINISTRADOR);
+		PessoaFinanceira pessoaB = criarPessoa(empresaB, adminB, "Pessoa B");
+		ContaFinanceira contaB = criarConta(empresaB, "Conta B");
+		CategoriaFinanceira categoriaB = criarCategoria(empresaB, "Renda B", TipoFinanceiro.RECEITA);
+		MockHttpSession sessaoB = autenticarNaEmpresa(adminB.getEmail(), empresaB.getId());
+		criarLancamentoFiltravel(sessaoB, contaB, categoriaB, pessoaB, "RECEITA", "Somente empresa B", "10.00",
+				"2026-08-01", null, "PENDENTE", null);
+		MockHttpSession sessaoA = autenticarNaEmpresa(adminA.getEmail(), empresaA.getId());
+
+		mockMvc.perform(get(URL_BASE + "/pagina").session(sessaoA))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.totalElementos").value(0));
+		mockMvc.perform(get(URL_BASE + "/pagina").session(sessaoA).param("valorMinimo", "20").param("valorMaximo", "10"))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(get(URL_BASE + "/pagina").session(sessaoA).param("ordenarPor", "empresa"))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(get(URL_BASE + "/pagina")).andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	void editarLiquidadoRecalculaValorEConta() throws Exception {
 		Empresa empresa = criarEmpresaComFinanceiro("27111111000236"); Usuario admin = criarUsuario("lanc.f2005.edicao@criati.test");
 		criarVinculo(admin, empresa, PerfilUsuario.ADMINISTRADOR); PessoaFinanceira pessoa = criarPessoa(empresa, admin, "Pessoa");
@@ -590,6 +655,20 @@ class LancamentoFinanceiroControllerTests {
 		MvcResult r = mockMvc.perform(post(URL_BASE).session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(corpo + "}"))
 				.andExpect(status().isCreated()).andReturn();
 		return com.jayway.jsonpath.JsonPath.read(r.getResponse().getContentAsString(), "$.id");
+	}
+
+	private void criarLancamentoFiltravel(MockHttpSession session, ContaFinanceira conta,
+			CategoriaFinanceira categoria, PessoaFinanceira pessoa, String tipo, String descricao, String valor,
+			String competencia, String vencimento, String statusLancamento, String liquidacao) throws Exception {
+		String corpo = "{\"contaId\":\"%s\",\"categoriaId\":\"%s\",\"pessoaFinanceiraId\":\"%s\","
+				+ "\"tipo\":\"%s\",\"descricao\":\"%s\",\"valor\":%s,\"dataCompetencia\":\"%s\",\"status\":\"%s\"";
+		corpo = corpo.formatted(conta.getId(), categoria.getId(), pessoa.getId(), tipo, descricao, valor,
+				competencia, statusLancamento);
+		if (vencimento != null) corpo += ",\"dataVencimento\":\"" + vencimento + "\"";
+		if (liquidacao != null) corpo += ",\"dataLiquidacao\":\"" + liquidacao + "\"";
+		mockMvc.perform(post(URL_BASE).session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content(corpo + "}"))
+				.andExpect(status().isCreated());
 	}
 
 	private void assertSaldo(MockHttpSession session, ContaFinanceira conta, double saldo) throws Exception {

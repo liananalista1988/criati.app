@@ -64,6 +64,9 @@
 
 	var lancamentos = {
 		listar: lancamentosBase.listar,
+		listarPagina: function (filtros) {
+			return window.CriatiApi.get(BASE + "/lancamentos/pagina" + query(filtros));
+		},
 		criar: lancamentosBase.criar,
 		buscar: lancamentosBase.buscar,
 		editar: lancamentosBase.editar,

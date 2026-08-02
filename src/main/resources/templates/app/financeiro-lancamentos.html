@@ -21,14 +21,13 @@
 		<div class="criati-main">
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
-			<main class="criati-content">
+			<main class="criati-content" th:attr="data-pode-escrever=${podeEscreverFinanceiro},data-pode-desliquidar=${podeDesliquidarFinanceiro}">
 				<header class="financeiro-operacional-cabecalho">
 					<div>
-						<p class="financeiro-dashboard-sobretitulo">Movimentações</p>
 						<h1>Lançamentos</h1>
-						<p>Organize receitas e despesas por competência, vencimento e liquidação.</p>
+						<p id="financeiro-lancamentos-periodo" class="financeiro-lancamentos-periodo">Todos os períodos</p>
 					</div>
-					<div class="financeiro-operacional-acoes">
+					<div class="financeiro-operacional-acoes" th:if="${podeEscreverFinanceiro}">
 						<button type="button" id="financeiro-lancamentos-nova-receita"
 							class="criati-btn criati-btn-ghost">Nova receita</button>
 						<button type="button" id="financeiro-lancamentos-nova-despesa"
@@ -36,70 +35,7 @@
 					</div>
 				</header>
 
-				<section class="criati-filtros" data-filtros-recolhiveis>
-					<button type="button" class="criati-btn criati-btn-ghost criati-filtros-toggle" data-filtros-toggle
-						aria-expanded="false" aria-controls="lancamentos-filtros-painel">
-						Filtros <span class="criati-filtros-contador" data-filtros-contador hidden></span>
-					</button>
-					<form id="financeiro-lancamentos-filtros" class="financeiro-filtros-form"
-						aria-label="Filtros de lançamentos">
-					<div id="lancamentos-filtros-painel" data-filtros-painel hidden>
-				<div class="criati-toolbar financeiro-filtros-grade">
-					<div class="criati-field">
-						<label for="financeiro-filtro-data-inicial">De</label>
-						<input class="criati-input" type="date" id="financeiro-filtro-data-inicial" />
-					</div>
-					<div class="criati-field">
-						<label for="financeiro-filtro-data-final">Ate</label>
-						<input class="criati-input" type="date" id="financeiro-filtro-data-final" />
-					</div>
-					<div class="criati-field">
-						<label for="financeiro-filtro-tipo">Tipo</label>
-						<select class="criati-select" id="financeiro-filtro-tipo">
-							<option value="">Todos</option>
-							<option value="RECEITA">Receita</option>
-							<option value="DESPESA">Despesa</option>
-						</select>
-					</div>
-					<div class="criati-field">
-						<label for="financeiro-filtro-status">Status</label>
-						<select class="criati-select" id="financeiro-filtro-status">
-							<option value="">Todos</option>
-							<option value="PENDENTE">Pendente</option>
-							<option value="LIQUIDADO">Liquidado</option>
-							<option value="PAGO">Pago (legado)</option>
-							<option value="CANCELADO">Cancelado</option>
-						</select>
-					</div>
-					<div class="criati-field">
-						<label for="financeiro-filtro-conta">Conta</label>
-						<select class="criati-select" id="financeiro-filtro-conta"></select>
-					</div>
-					<div class="criati-field">
-						<label for="financeiro-filtro-categoria">Categoria</label>
-						<select class="criati-select" id="financeiro-filtro-categoria"></select>
-					</div>
-					<div class="criati-field"><label for="financeiro-filtro-pessoa">Pessoa</label>
-						<select class="criati-select" id="financeiro-filtro-pessoa"></select></div>
-					<div class="criati-field"><label for="financeiro-filtro-parte">Contato</label>
-						<select class="criati-select" id="financeiro-filtro-parte"></select></div>
-					<div class="criati-field"><label for="financeiro-filtro-vencido">Vencimento</label>
-						<select class="criati-select" id="financeiro-filtro-vencido"><option value="">Todos</option><option value="true">Vencidos</option></select></div>
-					<div class="criati-field financeiro-campo-busca">
-						<label for="financeiro-filtro-busca">Buscar</label>
-						<input class="criati-input" type="search" id="financeiro-filtro-busca" placeholder="Descrição..." />
-					</div>
-				</div>
-						<div class="financeiro-filtros-acoes">
-							<button type="button" class="criati-btn criati-btn-ghost"
-								id="financeiro-lancamentos-limpar-filtros">Limpar filtros</button>
-							<button type="submit" class="criati-btn criati-btn-primary">Aplicar filtros</button>
-						</div>
-					</div>
-					</form>
-				</section>
-				<section aria-labelledby="financeiro-lancamentos-resumo-titulo">
-					<h2 id="financeiro-lancamentos-resumo-titulo" class="financeiro-dashboard-titulo-secao">Resumo do período</h2>
+				<section aria-label="Indicadores do período">
 					<div class="financeiro-operacional-cards" id="financeiro-lancamentos-resumo" aria-live="polite">
 						<article class="financeiro-dashboard-card is-receita"><p class="financeiro-dashboard-card-rotulo">Receitas liquidadas</p><p class="criati-card-value" id="resumo-receitas-liquidadas">R$ 0,00</p><p class="financeiro-dashboard-card-apoio">Entradas realizadas</p></article>
 						<article class="financeiro-dashboard-card is-despesa"><p class="financeiro-dashboard-card-rotulo">Despesas liquidadas</p><p class="criati-card-value" id="resumo-despesas-liquidadas">R$ 0,00</p><p class="financeiro-dashboard-card-apoio">Saídas realizadas</p></article>
@@ -126,29 +62,50 @@
 					<p>Nao foi possivel carregar os lancamentos agora.</p>
 				</div>
 				<div id="financeiro-lancamentos-vazio" class="criati-empty-state" hidden>
-					<p>Nenhum lançamento nesta competência. Cadastre receitas e despesas para acompanhar o fluxo financeiro da residência.</p>
+					<p>Nenhum lançamento encontrado com os filtros atuais.</p>
 				</div>
 
-				<div class="criati-table-wrap financeiro-tabela-operacional" id="financeiro-lancamentos-tabela-wrap" hidden>
-					<table class="criati-table" aria-label="Lançamentos financeiros">
+				<p id="financeiro-lancamentos-filtros-ativos" class="financeiro-lancamentos-filtros-ativos" role="status">Nenhum filtro ativo.</p>
+				<form id="financeiro-lancamentos-filtros" aria-label="Filtros por coluna dos lançamentos">
+				<div class="criati-table-wrap financeiro-tabela-operacional financeiro-lancamentos-grade" id="financeiro-lancamentos-tabela-wrap">
+					<table class="criati-table" aria-label="Lançamentos financeiros com filtros por coluna">
 						<thead>
-							<tr>
-								<th>Competencia</th>
-								<th>Descricao</th>
-								<th>Categoria</th>
-								<th>Conta</th>
-								<th>Pessoa</th>
-								<th>Tipo</th>
-								<th>Valor</th>
-								<th>Status</th>
-								<th>Vencimento</th>
-								<th>Liquidação</th>
+							<tr class="financeiro-lancamentos-colunas">
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="competencia">Competência</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="descricao">Descrição</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="categoria">Categoria</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="conta">Conta</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="pessoa">Pessoa</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="tipo">Tipo</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="valor">Valor</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="situacao">Situação</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="vencimento">Vencimento</button></th>
+								<th><button type="button" class="financeiro-ordenacao" data-ordenar="liquidacao">Recebimento/pagamento</button></th>
 								<th>Acoes</th>
+							</tr>
+							<tr class="financeiro-lancamentos-filtros-colunas">
+								<th><div class="financeiro-filtro-coluna financeiro-filtro-intervalo"><label for="financeiro-filtro-competencia-inicial">Competência inicial</label><input type="date" id="financeiro-filtro-competencia-inicial" /><label for="financeiro-filtro-competencia-final">Competência final</label><input type="date" id="financeiro-filtro-competencia-final" /><button type="button" data-limpar-filtro="competencia" aria-label="Limpar filtro de competência">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna"><label for="financeiro-filtro-descricao">Filtrar descrição</label><input type="search" id="financeiro-filtro-descricao" placeholder="Descrição" /><button type="button" data-limpar-filtro="descricao" aria-label="Limpar filtro de descrição">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna"><label for="financeiro-filtro-categoria">Filtrar categoria</label><select id="financeiro-filtro-categoria"></select><button type="button" data-limpar-filtro="categoria" aria-label="Limpar filtro de categoria">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna"><label for="financeiro-filtro-conta">Filtrar conta</label><select id="financeiro-filtro-conta"></select><button type="button" data-limpar-filtro="conta" aria-label="Limpar filtro de conta">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna"><label for="financeiro-filtro-pessoa">Filtrar pessoa</label><select id="financeiro-filtro-pessoa"></select><button type="button" data-limpar-filtro="pessoa" aria-label="Limpar filtro de pessoa">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna"><label for="financeiro-filtro-tipo">Filtrar tipo</label><select id="financeiro-filtro-tipo"><option value="">Todos</option><option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option></select><button type="button" data-limpar-filtro="tipo" aria-label="Limpar filtro de tipo">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna financeiro-filtro-intervalo"><label for="financeiro-filtro-valor-minimo">Valor mínimo</label><input type="number" min="0" step="0.01" id="financeiro-filtro-valor-minimo" placeholder="Mín." /><label for="financeiro-filtro-valor-maximo">Valor máximo</label><input type="number" min="0" step="0.01" id="financeiro-filtro-valor-maximo" placeholder="Máx." /><button type="button" data-limpar-filtro="valor" aria-label="Limpar filtro de valor">×</button></div></th>
+								<th><div class="financeiro-filtro-coluna"><label for="financeiro-filtro-situacao">Filtrar situação</label><select id="financeiro-filtro-situacao"><option value="">Todas</option><option value="PENDENTE">Pendente</option><option value="LIQUIDADO">Liquidado</option><option value="VENCIDO">Vencido</option><option value="CANCELADO">Cancelado</option></select><button type="button" data-limpar-filtro="situacao" aria-label="Limpar filtro de situação">×</button></div></th>
+								<th><span class="financeiro-sem-filtro">Situação exibida na coluna</span></th>
+								<th><div class="financeiro-filtro-coluna financeiro-filtro-intervalo"><label for="financeiro-filtro-liquidacao-inicial">Recebimento/pagamento inicial</label><input type="date" id="financeiro-filtro-liquidacao-inicial" /><label for="financeiro-filtro-liquidacao-final">Recebimento/pagamento final</label><input type="date" id="financeiro-filtro-liquidacao-final" /><button type="button" data-limpar-filtro="liquidacao" aria-label="Limpar filtro de recebimento ou pagamento">×</button></div></th>
+								<th><button type="button" class="criati-btn criati-btn-ghost" id="financeiro-lancamentos-limpar-filtros">Limpar todos</button></th>
 							</tr>
 						</thead>
 						<tbody id="financeiro-lancamentos-tbody"></tbody>
 					</table>
 				</div>
+				</form>
+				<nav id="financeiro-lancamentos-paginacao" class="financeiro-lancamentos-paginacao" aria-label="Paginação dos lançamentos" hidden>
+					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-lancamentos-anterior">Anterior</button>
+					<span id="financeiro-lancamentos-pagina" aria-live="polite"></span>
+					<button type="button" class="criati-btn criati-btn-ghost" id="financeiro-lancamentos-proxima">Próxima</button>
+				</nav>
 			</main>
 		</div>
 	</div>

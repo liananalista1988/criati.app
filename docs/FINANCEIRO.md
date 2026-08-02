@@ -115,6 +115,7 @@ POST   /api/contexto/financeiro/categorias/{id}/inativar      (ADMINISTRADOR)
 POST   /api/contexto/financeiro/categorias/{id}/reativar      (ADMINISTRADOR)
 
 GET    /api/contexto/financeiro/lancamentos                   (todos os perfis; filtros data inicial/final, tipo, status, conta, categoria, busca)
+GET    /api/contexto/financeiro/lancamentos/pagina            (todos os perfis; paginação, ordenação e filtros por coluna usados pela tela)
 POST   /api/contexto/financeiro/lancamentos                   (ADMINISTRADOR, GESTOR)
 GET    /api/contexto/financeiro/lancamentos/{id}               (todos os perfis)
 PUT    /api/contexto/financeiro/lancamentos/{id}               (ADMINISTRADOR, GESTOR; somente se PENDENTE)
@@ -133,7 +134,7 @@ Nenhum endpoint `DELETE` existe neste módulo.
 GET /app/financeiro              dashboard financeiro (cards, resumo por categoria, ultimos lancamentos)
 GET /app/financeiro/contas        listar/criar/editar/inativar/reativar contas
 GET /app/financeiro/categorias     listar/criar/editar/inativar/reativar categorias (receitas e despesas separadas)
-GET /app/financeiro/lancamentos    listar com filtros; criar receita/despesa; editar; pagar; reabrir; cancelar
+GET /app/financeiro/lancamentos    listar com filtros por coluna, paginação e ordenação; criar receita/despesa; editar; pagar; reabrir; cancelar
 ```
 
 Todas autenticadas, exigem empresa ativa e `FINANCEIRO` habilitado (redirecionam para `/app/aplicacoes` caso contrário). Interface em Thymeleaf + CSS/JS puro (mesmo padrão do restante do projeto, sem framework frontend e sem biblioteca de gráficos): o resumo por categoria usa barras de progresso CSS simples (`width` proporcional), não uma biblioteca de gráficos.
