@@ -148,6 +148,36 @@
 	color: var(--criati-text-muted);
 }
 
+/* Grupos recolhiveis do menu do Financeiro (botao em vez de <p>, ver
+   fragments/sidebar.html): reseta a aparencia de botao nativo e mantem o
+   mesmo visual do titulo de secao estatico, mais o indicador de estado
+   (seta), nunca so a cor. */
+.criati-nav-secao-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-family: inherit;
+}
+
+.criati-nav-secao-toggle:hover,
+.criati-nav-secao-toggle:focus-visible {
+	color: var(--criati-text);
+}
+
+.criati-nav-secao-toggle::after {
+	content: "▸";
+	font-size: 0.85em;
+	transition: transform 0.15s ease;
+}
+
+.criati-nav-secao-toggle[aria-expanded="true"]::after {
+	transform: rotate(90deg);
+}
+
 /* Sidebar recolhida (somente desktop; ver criati-responsive.css para o
    comportamento off-canvas do mobile, que nunca usa este modo compacto) */
 
@@ -174,6 +204,14 @@
 		justify-content: center;
 		gap: 0;
 		padding: 0 6px;
+	}
+
+	/* O recolhimento por categoria (fragments/sidebar.html, grupos do menu do
+	   Financeiro) e independente do recolhimento da sidebar inteira: no modo
+	   compacto (somente icones) todos os links continuam alcancaveis por
+	   tooltip, entao um grupo de categoria fechado nao pode escondê-los. */
+	html.criati-sidebar-collapsed [data-menu-financeiro] ul[hidden] {
+		display: flex;
 	}
 
 	/* Tooltip acessivel em CSS puro (sem JS): visivel no hover e no foco por
@@ -332,6 +370,92 @@
 .criati-content {
 	padding: var(--criati-space-xl) var(--criati-space-lg);
 	flex: 1;
+	background: var(--criati-content-bg);
+}
+
+/* Modal generico (reaproveitado tambem por criati-financeiro.css e
+   criati-acessos.css, que definem o mesmo padrao para as paginas que ja
+   carregam essas folhas). Declarado aqui porque criati-app.css e a unica
+   folha comum a toda pagina autenticada (ex.: dashboard, aplicacoes),
+   necessaria para o controle de cores da topbar (fragments/cores.html),
+   que aparece em todas elas. */
+.criati-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: var(--criati-overlay);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 40px 16px;
+	overflow-y: auto;
+	z-index: 500;
+}
+
+.criati-modal-overlay[hidden] {
+	display: none;
+}
+
+.criati-modal {
+	background: var(--criati-surface);
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-lg);
+	box-shadow: var(--criati-shadow);
+	width: 100%;
+	max-width: 480px;
+	padding: var(--criati-card-padding);
+}
+
+.criati-modal h2 {
+	font-size: var(--criati-font-size-lg);
+	margin-bottom: 18px;
+}
+
+.criati-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.criati-modal-acoes {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 6px;
+}
+
+.criati-texto-ajuda {
+	font-size: 0.78rem;
+	color: var(--criati-text-muted);
+	margin-top: 4px;
+}
+
+.criati-cores-secao {
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-sm);
+	padding: 12px;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.criati-cores-secao legend {
+	font-size: var(--criati-font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--criati-text-muted);
+	padding: 0 4px;
+}
+
+.criati-input-cor {
+	width: 100%;
+	height: 36px;
+	padding: 2px;
+	border: 1px solid var(--criati-border);
+	border-radius: var(--criati-radius-sm);
+	background: var(--criati-input-bg);
+	cursor: pointer;
 }
 
 .criati-page-header {

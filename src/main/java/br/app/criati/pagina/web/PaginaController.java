@@ -54,8 +54,18 @@ public class PaginaController {
 		return "convite/aceitar";
 	}
 
+	// Usuario com exatamente uma empresa vinculada pula a "Visao geral"
+	// (CRIATI-UX-002): nao ha o que escolher, entao o dashboard redireciona
+	// direto para a lista de aplicacoes da propria empresa. Zero vinculos
+	// (ex.: Superadministrador) ou duas ou mais continuam no dashboard, que
+	// mostra o estado vazio ou o seletor de empresa, respectivamente. Decidido
+	// aqui (backend) e nao apenas ocultando o link no menu, para que acessar a
+	// URL diretamente tenha o mesmo comportamento.
 	@GetMapping("/app/dashboard")
-	public String dashboard() {
+	public String dashboard(@AuthenticationPrincipal UsuarioPrincipal principal) {
+		if (possuiExatamenteUmaEmpresa(principal)) {
+			return "redirect:/app/aplicacoes";
+		}
 		return "app/dashboard";
 	}
 
@@ -401,6 +411,21 @@ public class PaginaController {
 	@ModelAttribute("superAdministrador")
 	public boolean superAdministrador(@AuthenticationPrincipal UsuarioPrincipal principal) {
 		return principal != null && principal.getUsuario().isSuperAdministrador();
+	}
+
+	// Disponivel em todo template renderizado por este controller: o link de
+	// "Visao geral"/Dashboard so aparece na sidebar quando faz sentido escolher
+	// entre empresas (zero vinculos - ex.: Superadministrador - ou duas ou
+	// mais); com exatamente uma empresa o proprio GET /app/dashboard ja
+	// redireciona (ver acima), entao mostrar o link seria um beco sem saida.
+	@ModelAttribute("mostrarVisaoGeral")
+	public boolean mostrarVisaoGeral(@AuthenticationPrincipal UsuarioPrincipal principal) {
+		return !possuiExatamenteUmaEmpresa(principal);
+	}
+
+	private boolean possuiExatamenteUmaEmpresa(UsuarioPrincipal principal) {
+		return principal != null
+				&& contextoEmpresaService.listarVinculosAtivos(principal.getUsuario().getId()).size() == 1;
 	}
 
 	private boolean usuarioAutenticado() {

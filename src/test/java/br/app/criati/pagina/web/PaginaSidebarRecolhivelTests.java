@@ -91,6 +91,15 @@ class PaginaSidebarRecolhivelTests {
 				new Empresa("Empresa Sidebar Ltda", "Empresa Sidebar", cnpjUnico(), StatusCadastro.ATIVO));
 		UsuarioEmpresa vinculo = new UsuarioEmpresa(usuario, empresa, PerfilUsuario.ADMINISTRADOR, StatusCadastro.ATIVO);
 		usuarioEmpresaRepository.saveAndFlush(vinculo);
+		// Duas empresas vinculadas (nao apenas uma): com exatamente uma, GET
+		// /app/dashboard agora redireciona para /app/aplicacoes (CRIATI-UX-002,
+		// ver PaginaVisaoGeralEmpresaTests), o que quebraria os asserts de
+		// conteudo do dashboard feitos por estes testes - o alvo deles e outro
+		// (icone do hamburguer / cards preenchidos), nao a regra de redirecionamento.
+		Empresa segundaEmpresa = empresaRepository.saveAndFlush(
+				new Empresa("Empresa Sidebar Dois Ltda", "Empresa Sidebar Dois", cnpjUnico(), StatusCadastro.ATIVO));
+		usuarioEmpresaRepository.saveAndFlush(
+				new UsuarioEmpresa(usuario, segundaEmpresa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO));
 
 		MockHttpSession sessao = autenticar(email);
 		mockMvc.perform(post("/api/contexto/empresa-ativa")

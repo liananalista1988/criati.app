@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<!-- Personalizacao de cores do menu lateral, area de conteudo e topo
+	     (CRIATI-UX-002), independente por tema claro/escuro. Reaproveita o
+	     mesmo mecanismo de preferencia somente-visual, guardada no navegador
+	     (criati-cores.js), igual a tema/estilo - nao depende de sessao nem de
+	     backend. -->
+	<div th:fragment="coresControle">
+		<button
+			type="button"
+			class="criati-icon-btn"
+			id="criati-cores-abrir"
+			aria-haspopup="dialog"
+			aria-label="Personalizar cores">
+			<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<circle cx="13.5" cy="6.5" r="0.5" />
+				<circle cx="17.5" cy="10.5" r="0.5" />
+				<circle cx="8.5" cy="7.5" r="0.5" />
+				<circle cx="6.5" cy="12.5" r="0.5" />
+				<path d="M12 21a9 9 0 1 1 0-18c4.97 0 9 3.5 9 7.5 0 2-1.5 3.5-3.5 3.5h-1.34a2 2 0 0 0-1.5 3.32c.24.26.34.6.34.98 0 1.2-1.34 2.2-3 2.7z" />
+			</svg>
+		</button>
+
+		<div class="criati-modal-overlay" id="criati-cores-modal" hidden>
+			<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="criati-cores-modal-titulo">
+				<h2 id="criati-cores-modal-titulo">Personalizar cores</h2>
+				<p class="criati-texto-ajuda">Escolha a cor de fundo do menu lateral, da área de conteúdo e do topo, separadamente para o tema claro e o tema escuro.</p>
+				<form class="criati-modal-form" id="criati-cores-form">
+					<fieldset class="criati-cores-secao">
+						<legend>Tema claro</legend>
+						<div class="criati-field"><label for="cores-light-sidebar">Menu lateral</label><input class="criati-input-cor" type="color" id="cores-light-sidebar" data-tema="light" data-campo="sidebar" /></div>
+						<div class="criati-field"><label for="cores-light-conteudo">Área de conteúdo</label><input class="criati-input-cor" type="color" id="cores-light-conteudo" data-tema="light" data-campo="conteudo" /></div>
+						<div class="criati-field"><label for="cores-light-topo">Topo</label><input class="criati-input-cor" type="color" id="cores-light-topo" data-tema="light" data-campo="topo" /></div>
+						<p class="criati-campo-erro-mensagem" id="cores-light-aviso-contraste" hidden></p>
+					</fieldset>
+					<fieldset class="criati-cores-secao">
+						<legend>Tema escuro</legend>
+						<div class="criati-field"><label for="cores-dark-sidebar">Menu lateral</label><input class="criati-input-cor" type="color" id="cores-dark-sidebar" data-tema="dark" data-campo="sidebar" /></div>
+						<div class="criati-field"><label for="cores-dark-conteudo">Área de conteúdo</label><input class="criati-input-cor" type="color" id="cores-dark-conteudo" data-tema="dark" data-campo="conteudo" /></div>
+						<div class="criati-field"><label for="cores-dark-topo">Topo</label><input class="criati-input-cor" type="color" id="cores-dark-topo" data-tema="dark" data-campo="topo" /></div>
+						<p class="criati-campo-erro-mensagem" id="cores-dark-aviso-contraste" hidden></p>
+					</fieldset>
+					<div class="criati-modal-acoes">
+						<button type="button" class="criati-btn criati-btn-ghost" id="criati-cores-restaurar">Restaurar padrão Criati</button>
+						<button type="button" class="criati-btn criati-btn-primary" id="criati-cores-fechar">Concluir</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -25,6 +25,7 @@
 	--criati-overlay: rgba(2, 6, 14, 0.65);
 	--criati-sidebar-bg: var(--criati-surface);
 	--criati-topbar-bg: var(--criati-surface);
+	--criati-content-bg: var(--criati-bg);
 	--criati-success-bg: rgba(34, 197, 94, 0.15);
 	--criati-success-fg: #bbf7d0;
 	--criati-warning-bg: rgba(234, 179, 8, 0.15);

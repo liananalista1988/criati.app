@@ -10,7 +10,7 @@
 		<nav aria-label="Navegacao principal">
 			<p class="criati-nav-secao-titulo">Visão geral</p>
 			<ul class="criati-nav">
-				<li>
+				<li th:if="${mostrarVisaoGeral}">
 					<a
 						class="criati-nav-link"
 						th:classappend="${paginaAtiva == 'dashboard'} ? 'is-active' : ''"
@@ -53,9 +53,15 @@
 				th:if="${#strings.startsWith(paginaAtiva, 'financeiro-')}"
 				class="criati-menu-financeiro"
 				data-menu-financeiro>
-				<div class="criati-nav-secao">
-					<p class="criati-nav-secao-titulo">Movimentações</p>
-					<ul class="criati-nav">
+				<!-- Cada grupo comeca recolhido; o grupo que contem a pagina atual
+				     abre automaticamente (calculado no backend, via paginaAtiva - nao
+				     depende do JavaScript rodar para mostrar o estado correto na
+				     primeira renderizacao). O JS (criati-ui.js initMenuCategoriasRecolhiveis)
+				     so cuida da alternancia por clique/teclado depois disso. -->
+				<div class="criati-nav-secao" data-nav-grupo
+					th:with="grupoAberto=${paginaAtiva == 'financeiro-visao-geral' or paginaAtiva == 'financeiro-lancamentos' or paginaAtiva == 'financeiro-recorrencias' or paginaAtiva == 'financeiro-contas-a-pagar' or paginaAtiva == 'financeiro-importacoes'}">
+					<button type="button" class="criati-nav-secao-titulo criati-nav-secao-toggle" th:attr="aria-expanded=${grupoAberto}" aria-controls="menu-financeiro-movimentacoes">Movimentações</button>
+					<ul class="criati-nav" id="menu-financeiro-movimentacoes" th:attr="hidden=${grupoAberto} ? null : 'hidden'">
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-visao-geral'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-visao-geral'} ? 'page' : null" href="/app/financeiro" aria-label="Visao geral financeira" data-tooltip="Visao geral financeira"><span aria-hidden="true">↗</span><span class="criati-nav-label">Visao geral financeira</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-lancamentos'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-lancamentos'} ? 'page' : null" href="/app/financeiro/lancamentos" aria-label="Lancamentos" data-tooltip="Lancamentos"><span aria-hidden="true">↕</span><span class="criati-nav-label">Lancamentos</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-recorrencias'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-recorrencias'} ? 'page' : null" href="/app/financeiro/recorrencias" aria-label="Recorrencias" data-tooltip="Recorrencias"><span aria-hidden="true">⟳</span><span class="criati-nav-label">Recorrencias</span></a></li>
@@ -63,25 +69,28 @@
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-importacoes'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-importacoes'} ? 'page' : null" href="/app/financeiro/importacoes" aria-label="Importacoes bancarias" data-tooltip="Importacoes bancarias"><span aria-hidden="true">⇧</span><span class="criati-nav-label">Importações bancárias</span></a></li>
 					</ul>
 				</div>
-				<div class="criati-nav-secao">
-					<p class="criati-nav-secao-titulo">Cartões</p>
-					<ul class="criati-nav">
+				<div class="criati-nav-secao" data-nav-grupo
+					th:with="grupoAberto=${paginaAtiva == 'financeiro-cartoes' or paginaAtiva == 'financeiro-compras' or paginaAtiva == 'financeiro-parcelas' or paginaAtiva == 'financeiro-faturas'}">
+					<button type="button" class="criati-nav-secao-titulo criati-nav-secao-toggle" th:attr="aria-expanded=${grupoAberto}" aria-controls="menu-financeiro-cartoes">Cartões</button>
+					<ul class="criati-nav" id="menu-financeiro-cartoes" th:attr="hidden=${grupoAberto} ? null : 'hidden'">
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-cartoes'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-cartoes'} ? 'page' : null" href="/app/financeiro/cartoes" aria-label="Cartoes" data-tooltip="Cartoes"><span aria-hidden="true">▭</span><span class="criati-nav-label">Cartoes</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-compras'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-compras'} ? 'page' : null" href="/app/financeiro/compras-cartao" aria-label="Compras" data-tooltip="Compras"><span aria-hidden="true">●</span><span class="criati-nav-label">Compras</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-parcelas'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-parcelas'} ? 'page' : null" href="/app/financeiro/parcelas-cartao" aria-label="Parcelas" data-tooltip="Parcelas"><span aria-hidden="true">≡</span><span class="criati-nav-label">Parcelas</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-faturas'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-faturas'} ? 'page' : null" href="/app/financeiro/faturas" aria-label="Faturas" data-tooltip="Faturas"><span aria-hidden="true">▤</span><span class="criati-nav-label">Faturas</span></a></li>
 					</ul>
 				</div>
-				<div class="criati-nav-secao">
-					<p class="criati-nav-secao-titulo">Crédito e terceiros</p>
-					<ul class="criati-nav">
+				<div class="criati-nav-secao" data-nav-grupo
+					th:with="grupoAberto=${paginaAtiva == 'financeiro-emprestimos' or paginaAtiva == 'financeiro-compras-terceiros'}">
+					<button type="button" class="criati-nav-secao-titulo criati-nav-secao-toggle" th:attr="aria-expanded=${grupoAberto}" aria-controls="menu-financeiro-credito-terceiros">Crédito e terceiros</button>
+					<ul class="criati-nav" id="menu-financeiro-credito-terceiros" th:attr="hidden=${grupoAberto} ? null : 'hidden'">
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-emprestimos'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-emprestimos'} ? 'page' : null" href="/app/financeiro/emprestimos" aria-label="Emprestimos" data-tooltip="Emprestimos"><span aria-hidden="true">⇄</span><span class="criati-nav-label">Emprestimos</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-compras-terceiros'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-compras-terceiros'} ? 'page' : null" href="/app/financeiro/compras-terceiros" aria-label="Compras para terceiros" data-tooltip="Compras para terceiros"><span aria-hidden="true">◎</span><span class="criati-nav-label">Compras para terceiros</span></a></li>
 					</ul>
 				</div>
-				<div class="criati-nav-secao">
-					<p class="criati-nav-secao-titulo">Cadastros</p>
-					<ul class="criati-nav">
+				<div class="criati-nav-secao" data-nav-grupo
+					th:with="grupoAberto=${paginaAtiva == 'financeiro-contas' or paginaAtiva == 'financeiro-categorias' or paginaAtiva == 'financeiro-pessoas' or paginaAtiva == 'financeiro-contatos'}">
+					<button type="button" class="criati-nav-secao-titulo criati-nav-secao-toggle" th:attr="aria-expanded=${grupoAberto}" aria-controls="menu-financeiro-cadastros">Cadastros</button>
+					<ul class="criati-nav" id="menu-financeiro-cadastros" th:attr="hidden=${grupoAberto} ? null : 'hidden'">
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-contas'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-contas'} ? 'page' : null" href="/app/financeiro/contas" aria-label="Contas" data-tooltip="Contas"><span aria-hidden="true">□</span><span class="criati-nav-label">Contas</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-categorias'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-categorias'} ? 'page' : null" href="/app/financeiro/categorias" aria-label="Categorias" data-tooltip="Categorias"><span aria-hidden="true">◇</span><span class="criati-nav-label">Categorias</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-pessoas'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-pessoas'} ? 'page' : null" href="/app/financeiro/pessoas" aria-label="Pessoas" data-tooltip="Pessoas"><span aria-hidden="true">○</span><span class="criati-nav-label">Pessoas</span></a></li>

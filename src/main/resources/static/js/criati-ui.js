@@ -209,6 +209,34 @@
 		});
 	}
 
+	/**
+	 * Grupos/categorias do menu lateral (fragments/sidebar.html, submenu do
+	 * Financeiro): alterna aria-expanded e o atributo hidden da lista
+	 * controlada. O estado inicial (aberto/fechado por categoria) ja vem
+	 * correto do backend (Thymeleaf calcula com base na pagina atual); esta
+	 * funcao so cuida da alternancia por clique - o teclado ja funciona nativamente
+	 * porque o controle e um <button> real. Roda em toda pagina autenticada
+	 * (a sidebar e um fragmento compartilhado), entao se auto-inicializa aqui
+	 * em vez de exigir uma chamada explicita em cada template.
+	 */
+	function initMenuCategoriasRecolhiveis() {
+		document.querySelectorAll(".criati-nav-secao-toggle").forEach(function (botao) {
+			if (botao.dataset.grupoInicializado === "true") {
+				return;
+			}
+			botao.dataset.grupoInicializado = "true";
+			var alvo = document.getElementById(botao.getAttribute("aria-controls"));
+			if (!alvo) {
+				return;
+			}
+			botao.addEventListener("click", function () {
+				var aberto = botao.getAttribute("aria-expanded") === "true";
+				botao.setAttribute("aria-expanded", String(!aberto));
+				alvo.hidden = aberto;
+			});
+		});
+	}
+
 	function initUserMenu() {
 		var trigger = document.querySelector(".criati-user-trigger");
 		var dropdown = document.querySelector(".criati-user-dropdown");
@@ -463,6 +491,9 @@
 		initUserMenu: initUserMenu,
 		criarModal: criarModal,
 		confirmarAcao: confirmarAcao,
-		validarObrigatorios: validarObrigatorios
+		validarObrigatorios: validarObrigatorios,
+		initMenuCategoriasRecolhiveis: initMenuCategoriasRecolhiveis
 	};
+
+	document.addEventListener("DOMContentLoaded", initMenuCategoriasRecolhiveis);
 })(window, document);
