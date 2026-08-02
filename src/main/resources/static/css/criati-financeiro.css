@@ -999,6 +999,16 @@
 	text-transform: none;
 }
 
+.importacao-transacao-fatura {
+	margin-top: 6px;
+}
+
+.financeiro-sugestao-regra {
+	margin: 6px 0 0;
+	font-size: var(--criati-font-size-xs);
+	color: var(--criati-text-muted);
+}
+
 .financeiro-modal-operacional {
 	max-width: 620px;
 }

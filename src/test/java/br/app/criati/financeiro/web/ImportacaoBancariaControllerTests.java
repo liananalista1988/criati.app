@@ -667,7 +667,7 @@ class ImportacaoBancariaControllerTests {
 		ContextoEmpresaAtual contexto = new ContextoEmpresaAtual(c.usuario().getId(), c.empresa().getId(), null,
 				PerfilUsuario.ADMINISTRADOR);
 		ConfirmacaoTransacaoImportada comando = new ConfirmacaoTransacaoImportada(
-				transacaoId, despesa.getId(), "Confirmacao concorrente", false);
+				transacaoId, despesa.getId(), null, null, "Confirmacao concorrente", false);
 		CountDownLatch inicio = new CountDownLatch(1);
 		ExecutorService executor = Executors.newFixedThreadPool(2);
 		try {

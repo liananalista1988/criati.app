@@ -1,16 +1,27 @@
 package br.app.criati.financeiro.web;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import br.app.criati.financeiro.model.RegraClassificacaoImportacao;
 import br.app.criati.financeiro.service.PreviaImportacaoBancaria;
 
 public record PreviaImportacaoBancariaResponse(
 		LoteImportacaoBancariaResponse lote,
 		List<TransacaoBancariaImportadaResponse> transacoes) {
 
-	public static PreviaImportacaoBancariaResponse from(PreviaImportacaoBancaria previa) {
+	public static PreviaImportacaoBancariaResponse from(
+			PreviaImportacaoBancaria previa, Map<UUID, RegraClassificacaoImportacao> sugestoesPorTransacao) {
 		return new PreviaImportacaoBancariaResponse(LoteImportacaoBancariaResponse.from(previa.lote()),
-				previa.transacoes().stream().map(TransacaoBancariaImportadaResponse::from).toList());
+				previa.transacoes().stream()
+						.map(transacao -> TransacaoBancariaImportadaResponse.from(
+								transacao, sugestoesPorTransacao.get(transacao.getId())))
+						.toList());
+	}
+
+	public static PreviaImportacaoBancariaResponse from(PreviaImportacaoBancaria previa) {
+		return from(previa, Map.of());
 	}
 
 	@Override

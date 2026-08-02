@@ -58,6 +58,7 @@ import br.app.criati.exception.RecebimentoParcelaEmprestimoNaoEncontradoExceptio
 import br.app.criati.exception.RecebimentoParcelaEmprestimoStatusInvalidoException;
 import br.app.criati.exception.RecorrenciaFinanceiraNaoEncontradaException;
 import br.app.criati.exception.RecorrenciaFinanceiraStatusInvalidoException;
+import br.app.criati.exception.RegraClassificacaoImportacaoNaoEncontradaException;
 import br.app.criati.exception.RessarcimentoParcelaCartaoNaoEncontradoException;
 import br.app.criati.exception.RessarcimentoParcelaCartaoStatusInvalidoException;
 import br.app.criati.exception.UltimoAdministradorAtivoException;
@@ -175,7 +176,8 @@ public class GlobalExceptionHandler {
 			RessarcimentoParcelaCartaoNaoEncontradoException.class,
 			FaturaCartaoNaoEncontradaException.class,
 			LoteImportacaoNaoEncontradoException.class,
-			TransacaoImportadaNaoEncontradaException.class
+			TransacaoImportadaNaoEncontradaException.class,
+			RegraClassificacaoImportacaoNaoEncontradaException.class
 	})
 	public ResponseEntity<ApiErrorResponse> tratarNaoEncontrado(
 			RuntimeException exception,

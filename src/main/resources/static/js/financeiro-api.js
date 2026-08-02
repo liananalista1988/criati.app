@@ -370,6 +370,8 @@
 		}
 	};
 
+	var regrasImportacao = recurso(BASE + "/regras-importacao");
+
 	window.FinanceiroApi = {
 		contas: contas,
 		categorias: categorias,
@@ -389,6 +391,7 @@
 		valoresAReceberCartao: valoresAReceberCartao,
 		faturas: faturas,
 		importacoesBancarias: importacoesBancarias,
+		regrasImportacao: regrasImportacao,
 		dashboard: dashboard
 	};
 })(window);

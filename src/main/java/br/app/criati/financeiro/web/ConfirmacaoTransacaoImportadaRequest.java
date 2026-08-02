@@ -9,12 +9,18 @@ import jakarta.validation.constraints.Size;
 
 public record ConfirmacaoTransacaoImportadaRequest(
 		@NotNull UUID transacaoId,
-		@NotNull UUID categoriaId,
+		// Exatamente um entre categoriaId e faturaId deve ser informado -
+		// validado em ConfirmacaoImportacaoBancariaService, nao aqui, porque a
+		// obrigatoriedade e condicional (nao expressavel com anotacoes simples).
+		UUID categoriaId,
+		UUID faturaId,
+		UUID regraClassificacaoId,
 		@NotBlank @Size(max = 200) String descricaoFinal,
 		boolean confirmarDuplicidade) {
 
 	ConfirmacaoTransacaoImportada toCommand() {
-		return new ConfirmacaoTransacaoImportada(transacaoId, categoriaId, descricaoFinal, confirmarDuplicidade);
+		return new ConfirmacaoTransacaoImportada(
+				transacaoId, categoriaId, faturaId, regraClassificacaoId, descricaoFinal, confirmarDuplicidade);
 	}
 
 	@Override

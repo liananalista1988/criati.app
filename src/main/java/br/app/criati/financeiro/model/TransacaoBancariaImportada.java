@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.exception.DadosInvalidosException;
+import br.app.criati.shared.enums.OrigemClassificacaoTransacaoImportada;
 import br.app.criati.shared.enums.SituacaoTransacaoImportada;
 import br.app.criati.usuario.model.Usuario;
 import jakarta.persistence.Column;
@@ -104,6 +105,14 @@ public class TransacaoBancariaImportada {
 	@JoinColumn(name = "ignorada_por_usuario_id")
 	private Usuario ignoradaPor;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "regra_classificacao_id")
+	private RegraClassificacaoImportacao regraClassificacao;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "origem_classificacao", nullable = false, length = 20)
+	private OrigemClassificacaoTransacaoImportada origemClassificacao;
+
 	public TransacaoBancariaImportada(Empresa empresa, LoteImportacaoBancaria lote, ContaFinanceira conta,
 			int sequencia, LocalDate dataTransacao, BigDecimal valor, String tipoBancario, String descricao,
 			String identificadorBancario, String documento, String chaveDuplicidade, boolean duplicadaNoArquivo,
@@ -123,13 +132,22 @@ public class TransacaoBancariaImportada {
 		this.possivelmenteJaImportada = possivelmenteJaImportada;
 		this.criadoEm = OffsetDateTime.now();
 		this.situacao = SituacaoTransacaoImportada.PENDENTE;
+		this.origemClassificacao = OrigemClassificacaoTransacaoImportada.MANUAL;
 	}
 
 	public boolean estaSinalizadaComoDuplicada() {
 		return duplicadaNoArquivo || possivelmenteJaImportada;
 	}
 
-	public void confirmar(LancamentoFinanceiro lancamento, Usuario autor) {
+	/**
+	 * regra e origem sao opcionais: regra nula + origem MANUAL cobre tanto o
+	 * historico anterior a esta funcionalidade quanto uma confirmacao em que
+	 * nenhuma regra foi efetivamente usada (nunca ambos nao-nulos/MANUAL ao
+	 * mesmo tempo - ver ConfirmacaoImportacaoBancariaService, que decide isso
+	 * antes de chamar este metodo).
+	 */
+	public void confirmar(LancamentoFinanceiro lancamento, Usuario autor,
+			RegraClassificacaoImportacao regra, OrigemClassificacaoTransacaoImportada origem) {
 		if (situacao != SituacaoTransacaoImportada.PENDENTE) {
 			throw new DadosInvalidosException("Somente transacao pendente pode ser confirmada");
 		}
@@ -137,6 +155,8 @@ public class TransacaoBancariaImportada {
 		this.confirmadaEm = OffsetDateTime.now();
 		this.confirmadaPor = Objects.requireNonNull(autor, "autor nao pode ser nulo");
 		this.situacao = SituacaoTransacaoImportada.CONFIRMADA;
+		this.regraClassificacao = regra;
+		this.origemClassificacao = Objects.requireNonNull(origem, "origem nao pode ser nula");
 	}
 
 	public void ignorar(Usuario autor) {

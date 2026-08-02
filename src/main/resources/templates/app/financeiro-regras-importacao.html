@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title>Regras de classificação · Financeiro · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-financeiro.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('financeiro-regras-importacao')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+			<main class="criati-content">
+				<div class="criati-page-header financeiro-operacional-cabecalho">
+					<div>
+						<h1>Regras de classificação</h1>
+						<p>Reconhecem padrões de descrição em transações já importadas e sugerem (ou pré-preenchem) categoria, pessoa e encaminhamento. Nunca criam lançamento, pagamento de fatura ou compromisso sozinhas — a confirmação final é sempre manual.</p>
+					</div>
+					<button type="button" id="regras-nova" class="criati-btn criati-btn-primary">Nova regra</button>
+				</div>
+
+				<div class="criati-toolbar">
+					<div class="criati-field">
+						<label for="regras-filtro-status">Status</label>
+						<select id="regras-filtro-status" class="criati-select">
+							<option value="ATIVO">Ativas</option>
+							<option value="INATIVO">Inativas</option>
+							<option value="">Todas</option>
+						</select>
+					</div>
+				</div>
+
+				<p id="regras-carregando">Carregando regras...</p>
+				<div id="regras-erro" class="criati-error-state" hidden><p>Não foi possível carregar as regras agora.</p></div>
+				<div id="regras-vazio" class="criati-empty-state" hidden>
+					<p>Nenhuma regra cadastrada.</p>
+					<p>Cadastre regras a partir de transações recorrentes já importadas para agilizar a próxima revisão.</p>
+				</div>
+				<div class="criati-table-wrap" id="regras-tabela-wrap" hidden>
+					<table class="criati-table" aria-label="Regras de classificação de importação">
+						<thead><tr><th>Padrão</th><th>Natureza</th><th>Categoria</th><th>Conta</th><th>Aplicação</th><th>Usos</th><th>Status</th><th>Ações</th></tr></thead>
+						<tbody id="regras-tbody"></tbody>
+					</table>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div class="criati-modal-overlay" id="regra-modal" hidden>
+		<div class="criati-modal financeiro-modal-operacional" role="dialog" aria-modal="true" aria-labelledby="regra-modal-titulo">
+			<h2 id="regra-modal-titulo">Nova regra</h2>
+			<form class="criati-modal-form" id="regra-form">
+				<div class="criati-field"><label for="regra-descricao-referencia">Descrição de referência (exemplo real)</label><input class="criati-input" id="regra-descricao-referencia" required maxlength="500" /></div>
+				<div class="criati-field"><label for="regra-padrao">Padrão (opcional — se vazio, usa a descrição de referência)</label><input class="criati-input" id="regra-padrao" maxlength="300" /></div>
+				<div class="criati-field"><label for="regra-estrategia">Estratégia de comparação</label>
+					<select class="criati-select" id="regra-estrategia">
+						<option value="CONTEM">Contém</option>
+						<option value="IGUAL">Igual</option>
+						<option value="PREFIXO">Prefixo</option>
+					</select>
+				</div>
+				<div class="criati-field"><label for="regra-tipo">Natureza</label>
+					<select class="criati-select" id="regra-tipo" required>
+						<option value="RECEITA">Receita</option>
+						<option value="DESPESA">Despesa</option>
+					</select>
+				</div>
+				<div class="criati-field"><label for="regra-categoria">Categoria</label><select class="criati-select" id="regra-categoria" required></select></div>
+				<div class="criati-field"><label for="regra-conta">Conta (opcional — vazio vale para qualquer conta)</label><select class="criati-select" id="regra-conta"><option value="">Qualquer conta</option></select></div>
+				<div class="criati-field"><label for="regra-pessoa">Pessoa responsável (opcional)</label><select class="criati-select" id="regra-pessoa"><option value="">Nenhuma</option></select></div>
+				<div class="criati-field"><label for="regra-forma">Forma de pagamento (opcional)</label>
+					<select class="criati-select" id="regra-forma"><option value="">Não informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select>
+				</div>
+				<div class="criati-field"><label for="regra-encaminhamento">Encaminhamento sugerido (opcional)</label>
+					<select class="criati-select" id="regra-encaminhamento">
+						<option value="">Nenhum</option>
+						<option value="FATURA_CARTAO">Pagamento de fatura de cartão</option>
+						<option value="EMPRESTIMO_RECEBIDO">Empréstimo recebido</option>
+						<option value="EMPRESTIMO_CONCEDIDO">Empréstimo concedido</option>
+						<option value="EMPRESTIMO_RECEBIMENTO_PARCELA">Recebimento de parcela de empréstimo</option>
+						<option value="EMPRESTIMO_PAGAMENTO_PARCELA">Pagamento de parcela de empréstimo</option>
+					</select>
+					<p class="criati-texto-ajuda">Só orienta a revisão (ex.: mostrar o seletor de fatura). Nunca cria contrato, parcela ou pagamento sozinho.</p>
+				</div>
+				<div class="criati-field"><label for="regra-confianca">Nível de confiança</label>
+					<select class="criati-select" id="regra-confianca"><option value="ALTA">Alta</option><option value="MEDIA" selected>Média</option><option value="BAIXA">Baixa</option></select>
+				</div>
+				<div class="criati-field"><label for="regra-prioridade">Prioridade (desempate entre regras que casam)</label><input class="criati-input" id="regra-prioridade" type="number" min="0" step="1" value="0" /></div>
+				<div class="criati-field"><label for="regra-aplicacao">Aplicação</label>
+					<select class="criati-select" id="regra-aplicacao">
+						<option value="SUGESTAO">Sugestão (usuário escolhe se aceita)</option>
+						<option value="AUTOMATICA">Automática (pré-preenche a linha; confirmação continua manual)</option>
+					</select>
+					<p class="criati-texto-ajuda">Automática nunca confirma, cria lançamento, liquida fatura ou movimenta dinheiro sozinha — só pré-preenche a linha de revisão. Só disponível para estratégia Igual ou Prefixo, e nunca para padrões genéricos (ex.: "PIX", "PAGAMENTO").</p>
+				</div>
+				<div class="criati-modal-acoes"><button type="button" class="criati-btn criati-btn-ghost" id="regra-cancelar">Cancelar</button><button type="submit" class="criati-btn criati-btn-primary" id="regra-salvar">Salvar</button></div>
+			</form>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+	<script th:src="@{/js/criati-api.js}"></script><script th:src="@{/js/criati-tema.js}"></script><script th:src="@{/js/criati-estilo.js}"></script><script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script><script th:src="@{/js/criati-contexto.js}"></script><script th:src="@{/js/criati-aplicacoes.js}"></script><script th:src="@{/js/financeiro-formatacao.js}"></script><script th:src="@{/js/financeiro-detalhes.js}"></script><script th:src="@{/js/financeiro-api.js}"></script><script th:src="@{/js/financeiro-regras-importacao.js}"></script>
+	<script>document.addEventListener("DOMContentLoaded", function () { CriatiUI.initSidebarToggle(); CriatiUI.initUserMenu(); CriatiAuth.initLogout(); CriatiContexto.iniciar(); CriatiAplicacoes.carregarSidebar(); FinanceiroRegrasImportacao.iniciar(); });</script>
+</body>
+</html>

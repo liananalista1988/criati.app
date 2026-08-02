@@ -303,6 +303,24 @@ public class PaginaController {
 		return "app/financeiro-importacao-detalhe";
 	}
 
+	// CRUD de regras de classificacao de importacao (CRIATI-IMP-002A) e
+	// restrito a ADMINISTRADOR (RegraClassificacaoImportacaoService), mesmo
+	// padrao ADMINISTRADOR-apenas de Contas/Categorias - mas a pagina fica
+	// acessivel a qualquer perfil com Financeiro habilitado (mesmo padrao das
+	// demais telas de cadastro), o backend rejeita escrita de quem nao for
+	// ADMINISTRADOR.
+	@GetMapping("/app/financeiro/regras-importacao")
+	public String financeiroRegrasImportacao(
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		if (!aplicacaoService.possuiAplicacaoAtiva(
+				contexto.empresaId(), CodigoAplicacao.FINANCEIRO.name())) {
+			return "redirect:/app/aplicacoes";
+		}
+		return "app/financeiro-regras-importacao";
+	}
+
 	@GetMapping("/app/financeiro/contas-a-pagar")
 	public String financeiroContasAPagar(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (!possuiAplicacaoAtivaNaEmpresaAtiva(session, principal, CodigoAplicacao.FINANCEIRO.name())) {

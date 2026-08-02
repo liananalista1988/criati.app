@@ -251,7 +251,18 @@ public class LancamentoFinanceiro {
 	public static LancamentoFinanceiro gerarDeImportacao(Empresa empresa, ContaFinanceira conta,
 			CategoriaFinanceira categoria, TipoFinanceiro tipo, String descricao, BigDecimal valor,
 			LocalDate dataTransacao, Usuario autor) {
-		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, null, null,
+		return gerarDeImportacao(empresa, conta, categoria, null, tipo, descricao, valor, dataTransacao, autor);
+	}
+
+	// Sobrecarga com pessoa responsavel opcional: usada quando uma regra de
+	// classificacao de importacao (CRIATI-IMP-002A) sugere/pre-preenche uma
+	// pessoa e o usuario confirma - nunca inferida automaticamente do titular
+	// da conta aqui (diferente do fluxo manual de lancamento), porque a regra
+	// e quem decide, de forma explicita e auditavel.
+	public static LancamentoFinanceiro gerarDeImportacao(Empresa empresa, ContaFinanceira conta,
+			CategoriaFinanceira categoria, PessoaFinanceira pessoaFinanceira, TipoFinanceiro tipo, String descricao,
+			BigDecimal valor, LocalDate dataTransacao, Usuario autor) {
+		LancamentoFinanceiro lancamento = new LancamentoFinanceiro(empresa, conta, categoria, pessoaFinanceira, null,
 				tipo, descricao, valor, dataTransacao, dataTransacao, dataTransacao,
 				StatusLancamentoFinanceiro.LIQUIDADO, null, null, autor);
 		lancamento.origem = OrigemLancamentoFinanceiro.IMPORTACAO;

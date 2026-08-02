@@ -83,7 +83,9 @@ public class ImportacaoBancariaController {
 	@GetMapping("/{id}")
 	public PreviaImportacaoBancariaResponse buscar(
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
-		return PreviaImportacaoBancariaResponse.from(service.buscar(id, exigirAcesso(session, principal)));
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return PreviaImportacaoBancariaResponse.from(
+				service.buscar(id, contexto), confirmacaoService.sugestoesPorTransacao(id, contexto));
 	}
 
 	@PostMapping("/{id}/descartar")

@@ -47,9 +47,18 @@
 	var resumoAtual = null;
 	var podeGerenciarAtual = false;
 	var categoriasAtivas = [];
+	var faturasEmAberto = [];
+	var nomeCartaoPorId = {};
 	var selecionadas = new Set();
 	var OPCAO_NOVA_CATEGORIA = "__nova__";
 	var selectCategoriaAlvo = null;
+	var ENCAMINHAMENTO_LABEL = {
+		FATURA_CARTAO: "possível pagamento de fatura de cartão",
+		EMPRESTIMO_RECEBIDO: "possível recebimento de empréstimo",
+		EMPRESTIMO_CONCEDIDO: "possível empréstimo concedido",
+		EMPRESTIMO_RECEBIMENTO_PARCELA: "possível recebimento de parcela de empréstimo",
+		EMPRESTIMO_PAGAMENTO_PARCELA: "possível pagamento de parcela de empréstimo"
+	};
 
 	var STATUS_LOTE = {
 		PREVIA_DISPONIVEL: "Pré-visualização disponível",
@@ -414,13 +423,23 @@
 			? "Arquivo importado com sucesso. Revise a pré-visualização antes de decidir os próximos passos."
 			: null;
 		if (podeGerenciarAtual) {
-			// Categorias so sao necessarias para quem pode confirmar transacoes;
-			// usuarios somente leitura nao fazem essa chamada extra.
-			api.categorias.listar({ status: "ATIVO" }).then(function (resposta) {
-				categoriasAtivas = resposta.data || [];
+			// Categorias e faturas em aberto so sao necessarias para quem pode
+			// confirmar transacoes; usuarios somente leitura nao fazem essas
+			// chamadas extras.
+			Promise.all([
+				api.categorias.listar({ status: "ATIVO" }),
+				api.faturas.listar({ status: "ABERTA" }),
+				api.cartoes.listar({ status: "ATIVO" })
+			]).then(function (respostas) {
+				categoriasAtivas = respostas[0].data || [];
+				faturasEmAberto = respostas[1].data || [];
+				nomeCartaoPorId = {};
+				(respostas[2].data || []).forEach(function (cartao) { nomeCartaoPorId[cartao.id] = cartao.nome; });
 			}).catch(function () {
-				categoriasAtivas = [];
-				window.CriatiUI.showToast("erro", "Não foi possível carregar as categorias financeiras.");
+				categoriasAtivas = categoriasAtivas.length ? categoriasAtivas : [];
+				faturasEmAberto = [];
+				nomeCartaoPorId = {};
+				window.CriatiUI.showToast("erro", "Não foi possível carregar categorias, cartões e/ou faturas em aberto.");
 			}).then(function () {
 				carregarDetalhe(mensagemInicial);
 			});
@@ -513,6 +532,11 @@
 		var tr = document.createElement("tr");
 		tr.dataset.transacaoId = transacao.id;
 		tr.dataset.sequencia = String(transacao.sequencia);
+		// Regra sugerida (se houver) so e considerada "efetivamente usada" pelo
+		// backend se o que for confirmado ainda bater com o que ela sugeriu
+		// (ConfirmacaoImportacaoBancariaService) - o front so precisa informar
+		// qual regra gerou a sugestao, nunca decidir isso sozinho.
+		tr.dataset.regraSugeridaId = transacao.regraSugeridaId || "";
 
 		var celulaSelecao = celula(null, "Selecionar");
 		celulaSelecao.textContent = "";
@@ -580,6 +604,46 @@
 				selectCategoria.dataset.valorAnterior = selectCategoria.value;
 			});
 			celulaCategoria.appendChild(selectCategoria);
+
+			// Fatura de cartao (CRIATI-IMP-002A): via alternativa a categoria -
+			// quando escolhida, a transacao e confirmada como pagamento de
+			// fatura (PagamentoFaturaCartaoService), nunca como lancamento
+			// generico. Nunca vem pre-selecionada automaticamente, mesmo
+			// quando uma regra sugere isso - so um aviso em texto; a fatura
+			// especifica e sempre escolha explicita do usuario.
+			var selectFatura = document.createElement("select");
+			selectFatura.className = "criati-select importacao-transacao-fatura";
+			selectFatura.setAttribute("aria-label", "Pagamento de fatura de cartão (alternativa à categoria) da transação " + transacao.sequencia);
+			var opcaoSemFatura = document.createElement("option");
+			opcaoSemFatura.value = "";
+			opcaoSemFatura.textContent = "— Não é pagamento de fatura —";
+			selectFatura.appendChild(opcaoSemFatura);
+			faturasEmAberto.forEach(function (fatura) {
+				var opcao = document.createElement("option");
+				opcao.value = fatura.id;
+				opcao.textContent = (nomeCartaoPorId[fatura.cartaoPrincipalId] || "Cartão") + " — "
+					+ formatacao.dataBr(fatura.competencia) + " — saldo " + formatacao.moeda(fatura.saldoDevido);
+				selectFatura.appendChild(opcao);
+			});
+			selectFatura.addEventListener("change", function () {
+				selectCategoria.disabled = Boolean(selectFatura.value);
+			});
+			celulaCategoria.appendChild(selectFatura);
+
+			if (transacao.aplicacaoSugestao) {
+				var aviso = document.createElement("p");
+				aviso.className = "financeiro-sugestao-regra";
+				if (transacao.encaminhamentoSugerido) {
+					aviso.textContent = "Sugestão (regra): " + (ENCAMINHAMENTO_LABEL[transacao.encaminhamentoSugerido] || transacao.encaminhamentoSugerido)
+						+ " — selecione a fatura acima se aplicável.";
+				} else {
+					aviso.textContent = (transacao.aplicacaoSugestao === "AUTOMATICA" ? "Preenchido automaticamente" : "Sugestão")
+						+ " pela regra: " + transacao.categoriaSugeridaNome;
+					selectCategoria.value = transacao.categoriaSugeridaId;
+					selectCategoria.dataset.valorAnterior = selectCategoria.value;
+				}
+				celulaCategoria.appendChild(aviso);
+			}
 		} else {
 			celulaCategoria.textContent = transacao.situacao === "CONFIRMADA" ? "Lançada" : "—";
 		}
@@ -691,12 +755,14 @@
 			}
 			var sequencia = linha.dataset.sequencia;
 			var selectCategoria = linha.querySelector(".importacao-transacao-categoria");
+			var selectFatura = linha.querySelector(".importacao-transacao-fatura");
 			var inputDescricao = linha.querySelector(".importacao-transacao-descricao");
 			var checkDuplicidade = linha.querySelector(".importacao-transacao-confirmar-duplicidade");
-			var categoriaId = selectCategoria ? selectCategoria.value : "";
+			var faturaId = selectFatura ? selectFatura.value : "";
+			var categoriaId = (!faturaId && selectCategoria) ? selectCategoria.value : "";
 			var descricaoFinal = inputDescricao ? inputDescricao.value.trim() : "";
-			if (!categoriaId) {
-				erroValidacao = "Selecione a categoria da transação #" + sequencia + " antes de confirmar.";
+			if (!faturaId && !categoriaId) {
+				erroValidacao = "Selecione a categoria (ou a fatura, se for pagamento de cartão) da transação #" + sequencia + " antes de confirmar.";
 				return;
 			}
 			if (!descricaoFinal) {
@@ -709,7 +775,9 @@
 			}
 			comandos.push({
 				transacaoId: transacaoId,
-				categoriaId: categoriaId,
+				categoriaId: categoriaId || null,
+				faturaId: faturaId || null,
+				regraClassificacaoId: linha.dataset.regraSugeridaId || null,
 				descricaoFinal: descricaoFinal,
 				confirmarDuplicidade: Boolean(checkDuplicidade && checkDuplicidade.checked)
 			});

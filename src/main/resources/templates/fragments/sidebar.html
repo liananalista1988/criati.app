@@ -59,7 +59,7 @@
 				     primeira renderizacao). O JS (criati-ui.js initMenuCategoriasRecolhiveis)
 				     so cuida da alternancia por clique/teclado depois disso. -->
 				<div class="criati-nav-secao" data-nav-grupo
-					th:with="grupoAberto=${paginaAtiva == 'financeiro-visao-geral' or paginaAtiva == 'financeiro-lancamentos' or paginaAtiva == 'financeiro-recorrencias' or paginaAtiva == 'financeiro-contas-a-pagar' or paginaAtiva == 'financeiro-importacoes'}">
+					th:with="grupoAberto=${paginaAtiva == 'financeiro-visao-geral' or paginaAtiva == 'financeiro-lancamentos' or paginaAtiva == 'financeiro-recorrencias' or paginaAtiva == 'financeiro-contas-a-pagar' or paginaAtiva == 'financeiro-importacoes' or paginaAtiva == 'financeiro-regras-importacao'}">
 					<button type="button" class="criati-nav-secao-titulo criati-nav-secao-toggle" th:attr="aria-expanded=${grupoAberto}" aria-controls="menu-financeiro-movimentacoes">Movimentações</button>
 					<ul class="criati-nav" id="menu-financeiro-movimentacoes" th:attr="hidden=${grupoAberto} ? null : 'hidden'">
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-visao-geral'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-visao-geral'} ? 'page' : null" href="/app/financeiro" aria-label="Visao geral financeira" data-tooltip="Visao geral financeira"><span aria-hidden="true">↗</span><span class="criati-nav-label">Visao geral financeira</span></a></li>
@@ -67,6 +67,7 @@
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-recorrencias'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-recorrencias'} ? 'page' : null" href="/app/financeiro/recorrencias" aria-label="Recorrencias" data-tooltip="Recorrencias"><span aria-hidden="true">⟳</span><span class="criati-nav-label">Recorrencias</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-contas-a-pagar'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-contas-a-pagar'} ? 'page' : null" href="/app/financeiro/contas-a-pagar" aria-label="Contas a pagar" data-tooltip="Contas a pagar"><span aria-hidden="true">−</span><span class="criati-nav-label">Contas a pagar</span></a></li>
 						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-importacoes'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-importacoes'} ? 'page' : null" href="/app/financeiro/importacoes" aria-label="Importacoes bancarias" data-tooltip="Importacoes bancarias"><span aria-hidden="true">⇧</span><span class="criati-nav-label">Importações bancárias</span></a></li>
+						<li><a class="criati-nav-link" th:classappend="${paginaAtiva == 'financeiro-regras-importacao'} ? 'is-active' : ''" th:attr="aria-current=${paginaAtiva == 'financeiro-regras-importacao'} ? 'page' : null" href="/app/financeiro/regras-importacao" aria-label="Regras de classificacao" data-tooltip="Regras de classificacao"><span aria-hidden="true">✓</span><span class="criati-nav-label">Regras de classificação</span></a></li>
 					</ul>
 				</div>
 				<div class="criati-nav-secao" data-nav-grupo
