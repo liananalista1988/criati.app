@@ -308,6 +308,51 @@
 	background: var(--criati-danger);
 }
 
+/* Lista/tabela de categorias (CRIATI-FIN-014, substitui os cards antigos) */
+
+.financeiro-categorias-grupos {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--criati-space-lg);
+}
+
+@media (max-width: 900px) {
+	.financeiro-categorias-grupos {
+		grid-template-columns: 1fr;
+	}
+}
+
+.financeiro-categorias-grupo h2 {
+	font-size: 1.05rem;
+	margin-bottom: 12px;
+}
+
+.financeiro-categoria-nome-celula {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.financeiro-categoria-nome-celula.is-subcategoria {
+	padding-left: 20px;
+}
+
+.financeiro-categoria-marcador {
+	flex: 0 0 auto;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--criati-accent);
+}
+
+.financeiro-categoria-marcador.is-receita {
+	background: var(--criati-success);
+}
+
+.financeiro-categoria-marcador.is-despesa {
+	background: var(--criati-danger);
+}
+
 .financeiro-dashboard-indicadores {
 	display: flex;
 	flex-direction: column;
@@ -637,10 +682,16 @@
 }
 
 .criati-badge-pago,
+.criati-badge-liquidado,
 .criati-badge-receita,
 .criati-badge-ressarcida {
 	background: var(--criati-success-bg);
 	color: var(--criati-success-fg);
+}
+
+.criati-badge-vencido {
+	background: var(--criati-danger-bg);
+	color: var(--criati-danger-fg);
 }
 
 .criati-badge-cancelado,

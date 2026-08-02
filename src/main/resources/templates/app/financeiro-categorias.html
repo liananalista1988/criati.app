@@ -63,14 +63,24 @@
 					<p>Nenhuma categoria cadastrada. Crie categorias para organizar receitas e despesas da residência.</p>
 				</div>
 
-				<div id="financeiro-categorias-conteudo" hidden style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-					<section>
-						<h2 style="font-size: 1.05rem; margin-bottom: 12px;">Receitas</h2>
-						<div id="financeiro-categorias-receitas" style="display: flex; flex-direction: column; gap: 10px;"></div>
+				<div id="financeiro-categorias-conteudo" hidden class="financeiro-categorias-grupos">
+					<section class="financeiro-categorias-grupo is-receita">
+						<h2>Receitas</h2>
+						<div class="criati-table-wrap">
+							<table class="criati-table" aria-label="Categorias de receita">
+								<thead><tr><th>Nome</th><th>Ordem</th><th>Orçamento</th><th>Status</th><th>Ações</th></tr></thead>
+								<tbody id="financeiro-categorias-receitas"></tbody>
+							</table>
+						</div>
 					</section>
-					<section>
-						<h2 style="font-size: 1.05rem; margin-bottom: 12px;">Despesas</h2>
-						<div id="financeiro-categorias-despesas" style="display: flex; flex-direction: column; gap: 10px;"></div>
+					<section class="financeiro-categorias-grupo is-despesa">
+						<h2>Despesas</h2>
+						<div class="criati-table-wrap">
+							<table class="criati-table" aria-label="Categorias de despesa">
+								<thead><tr><th>Nome</th><th>Ordem</th><th>Orçamento</th><th>Status</th><th>Ações</th></tr></thead>
+								<tbody id="financeiro-categorias-despesas"></tbody>
+							</table>
+						</div>
 					</section>
 				</div>
 			</main>

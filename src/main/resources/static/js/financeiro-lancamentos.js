@@ -99,7 +99,10 @@
 		valor.dataset.label = "Valor"; valor.className = l.tipo === "RECEITA" ? "criati-valor-positivo" : "criati-valor-negativo"; tr.appendChild(valor);
 		var status = document.createElement("td"), badge = document.createElement("span");
 		status.dataset.label = "Status";
-		badge.className = "criati-badge criati-badge-" + l.status.toLowerCase();
+		// Vencido e calculado (pendente + vencimento no passado), nao um status
+		// persistido: prevalece sobre a cor do status normal para que a
+		// situacao fique visivelmente vermelha, nunca so o texto do badge.
+		badge.className = "criati-badge criati-badge-" + (l.vencido ? "vencido" : l.status.toLowerCase());
 		badge.textContent = l.vencido ? "Vencido" : (STATUS_LABEL[l.status] || l.status); status.appendChild(badge); tr.appendChild(status);
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataVencimento), "Vencimento"));
 		tr.appendChild(celula(window.FinanceiroFormatacao.dataBr(l.dataLiquidacao), "Liquidação"));

@@ -142,20 +142,33 @@
 		return td;
 	}
 
-	// Monta as opcoes de categoria de uma linha, sempre com a opcao
-	// "Cadastrar categoria" ao final; preserva o valor selecionado quando
-	// ainda existir na lista atualizada de categoriasAtivas.
+	// Monta as opcoes de categoria de uma linha, separando Receitas e
+	// Despesas em grupos visuais distintos (CRIATI-FIN-014, ponto 9), sempre
+	// com a opcao "Cadastrar categoria" ao final; preserva o valor
+	// selecionado quando ainda existir na lista atualizada de categoriasAtivas.
 	function montarOpcoesCategoria(select, valorSelecionado) {
 		select.textContent = "";
 		var opcaoVazia = document.createElement("option");
 		opcaoVazia.value = "";
 		opcaoVazia.textContent = "Selecione a categoria";
 		select.appendChild(opcaoVazia);
-		categoriasAtivas.forEach(function (categoria) {
-			var opcao = document.createElement("option");
-			opcao.value = categoria.id;
-			opcao.textContent = categoria.nome + " — " + (categoria.tipo === "RECEITA" ? "Receita" : "Despesa");
-			select.appendChild(opcao);
+		[
+			{ tipo: "RECEITA", rotulo: "Receitas" },
+			{ tipo: "DESPESA", rotulo: "Despesas" }
+		].forEach(function (grupo) {
+			var itensGrupo = categoriasAtivas.filter(function (c) { return c.tipo === grupo.tipo; });
+			if (!itensGrupo.length) {
+				return;
+			}
+			var optgroup = document.createElement("optgroup");
+			optgroup.label = grupo.rotulo;
+			itensGrupo.forEach(function (categoria) {
+				var opcao = document.createElement("option");
+				opcao.value = categoria.id;
+				opcao.textContent = categoria.nome;
+				optgroup.appendChild(opcao);
+			});
+			select.appendChild(optgroup);
 		});
 		var opcaoNova = document.createElement("option");
 		opcaoNova.value = OPCAO_NOVA_CATEGORIA;

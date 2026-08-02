@@ -47,31 +47,52 @@
 			(r.comOrcamento || 0) + " habilitadas para orçamento";
 	}
 
+	// Lista/tabela compacta em vez de cards (CRIATI-FIN-014): cada tipo em sua
+	// propria tabela (agrupamento visual ja reforcado por cor+icone na coluna
+	// Nome, nunca so a cor), hierarquia categoria/subcategoria por indentacao
+	// e prefixo "↳" (texto, nao so recuo visual).
 	function renderColuna(id, tipo) {
-		var container = el(id); container.innerHTML = "";
+		var corpo = el(id); corpo.innerHTML = "";
 		var itens = categoriasCache.filter(function (c) { return c.tipo === tipo; });
-		if (!itens.length) { var p = document.createElement("p"); p.className = "criati-card-sub";
-			p.textContent = "Nenhuma categoria cadastrada."; container.appendChild(p); return; }
+		if (!itens.length) {
+			var linhaVazia = document.createElement("tr"); var celulaVazia = document.createElement("td");
+			celulaVazia.colSpan = 5; celulaVazia.className = "criati-card-sub"; celulaVazia.textContent = "Nenhuma categoria cadastrada.";
+			linhaVazia.appendChild(celulaVazia); corpo.appendChild(linhaVazia); return;
+		}
 		itens.filter(function (c) { return c.nivel === 1; }).forEach(function (principal) {
-			container.appendChild(criarLinha(principal));
+			corpo.appendChild(criarLinha(principal));
 			itens.filter(function (c) { return c.categoriaPaiId === principal.id; }).forEach(function (filha) {
-				container.appendChild(criarLinha(filha));
+				corpo.appendChild(criarLinha(filha));
 			});
 		});
 	}
 
 	function criarLinha(categoria) {
-		var linha = document.createElement("div"); linha.className = "criati-card";
-		if (categoria.nivel === 2) linha.style.marginLeft = "20px";
-		var nome = document.createElement("p"); nome.className = "criati-card-value";
-		nome.textContent = (categoria.nivel === 2 ? "↳ " : "") + categoria.nome;
-		var detalhe = document.createElement("p"); detalhe.className = "criati-card-sub";
-		detalhe.textContent = "Ordem " + categoria.ordem + " · " +
-			(categoria.permiteOrcamento ? "Permite orçamento" : "Sem orçamento") + " · " +
-			categoria.quantidadeSubcategorias + " subcategorias";
+		var linha = document.createElement("tr");
+
+		var celulaNome = document.createElement("td"); celulaNome.dataset.label = "Nome";
+		celulaNome.className = "financeiro-categoria-nome-celula" + (categoria.nivel === 2 ? " is-subcategoria" : "");
+		var marcador = document.createElement("span");
+		marcador.className = "financeiro-categoria-marcador " + (categoria.tipo === "RECEITA" ? "is-receita" : "is-despesa");
+		marcador.setAttribute("aria-hidden", "true");
+		celulaNome.appendChild(marcador);
+		celulaNome.appendChild(document.createTextNode((categoria.nivel === 2 ? "↳ " : "") + categoria.nome));
+		linha.appendChild(celulaNome);
+
+		var celulaOrdem = document.createElement("td"); celulaOrdem.dataset.label = "Ordem"; celulaOrdem.textContent = categoria.ordem;
+		linha.appendChild(celulaOrdem);
+
+		var celulaOrcamento = document.createElement("td"); celulaOrcamento.dataset.label = "Orçamento";
+		celulaOrcamento.textContent = categoria.permiteOrcamento ? "Sim" : "Não";
+		linha.appendChild(celulaOrcamento);
+
+		var celulaStatus = document.createElement("td"); celulaStatus.dataset.label = "Status";
 		var status = document.createElement("span"); status.className = "criati-badge criati-badge-" + categoria.status.toLowerCase();
 		status.textContent = categoria.status === "ATIVO" ? "Ativa" : "Inativa";
-		var acoes = document.createElement("div"); acoes.className = "criati-table-acoes"; acoes.style.marginTop = "10px";
+		celulaStatus.appendChild(status);
+		linha.appendChild(celulaStatus);
+
+		var acoes = document.createElement("td"); acoes.className = "criati-table-acoes"; acoes.dataset.label = "Ações";
 		var detalhes = document.createElement("button"); detalhes.type = "button"; detalhes.className = "criati-btn criati-btn-ghost";
 		detalhes.textContent = "Detalhes"; detalhes.addEventListener("click", function () { abrirDetalhes(categoria); });
 		var editar = document.createElement("button"); editar.type = "button"; editar.className = "criati-btn criati-btn-ghost";
@@ -80,7 +101,8 @@
 		alternar.textContent = categoria.status === "ATIVO" ? "Inativar" : "Reativar";
 		alternar.addEventListener("click", function () { alternarStatus(categoria); });
 		acoes.appendChild(detalhes); acoes.appendChild(editar); acoes.appendChild(alternar);
-		linha.appendChild(nome); linha.appendChild(detalhe); linha.appendChild(status); linha.appendChild(acoes); return linha;
+		linha.appendChild(acoes);
+		return linha;
 	}
 
 	function abrirDetalhes(categoria) {
@@ -91,6 +113,7 @@
 			["Categoria superior", categoria.categoriaPaiNome],
 			["Nível", categoria.nivel],
 			["Ordem", categoria.ordem],
+			["Subcategorias", categoria.quantidadeSubcategorias],
 			["Permite orçamento", categoria.permiteOrcamento ? "Sim" : "Não"],
 			["Status", categoria.status === "ATIVO" ? "Ativa" : "Inativa"]
 		]);
