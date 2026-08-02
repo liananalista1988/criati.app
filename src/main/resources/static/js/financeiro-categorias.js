@@ -128,7 +128,9 @@
 
 	function fecharModal() { el("financeiro-categoria-modal").hidden = true; el("financeiro-categoria-form").reset(); categoriaEmEdicao = null; }
 	function salvar(evento) {
-		evento.preventDefault(); var botao = el("financeiro-categoria-salvar");
+		evento.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("financeiro-categoria-form"))) { return; }
+		var botao = el("financeiro-categoria-salvar");
 		var dados = { nome: el("financeiro-categoria-nome").value, descricao: el("financeiro-categoria-descricao").value,
 			categoriaPaiId: el("financeiro-categoria-pai").value || null, tipo: el("financeiro-categoria-tipo").value,
 			ordem: Number(el("financeiro-categoria-ordem").value), permiteOrcamento: el("financeiro-categoria-orcamento").checked };

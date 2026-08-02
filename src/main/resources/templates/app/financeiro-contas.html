@@ -74,7 +74,7 @@
 		<h2 id="conta-modal-titulo">Nova conta</h2>
 		<form class="criati-modal-form" id="conta-form">
 			<div class="criati-field"><label for="conta-nome">Nome de identificação</label><input class="criati-input" id="conta-nome" required maxlength="150" /></div>
-			<div class="criati-field"><label for="conta-titular">Titular</label><select class="criati-select" id="conta-titular" required><option value="">Selecione</option></select></div>
+			<div class="criati-field"><label for="conta-titular">Titular</label><select class="criati-select" id="conta-titular" required><option value="">Selecione</option></select><button type="button" class="criati-btn criati-btn-ghost" id="conta-novo-titular">Cadastrar titular</button></div>
 			<div class="criati-field"><label for="conta-tipo">Tipo</label><select class="criati-select" id="conta-tipo" required><option value="CONTA_CORRENTE">Conta corrente</option><option value="CONTA_PAGAMENTO">Conta de pagamento</option><option value="POUPANCA">Poupança</option><option value="DINHEIRO">Dinheiro</option><option value="CARTEIRA">Carteira</option><option value="OUTRA">Outra</option><option value="CAIXA" disabled>Caixa (legado)</option><option value="INVESTIMENTO" disabled>Investimento (legado)</option></select></div>
 			<div class="criati-field"><label for="conta-instituicao">Instituição financeira</label><select class="criati-select" id="conta-instituicao"><option value="">Sem instituição</option></select><button type="button" class="criati-btn criati-btn-ghost" id="conta-nova-instituicao">Cadastrar instituição</button></div>
 			<div class="criati-field"><label for="conta-moeda">Moeda</label><input class="criati-input" id="conta-moeda" value="BRL" readonly /></div>
@@ -83,6 +83,15 @@
 			<label><input id="conta-conciliacao" type="checkbox" /> Permitir conciliação futura</label>
 			<p class="criati-texto-ajuda">O saldo informado representa a posição inicial da conta e ainda não considera movimentações futuras.</p>
 			<div class="criati-modal-acoes"><button type="button" class="criati-btn criati-btn-ghost" id="conta-cancelar">Cancelar</button><button type="submit" class="criati-btn criati-btn-primary" id="conta-salvar">Salvar</button></div>
+		</form>
+	</div></div>
+
+	<div class="criati-modal-overlay" id="titular-modal" hidden><div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="titular-modal-titulo">
+		<h2 id="titular-modal-titulo">Nova pessoa</h2>
+		<form class="criati-modal-form" id="titular-form">
+			<div class="criati-field"><label for="titular-nome">Nome</label><input class="criati-input" id="titular-nome" required maxlength="150" /></div>
+			<div class="criati-field"><label for="titular-apelido">Apelido ou descrição (opcional)</label><input class="criati-input" id="titular-apelido" maxlength="100" /></div>
+			<div class="criati-modal-acoes"><button type="button" class="criati-btn criati-btn-ghost" id="titular-cancelar">Cancelar</button><button type="submit" class="criati-btn criati-btn-primary" id="titular-salvar">Salvar</button></div>
 		</form>
 	</div></div>
 

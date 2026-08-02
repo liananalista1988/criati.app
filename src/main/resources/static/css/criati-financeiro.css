@@ -794,7 +794,7 @@
 	background: var(--criati-surface-alt);
 }
 
-.criati-content .criati-field:has(:invalid:not(:placeholder-shown)) label {
+.criati-content .criati-field:has(.criati-campo-invalido) label {
 	color: var(--criati-danger-fg);
 }
 

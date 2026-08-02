@@ -25,15 +25,19 @@
 		el("conta-nova-instituicao").addEventListener("click", abrirInstituicao);
 		el("instituicao-cancelar").addEventListener("click", fecharInstituicao);
 		el("instituicao-form").addEventListener("submit", salvarInstituicao);
+		el("conta-novo-titular").addEventListener("click", abrirTitular);
+		el("titular-cancelar").addEventListener("click", fecharTitular);
+		el("titular-form").addEventListener("submit", salvarTitular);
 		["contas-filtro-titular", "contas-filtro-instituicao", "contas-filtro-tipo", "contas-filtro-status"]
 			.forEach(function (id) { el(id).addEventListener("change", carregarContas); });
 		el("contas-busca").addEventListener("input", carregarContas);
 		Promise.all([carregarTitulares(), carregarInstituicoes()]).then(function () { carregarContas(); carregarResumo(); });
 	}
 
-	function carregarTitulares() {
+	function carregarTitulares(selecionado) {
 		return window.FinanceiroApi.contas.titulares().then(function (resposta) {
 			preencherSelects("titular", resposta.data || []);
+			if (selecionado) { el("conta-titular").value = selecionado; }
 		});
 	}
 
@@ -117,7 +121,9 @@
 	function aplicarPadraoTipo() { var tipo = el("conta-tipo").value; var dinheiro = tipo === "DINHEIRO" || tipo === "CARTEIRA"; el("conta-conciliacao").checked = !dinheiro; el("conta-conciliacao").disabled = dinheiro; if (dinheiro) { el("conta-instituicao").value = ""; } }
 
 	function salvarConta(evento) {
-		evento.preventDefault(); var botaoSalvar = el("conta-salvar"); var dados = {
+		evento.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("conta-form"))) { return; }
+		var botaoSalvar = el("conta-salvar"); var dados = {
 			nome: el("conta-nome").value, titularId: el("conta-titular").value, instituicaoId: el("conta-instituicao").value || null,
 			tipo: el("conta-tipo").value, moeda: "BRL", saldoInicial: el("conta-saldo").value,
 			dataSaldoInicial: el("conta-data-saldo").value, permiteConciliacao: el("conta-conciliacao").checked
@@ -138,10 +144,25 @@
 			.catch(function (erro) { window.CriatiUI.showToast("erro", erro.message || "Não foi possível atualizar a conta."); });
 	}
 
+	function abrirTitular() { el("titular-modal").hidden = false; el("titular-nome").focus(); }
+	function fecharTitular() { el("titular-modal").hidden = true; el("titular-form").reset(); }
+	function salvarTitular(evento) {
+		evento.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("titular-form"))) { return; }
+		var botaoSalvar = el("titular-salvar"); window.CriatiUI.setButtonLoading(botaoSalvar, true, "Salvando...");
+		window.FinanceiroApi.pessoas.criar({ nome: el("titular-nome").value, apelido: el("titular-apelido").value || null })
+			.then(function (resposta) { fecharTitular(); return carregarTitulares(resposta.data.id); })
+			.then(function () { window.CriatiUI.showToast("sucesso", "Titular cadastrado com sucesso."); })
+			.catch(function (erro) { window.CriatiUI.showToast("erro", erro.message || "Não foi possível cadastrar o titular."); })
+			.finally(function () { window.CriatiUI.setButtonLoading(botaoSalvar, false); });
+	}
+
 	function abrirInstituicao() { el("instituicao-modal").hidden = false; el("instituicao-nome").focus(); }
 	function fecharInstituicao() { el("instituicao-modal").hidden = true; el("instituicao-form").reset(); }
 	function salvarInstituicao(evento) {
-		evento.preventDefault(); var botaoSalvar = el("instituicao-salvar"); window.CriatiUI.setButtonLoading(botaoSalvar, true, "Salvando...");
+		evento.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("instituicao-form"))) { return; }
+		var botaoSalvar = el("instituicao-salvar"); window.CriatiUI.setButtonLoading(botaoSalvar, true, "Salvando...");
 		window.FinanceiroApi.contas.criarInstituicao({ nome: el("instituicao-nome").value, codigo: el("instituicao-codigo").value })
 			.then(function (resposta) { fecharInstituicao(); return carregarInstituicoes(resposta.data.id); })
 			.then(function () { window.CriatiUI.showToast("sucesso", "Instituição cadastrada com sucesso."); })

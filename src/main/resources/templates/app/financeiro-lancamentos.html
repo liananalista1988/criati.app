@@ -187,7 +187,7 @@
 					<input class="criati-input" id="financeiro-lancamento-data-vencimento" type="date" /></div>
 				<div class="criati-field"><label for="financeiro-lancamento-status">Status inicial</label>
 					<select class="criati-select" id="financeiro-lancamento-status"><option value="PENDENTE">Pendente</option><option value="LIQUIDADO">Liquidado</option></select></div>
-				<div class="criati-field"><label for="financeiro-lancamento-data-liquidacao">Liquidação — quando o dinheiro entrou ou saiu</label>
+				<div class="criati-field"><label for="financeiro-lancamento-data-liquidacao" id="financeiro-lancamento-data-liquidacao-label">Data do recebimento ou pagamento</label>
 					<input class="criati-input" id="financeiro-lancamento-data-liquidacao" type="date" /></div>
 				<div class="criati-field"><label for="financeiro-lancamento-forma">Forma de pagamento (opcional)</label>
 					<select class="criati-select" id="financeiro-lancamento-forma"><option value="">Não informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select></div>
@@ -208,7 +208,7 @@
 			<h2 id="financeiro-pagar-modal-titulo">Confirmar liquidação</h2>
 			<form class="criati-modal-form" id="financeiro-pagar-form">
 				<div class="criati-field">
-					<label for="financeiro-pagar-data">Data de liquidação</label>
+					<label for="financeiro-pagar-data" id="financeiro-pagar-data-label">Data do recebimento ou pagamento</label>
 					<input class="criati-input" id="financeiro-pagar-data" type="date" required />
 				</div>
 				<div class="criati-field"><label for="financeiro-pagar-forma">Forma (opcional)</label><select class="criati-select" id="financeiro-pagar-forma"><option value="">Não informada</option><option>PIX</option><option>DEBITO</option><option>DINHEIRO</option><option>BOLETO</option><option>TRANSFERENCIA</option><option>OUTRA</option></select></div>

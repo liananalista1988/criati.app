@@ -125,21 +125,28 @@
 	function sucesso(msg) { return function () { window.CriatiUI.showToast("sucesso", msg); carregar(); }; }
 	function falha(msg) { return function (erro) { window.CriatiUI.showToast("erro", (erro && erro.message) || msg); }; }
 
-	function abrirLiquidacao(l) { lancamentoParaLiquidar = l; el("financeiro-pagar-data").value = hoje(); el("financeiro-pagar-forma").value = l.formaPagamento || ""; modalLiquidacao.abrir(el("financeiro-pagar-data")); }
+	function abrirLiquidacao(l) { lancamentoParaLiquidar = l; el("financeiro-pagar-data-label").textContent = rotuloDataPorTipo(l.tipo); el("financeiro-pagar-data").value = hoje(); el("financeiro-pagar-forma").value = l.formaPagamento || ""; modalLiquidacao.abrir(el("financeiro-pagar-data")); }
 	function fecharLiquidacao() { modalLiquidacao.fechar(); lancamentoParaLiquidar = null; }
-	function confirmarLiquidacao(e) { e.preventDefault(); var b = el("financeiro-pagar-confirmar"); window.CriatiUI.setButtonLoading(b, true, "Confirmando...");
+	function confirmarLiquidacao(e) { e.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("financeiro-pagar-form"))) { return; }
+		var b = el("financeiro-pagar-confirmar"); window.CriatiUI.setButtonLoading(b, true, "Confirmando...");
 		window.FinanceiroApi.lancamentos.liquidar(lancamentoParaLiquidar.id, { dataLiquidacao: el("financeiro-pagar-data").value,
 			formaPagamento: el("financeiro-pagar-forma").value || null }).then(function () { fecharLiquidacao(); sucesso("Lançamento liquidado.")(); })
 			.catch(falha("Não foi possível liquidar.")).finally(function () { window.CriatiUI.setButtonLoading(b, false); }); }
 
 	function preencherCategorias(tipo) { preencher(el("financeiro-lancamento-categoria"), categorias.filter(function (c) { return c.tipo === tipo; }), null); }
+	function rotuloDataPorTipo(tipo) { return tipo === "RECEITA" ? "Data do recebimento" : tipo === "DESPESA" ? "Data do pagamento" : "Data do recebimento ou pagamento"; }
+	function atualizarRotulosData(tipo) {
+		el("financeiro-lancamento-data-liquidacao-label").textContent = rotuloDataPorTipo(tipo);
+		el("financeiro-pagar-data-label").textContent = rotuloDataPorTipo(tipo);
+	}
 	function abrirCriacao(tipo) { lancamentoEmEdicao = null; el("financeiro-lancamento-modal-titulo").textContent = tipo === "RECEITA" ? "Nova receita" : "Nova despesa";
 		el("financeiro-lancamento-tipo").value = tipo; el("financeiro-lancamento-descricao").value = ""; el("financeiro-lancamento-valor").value = "";
 		el("financeiro-lancamento-data-competencia").value = hoje(); el("financeiro-lancamento-data-vencimento").value = "";
 		el("financeiro-lancamento-data-liquidacao").value = ""; el("financeiro-lancamento-status").value = "PENDENTE";
-		el("financeiro-lancamento-forma").value = ""; el("financeiro-lancamento-observacao").value = ""; preencherCategorias(tipo); modalLancamento.abrir(el("financeiro-lancamento-conta")); }
+		el("financeiro-lancamento-forma").value = ""; el("financeiro-lancamento-observacao").value = ""; atualizarRotulosData(tipo); preencherCategorias(tipo); modalLancamento.abrir(el("financeiro-lancamento-conta")); }
 	function abrirEdicao(l) { lancamentoEmEdicao = l; el("financeiro-lancamento-modal-titulo").textContent = "Editar lançamento";
-		el("financeiro-lancamento-tipo").value = l.tipo; preencherCategorias(l.tipo); el("financeiro-lancamento-conta").value = l.contaId;
+		el("financeiro-lancamento-tipo").value = l.tipo; atualizarRotulosData(l.tipo); preencherCategorias(l.tipo); el("financeiro-lancamento-conta").value = l.contaId;
 		el("financeiro-lancamento-categoria").value = l.categoriaId; el("financeiro-lancamento-pessoa").value = l.pessoaFinanceiraId || "";
 		el("financeiro-lancamento-parte").value = l.parteFinanceiraId || ""; el("financeiro-lancamento-descricao").value = l.descricao;
 		el("financeiro-lancamento-valor").value = l.valor; el("financeiro-lancamento-data-competencia").value = l.dataCompetencia;
@@ -147,7 +154,9 @@
 		el("financeiro-lancamento-data-liquidacao").value = l.dataLiquidacao || ""; el("financeiro-lancamento-forma").value = l.formaPagamento || "";
 		el("financeiro-lancamento-observacao").value = l.observacao || ""; modalLancamento.abrir(el("financeiro-lancamento-conta")); }
 	function fecharFormulario() { modalLancamento.fechar(); el("financeiro-lancamento-form").reset(); lancamentoEmEdicao = null; }
-	function salvar(e) { e.preventDefault(); var b = el("financeiro-lancamento-salvar"), tipo = el("financeiro-lancamento-tipo").value;
+	function salvar(e) { e.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("financeiro-lancamento-form"))) { return; }
+		var b = el("financeiro-lancamento-salvar"), tipo = el("financeiro-lancamento-tipo").value;
 		var d = { contaId: el("financeiro-lancamento-conta").value, categoriaId: el("financeiro-lancamento-categoria").value,
 			pessoaFinanceiraId: el("financeiro-lancamento-pessoa").value, parteFinanceiraId: el("financeiro-lancamento-parte").value || null,
 			tipo: tipo, descricao: el("financeiro-lancamento-descricao").value, valor: el("financeiro-lancamento-valor").value,

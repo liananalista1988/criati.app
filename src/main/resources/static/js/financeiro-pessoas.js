@@ -56,7 +56,9 @@
 
 	function fechar() { el("pessoa-modal").hidden = true; el("pessoa-form").reset(); emEdicao = null; }
 	function salvar(evento) {
-		evento.preventDefault(); var botao = el("pessoa-salvar"); var usuarioId = el("pessoa-usuario").value;
+		evento.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("pessoa-form"))) { return; }
+		var botao = el("pessoa-salvar"); var usuarioId = el("pessoa-usuario").value;
 		var dados = { nome: el("pessoa-nome").value, apelido: el("pessoa-apelido").value, usuarioId: usuarioId || null };
 		window.CriatiUI.setButtonLoading(botao, true, "Salvando...");
 		var chamada = emEdicao ? window.FinanceiroApi.pessoas.editar(emEdicao.id, dados) : window.FinanceiroApi.pessoas.criar(dados);

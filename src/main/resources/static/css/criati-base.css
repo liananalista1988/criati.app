@@ -355,6 +355,30 @@ button {
 	border-color: var(--criati-accent);
 }
 
+.criati-input.criati-campo-invalido,
+.criati-select.criati-campo-invalido {
+	border-color: var(--criati-danger);
+}
+
+.criati-input.criati-campo-invalido:focus-visible,
+.criati-select.criati-campo-invalido:focus-visible {
+	border-color: var(--criati-danger);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+.criati-campo-erro-mensagem {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+	font-size: var(--criati-font-size-xs);
+	color: var(--criati-danger-fg);
+}
+
+.criati-campo-erro-mensagem::before {
+	content: "⚠";
+}
+
 .criati-input-group {
 	position: relative;
 	display: flex;

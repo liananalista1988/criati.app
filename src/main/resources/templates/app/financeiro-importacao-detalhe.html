@@ -110,6 +110,24 @@
 		</div>
 	</div>
 
+	<div class="criati-modal-overlay" id="categoria-rapida-modal" hidden>
+		<div class="criati-modal" role="dialog" aria-modal="true" aria-labelledby="categoria-rapida-modal-titulo">
+			<h2 id="categoria-rapida-modal-titulo">Cadastrar categoria</h2>
+			<form class="criati-modal-form" id="categoria-rapida-form">
+				<div class="criati-field"><label for="categoria-rapida-nome">Nome</label><input class="criati-input" id="categoria-rapida-nome" required maxlength="150" /></div>
+				<div class="criati-field"><label for="categoria-rapida-tipo">Natureza</label>
+					<select class="criati-select" id="categoria-rapida-tipo" required>
+						<option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option>
+					</select>
+				</div>
+				<div class="criati-modal-acoes">
+					<button type="button" class="criati-btn criati-btn-ghost" id="categoria-rapida-cancelar">Cancelar</button>
+					<button type="submit" class="criati-btn criati-btn-primary" id="categoria-rapida-salvar">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 	<div th:replace="~{fragments/feedback :: toasts}"></div>
 	<script th:src="@{/js/criati-api.js}"></script>
 	<script th:src="@{/js/criati-tema.js}"></script>

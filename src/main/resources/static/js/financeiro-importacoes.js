@@ -48,6 +48,8 @@
 	var podeGerenciarAtual = false;
 	var categoriasAtivas = [];
 	var selecionadas = new Set();
+	var OPCAO_NOVA_CATEGORIA = "__nova__";
+	var selectCategoriaAlvo = null;
 
 	var STATUS_LOTE = {
 		PREVIA_DISPONIVEL: "Pré-visualização disponível",
@@ -138,6 +140,78 @@
 		}
 		td.appendChild(badge(valor, labels[valor] || valor, classes[valor] || "cancelado"));
 		return td;
+	}
+
+	// Monta as opcoes de categoria de uma linha, sempre com a opcao
+	// "Cadastrar categoria" ao final; preserva o valor selecionado quando
+	// ainda existir na lista atualizada de categoriasAtivas.
+	function montarOpcoesCategoria(select, valorSelecionado) {
+		select.textContent = "";
+		var opcaoVazia = document.createElement("option");
+		opcaoVazia.value = "";
+		opcaoVazia.textContent = "Selecione a categoria";
+		select.appendChild(opcaoVazia);
+		categoriasAtivas.forEach(function (categoria) {
+			var opcao = document.createElement("option");
+			opcao.value = categoria.id;
+			opcao.textContent = categoria.nome + " — " + (categoria.tipo === "RECEITA" ? "Receita" : "Despesa");
+			select.appendChild(opcao);
+		});
+		var opcaoNova = document.createElement("option");
+		opcaoNova.value = OPCAO_NOVA_CATEGORIA;
+		opcaoNova.textContent = "+ Cadastrar categoria";
+		select.appendChild(opcaoNova);
+		select.value = valorSelecionado && categoriasAtivas.some(function (c) { return c.id === valorSelecionado; })
+			? valorSelecionado : "";
+	}
+
+	// Reconstroi as opcoes de categoria de todas as linhas pendentes apos
+	// cadastrar uma categoria nova, preservando a selecao ja feita em cada
+	// linha (exceto na linha de origem, que recebe a categoria recem-criada);
+	// nunca recarrega a importacao inteira, para nao perder descricoes e
+	// selecoes ja preenchidas pelo usuario nas demais linhas.
+	function atualizarTodosSelectsCategoria(categoriaIdParaAlvo) {
+		document.querySelectorAll(".importacao-transacao-categoria").forEach(function (select) {
+			var valorAtual = select === selectCategoriaAlvo ? categoriaIdParaAlvo : select.value;
+			montarOpcoesCategoria(select, valorAtual);
+		});
+	}
+
+	function abrirCategoriaRapida(selectOrigem) {
+		selectCategoriaAlvo = selectOrigem;
+		el("categoria-rapida-form").reset();
+		el("categoria-rapida-modal").hidden = false;
+		el("categoria-rapida-nome").focus();
+	}
+
+	function fecharCategoriaRapida() {
+		el("categoria-rapida-modal").hidden = true;
+		if (selectCategoriaAlvo) {
+			selectCategoriaAlvo.value = selectCategoriaAlvo.dataset.valorAnterior || "";
+		}
+		selectCategoriaAlvo = null;
+	}
+
+	function salvarCategoriaRapida(evento) {
+		evento.preventDefault();
+		if (!window.CriatiUI.validarObrigatorios(el("categoria-rapida-form"))) { return; }
+		var botao = el("categoria-rapida-salvar");
+		window.CriatiUI.setButtonLoading(botao, true, "Salvando...");
+		api.categorias.criar({ nome: el("categoria-rapida-nome").value, tipo: el("categoria-rapida-tipo").value })
+			.then(function (resposta) {
+				categoriasAtivas.push(resposta.data);
+				var alvo = selectCategoriaAlvo;
+				el("categoria-rapida-modal").hidden = true;
+				el("categoria-rapida-form").reset();
+				atualizarTodosSelectsCategoria(resposta.data.id);
+				selectCategoriaAlvo = null;
+				if (alvo) { alvo.dataset.valorAnterior = alvo.value; }
+				window.CriatiUI.showToast("sucesso", "Categoria cadastrada com sucesso.");
+			})
+			.catch(function (erro) {
+				window.CriatiUI.showToast("erro", mensagemErro(erro, "Não foi possível cadastrar a categoria."));
+			})
+			.finally(function () { window.CriatiUI.setButtonLoading(botao, false); });
 	}
 
 	function preencherSelect(select, itens, textoVazio) {
@@ -320,6 +394,8 @@
 		if (el("importacao-selecionar-todas")) {
 			el("importacao-selecionar-todas").addEventListener("change", alternarSelecionarTodas);
 		}
+		el("categoria-rapida-cancelar").addEventListener("click", fecharCategoriaRapida);
+		el("categoria-rapida-form").addEventListener("submit", salvarCategoriaRapida);
 		var criado = new URLSearchParams(window.location.search).get("criado") === "1";
 		var mensagemInicial = criado
 			? "Arquivo importado com sucesso. Revise a pré-visualização antes de decidir os próximos passos."
@@ -491,15 +567,13 @@
 			var selectCategoria = document.createElement("select");
 			selectCategoria.className = "criati-select importacao-transacao-categoria";
 			selectCategoria.setAttribute("aria-label", "Categoria da transação " + transacao.sequencia);
-			var opcaoVazia = document.createElement("option");
-			opcaoVazia.value = "";
-			opcaoVazia.textContent = "Selecione a categoria";
-			selectCategoria.appendChild(opcaoVazia);
-			categoriasAtivas.forEach(function (categoria) {
-				var opcao = document.createElement("option");
-				opcao.value = categoria.id;
-				opcao.textContent = categoria.nome + " — " + (categoria.tipo === "RECEITA" ? "Receita" : "Despesa");
-				selectCategoria.appendChild(opcao);
+			montarOpcoesCategoria(selectCategoria, "");
+			selectCategoria.addEventListener("change", function () {
+				if (selectCategoria.value === OPCAO_NOVA_CATEGORIA) {
+					abrirCategoriaRapida(selectCategoria);
+					return;
+				}
+				selectCategoria.dataset.valorAnterior = selectCategoria.value;
 			});
 			celulaCategoria.appendChild(selectCategoria);
 		} else {

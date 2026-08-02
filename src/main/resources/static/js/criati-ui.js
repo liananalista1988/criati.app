@@ -349,6 +349,111 @@
 		});
 	}
 
+	/**
+	 * Validacao padronizada de campos obrigatorios de um formulario: marca
+	 * borda vermelha + mensagem curta (nunca so a cor, sempre com icone e
+	 * texto), foca o primeiro campo invalido e remove o estado de erro assim
+	 * que o campo for corrigido. Reaproveitavel por qualquer formulario do
+	 * sistema (nao especifico do modulo financeiro), chamado explicitamente
+	 * por cada handler de submit logo apos o preventDefault.
+	 */
+	function campoValido(campo) {
+		if (campo.disabled || campo.type === "hidden") {
+			return true;
+		}
+		if (campo.type === "checkbox" || campo.type === "radio") {
+			return campo.checked;
+		}
+		if (!String(campo.value || "").trim()) {
+			return false;
+		}
+		return typeof campo.checkValidity !== "function" || campo.checkValidity();
+	}
+
+	function mensagemErroCampo(campo) {
+		if (campo.type === "checkbox" || campo.type === "radio") {
+			return "Confirme esta opção.";
+		}
+		if (campo.tagName === "SELECT") {
+			return "Selecione uma opção.";
+		}
+		return "Campo obrigatório.";
+	}
+
+	function limparErroCampo(campo) {
+		campo.classList.remove("criati-campo-invalido");
+		campo.removeAttribute("aria-invalid");
+		var container = campo.closest(".criati-field") || campo.parentElement;
+		var erro = container ? container.querySelector(".criati-campo-erro-mensagem") : null;
+		if (erro) {
+			var descritos = (campo.getAttribute("aria-describedby") || "").split(" ").filter(function (id) {
+				return id && id !== erro.id;
+			});
+			if (descritos.length) {
+				campo.setAttribute("aria-describedby", descritos.join(" "));
+			} else {
+				campo.removeAttribute("aria-describedby");
+			}
+			erro.remove();
+		}
+	}
+
+	function marcarErroCampo(campo, mensagem) {
+		campo.classList.add("criati-campo-invalido");
+		campo.setAttribute("aria-invalid", "true");
+		var container = campo.closest(".criati-field") || campo.parentElement;
+		if (!container) {
+			return;
+		}
+		var erro = container.querySelector(".criati-campo-erro-mensagem");
+		if (!erro) {
+			erro = document.createElement("p");
+			erro.className = "criati-campo-erro-mensagem";
+			erro.setAttribute("role", "alert");
+			erro.id = (campo.id || "campo") + "-erro";
+			container.appendChild(erro);
+		}
+		erro.textContent = mensagem;
+		var descritos = (campo.getAttribute("aria-describedby") || "").split(" ").filter(Boolean);
+		if (descritos.indexOf(erro.id) === -1) {
+			descritos.push(erro.id);
+			campo.setAttribute("aria-describedby", descritos.join(" "));
+		}
+	}
+
+	function validarObrigatorios(form) {
+		if (!form) {
+			return true;
+		}
+		var campos = Array.prototype.slice.call(form.querySelectorAll("[required]"));
+		var primeiroInvalido = null;
+		campos.forEach(function (campo) {
+			if (campo.dataset.validacaoLigada !== "true") {
+				campo.dataset.validacaoLigada = "true";
+				var aoCorrigir = function () {
+					if (campoValido(campo)) {
+						limparErroCampo(campo);
+					}
+				};
+				campo.addEventListener("input", aoCorrigir);
+				campo.addEventListener("change", aoCorrigir);
+			}
+			if (campoValido(campo)) {
+				limparErroCampo(campo);
+			} else {
+				marcarErroCampo(campo, mensagemErroCampo(campo));
+				if (!primeiroInvalido) {
+					primeiroInvalido = campo;
+				}
+			}
+		});
+		if (primeiroInvalido) {
+			primeiroInvalido.focus();
+			return false;
+		}
+		return true;
+	}
+
 	window.CriatiUI = {
 		showToast: showToast,
 		setButtonLoading: setButtonLoading,
@@ -357,6 +462,7 @@
 		initFiltrosRecolhiveis: initFiltrosRecolhiveis,
 		initUserMenu: initUserMenu,
 		criarModal: criarModal,
-		confirmarAcao: confirmarAcao
+		confirmarAcao: confirmarAcao,
+		validarObrigatorios: validarObrigatorios
 	};
 })(window, document);
