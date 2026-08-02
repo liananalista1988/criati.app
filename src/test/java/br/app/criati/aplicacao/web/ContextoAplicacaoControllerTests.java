@@ -77,7 +77,41 @@ class ContextoAplicacaoControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(1))
 				.andExpect(jsonPath("$[0].codigo").value("FINANCEIRO"))
-				.andExpect(jsonPath("$[0].urlInicial").value("/app/financeiro"));
+				.andExpect(jsonPath("$[0].urlInicial").value("/app/financeiro"))
+				.andExpect(jsonPath("$[0].chaveVisual").value("financeiro"))
+				.andExpect(jsonPath("$[0].situacaoDisponibilidade").value("OPERACIONAL"))
+				.andExpect(jsonPath("$[0].ordemExibicao").value(10));
+	}
+
+	@Test
+	void retornaVazioSemModuloENaoExpoeCodigoForaDoCatalogoTipado() throws Exception {
+		Usuario usuario = criarUsuario("contexto.catalogo.tipado@criati.test");
+		Empresa empresa = criarEmpresa("23232323000146");
+		criarVinculo(usuario, empresa, StatusCadastro.ATIVO);
+		Aplicacao desconhecida = aplicacaoRepository.saveAndFlush(
+				new Aplicacao("DESCONHECIDA", "Desconhecida", "Não integra o catálogo técnico", StatusCadastro.ATIVO));
+		aplicacaoService.habilitar(empresa.getId(), desconhecida.getCodigo());
+		MockHttpSession session = login(usuario.getEmail());
+		selecionarEmpresa(session, empresa.getId());
+
+		mockMvc.perform(get("/api/contexto/aplicacoes").session(session))
+				.andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+	}
+
+	@Test
+	void variosModulosRespeitamOrdemCentralIndependenteDoNomePersistido() throws Exception {
+		Usuario usuario = criarUsuario("contexto.ordem.modulos@criati.test");
+		Empresa empresa = criarEmpresa("24242424000147");
+		criarVinculo(usuario, empresa, StatusCadastro.ATIVO);
+		aplicacaoService.habilitar(empresa.getId(), "CLINICA");
+		aplicacaoService.habilitar(empresa.getId(), "FINANCEIRO");
+		MockHttpSession session = login(usuario.getEmail());
+		selecionarEmpresa(session, empresa.getId());
+
+		mockMvc.perform(get("/api/contexto/aplicacoes").session(session))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].codigo").value("FINANCEIRO"))
+				.andExpect(jsonPath("$[1].codigo").value("CLINICA"));
 	}
 
 	@Test

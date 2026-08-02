@@ -261,6 +261,12 @@ O MVP será dividido em duas etapas:
 
 ## Catálogo de aplicações e Clínica Vida Demo
 
+- A definição técnica central dos módulos passa a ser `CodigoAplicacao`, com metadados de apresentação,
+  rota, situação e ordem estável. `ModuloDisponibilidadeService` combina essa definição com os vínculos
+  persistidos já existentes. Módulos futuros podem ser reconhecidos como `INDISPONIVEL`, sem seed, rota
+  ou exposição para empresas. Habilitação técnica por `EmpresaAplicacao` não representa contratação,
+  plano ou assinatura. Detalhes em `docs/PLATAFORMA_MODULOS.md`.
+
 - Conceito novo: `Aplicacao` (tabela `aplicacao`, código único, nome, descrição, status) é o catálogo global de soluções que a Criati oferece — hoje `FINANCEIRO` (produto real) e `CLINICA` (demonstração), criado por `V4__criar_estrutura_aplicacoes.sql`. Uma aplicação inativa nunca pode ser utilizada por nenhuma empresa, mesmo que o vínculo esteja ativo.
 - `Aplicacao` e perfil (`PerfilUsuario`, ver seção "Multiempresa") são conceitos ortogonais e não devem ser confundidos: perfil é "o que o usuário pode fazer dentro da empresa" (ADMINISTRADOR/GESTOR/USUARIO); aplicação é "qual solução a empresa contratou/habilitou" (Financeiro, Clínica). Uma empresa pode ter várias aplicações habilitadas ao mesmo tempo; nenhuma delas concede papel novo ao usuário, e nenhum papel novo (`ROLE_FINANCEIRO`/`ROLE_CLINICA`) foi criado para representar acesso a uma aplicação — o controle é feito checando o vínculo `EmpresaAplicacao`, não uma authority do Spring Security.
 - `EmpresaAplicacao` (tabela `empresa_aplicacao`, `UNIQUE(empresa_id, aplicacao_id)`) é o vínculo entre uma empresa e uma aplicação do catálogo, com o mesmo modelo de estado já usado por `UsuarioEmpresa`: `StatusCadastro` (`ATIVO`/`INATIVO`), sem exclusão física — desabilitar uma aplicação para uma empresa marca o vínculo como `INATIVO` (`AplicacaoService.desabilitar`), nunca remove a linha. Reabilitar reutiliza o mesmo vínculo (`findByEmpresaIdAndAplicacaoId` antes de decidir entre criar ou reativar), nunca duplica.

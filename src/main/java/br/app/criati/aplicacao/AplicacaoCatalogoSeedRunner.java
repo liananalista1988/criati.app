@@ -35,24 +35,20 @@ public class AplicacaoCatalogoSeedRunner implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) {
-		seedSeAusente(
-				CodigoAplicacao.FINANCEIRO.name(),
-				"Gerenciador Financeiro",
-				"Controle financeiro, receitas, despesas, contas e resultados");
-		seedSeAusente(
-				CodigoAplicacao.CLINICA.name(),
-				"Gestao de Clinica",
-				"Pacientes, profissionais, agenda e atendimentos");
+		CodigoAplicacao.catalogoOrdenado().stream()
+				.filter(CodigoAplicacao::isPersistidoNoCatalogoAtual)
+				.forEach(this::seedSeAusente);
 	}
 
 	// Sem @Transactional proprio: cada chamada de AplicacaoRepository (findByCodigo,
 	// save) ja e transacional por si so (proxy padrao do Spring Data); um
 	// @Transactional aqui seria ineficaz mesmo assim, por autoinvocacao (run()
 	// chama este metodo via "this", nunca pelo proxy do bean).
-	private void seedSeAusente(String codigo, String nome, String descricao) {
-		if (aplicacaoRepository.findByCodigo(codigo).isPresent()) {
+	private void seedSeAusente(CodigoAplicacao modulo) {
+		if (aplicacaoRepository.findByCodigo(modulo.name()).isPresent()) {
 			return;
 		}
-		aplicacaoRepository.save(new Aplicacao(codigo, nome, descricao, StatusCadastro.ATIVO));
+		aplicacaoRepository.save(new Aplicacao(modulo.name(), modulo.getNomeExibicao(),
+				modulo.getDescricaoCurta(), StatusCadastro.ATIVO));
 	}
 }
