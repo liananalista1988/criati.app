@@ -103,8 +103,6 @@ class PaginaControllerTests {
 		assertThat(corpo)
 				.contains("criati-sidebar")
 				.contains("Dashboard")
-				.contains("Usuarios")
-				.contains("Convites")
 				.contains("criati-topbar")
 				.contains("criati-logout-btn")
 				.contains("name=\"_csrf\"")

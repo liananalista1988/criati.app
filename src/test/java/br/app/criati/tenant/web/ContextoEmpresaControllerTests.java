@@ -60,8 +60,11 @@ class ContextoEmpresaControllerTests {
 		Usuario usuario = criarUsuario("lista@criati.test");
 		Empresa empresaAtiva = criarEmpresa("11111111000101");
 		Empresa empresaOndeVinculoEstaInativo = criarEmpresa("22222222000102");
+		Empresa empresaInativa = criarEmpresa("33333333000103");
 		criarVinculo(usuario, empresaAtiva, PerfilUsuario.GESTOR, StatusCadastro.ATIVO);
 		criarVinculo(usuario, empresaOndeVinculoEstaInativo, PerfilUsuario.USUARIO, StatusCadastro.INATIVO);
+		criarVinculo(usuario, empresaInativa, PerfilUsuario.USUARIO, StatusCadastro.ATIVO);
+		desativarEmpresa(empresaInativa);
 
 		MockHttpSession session = login(usuario.getEmail());
 

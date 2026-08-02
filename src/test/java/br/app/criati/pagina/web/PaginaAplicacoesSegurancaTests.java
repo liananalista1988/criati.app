@@ -66,13 +66,13 @@ class PaginaAplicacoesSegurancaTests {
 	}
 
 	@Test
-	void aplicacoesAutenticadoRetorna200() throws Exception {
+	void aplicacoesSemEmpresaAtivaVoltaParaSelecao() throws Exception {
 		Usuario usuario = criarUsuario("pagina.aplicacoes@criati.test");
 		MockHttpSession session = login(usuario.getEmail());
 
 		mockMvc.perform(get("/app/aplicacoes").session(session))
-				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/app/dashboard"));
 	}
 
 	@Test

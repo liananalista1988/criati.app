@@ -37,3 +37,22 @@ ser inferidos pelo catálogo ou exibidos como produtos contratados.
 
 Nenhuma migration foi necessária: `aplicacao` e `empresa_aplicacao`, criadas anteriormente, já suportam
 a disponibilidade persistida dos módulos atualmente integrados.
+
+## Entrada e navegação
+
+A entrada autenticada resolve duas dimensões em sequência, sem usar a quantidade de empresas como se
+fosse a quantidade de módulos:
+
+1. com uma empresa ativa vinculada, o backend seleciona seu contexto automaticamente; com várias, o
+   dashboard preserva a escolha explícita;
+2. depois de definido o contexto, um único módulo disponível abre diretamente, enquanto zero ou vários
+   levam ao panorama de módulos. O caso zero permanece em um estado vazio estável, sem redirecionamento
+   circular.
+
+O mesmo resolvedor atende acessos diretos a `/app/dashboard` e `/app/aplicacoes`. A troca de empresa na
+topbar retorna a essa entrada central, de modo que um módulo da empresa anterior não permaneça aberto.
+
+A sidebar recebe do backend somente módulos tecnicamente disponíveis e habilitados para a empresa.
+Links de administração empresarial são renderizados apenas para `ADMINISTRADOR`; a ocultação é apoio de
+interface, e as rotas continuam protegidas no backend. Os grupos internos do Financeiro permanecem
+recolhidos por padrão, abrindo automaticamente apenas o grupo da página atual.

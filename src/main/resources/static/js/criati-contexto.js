@@ -262,7 +262,9 @@
 					return window.CriatiApi
 						.post("/api/contexto/empresa-ativa", { empresaId: empresaId })
 						.then(function () {
-							return iniciar();
+							// O backend resolve a quantidade de modulos da nova empresa:
+							// um abre direto; zero ou varios exibem o panorama modular.
+							window.location.assign("/app/aplicacoes");
 						})
 						.catch(function () {
 							window.CriatiUI.showToast("erro", "Nao foi possivel selecionar essa empresa agora.");

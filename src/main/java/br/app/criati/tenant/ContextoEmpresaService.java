@@ -24,7 +24,9 @@ public class ContextoEmpresaService {
 
 	@Transactional(readOnly = true)
 	public List<UsuarioEmpresa> listarVinculosAtivos(UUID usuarioId) {
-		return usuarioEmpresaRepository.findAllByUsuarioIdAndStatus(usuarioId, StatusCadastro.ATIVO);
+		return usuarioEmpresaRepository.findAllByUsuarioIdAndStatus(usuarioId, StatusCadastro.ATIVO).stream()
+				.filter(vinculo -> vinculo.getEmpresa().getStatus() == StatusCadastro.ATIVO)
+				.toList();
 	}
 
 	@Transactional(readOnly = true)

@@ -505,6 +505,66 @@
 	margin-top: 4px;
 }
 
+.criati-page-eyebrow {
+	font-size: var(--criati-font-size-xs);
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.criati-module-overview-header {
+	max-width: 640px;
+}
+
+.criati-module-grid {
+	grid-template-columns: repeat(auto-fit, minmax(260px, 340px));
+	margin-top: var(--criati-space-lg);
+}
+
+.criati-display-contents {
+	display: contents;
+}
+
+.criati-module-card {
+	display: flex;
+	min-height: 190px;
+	flex-direction: column;
+	gap: var(--criati-space-sm);
+}
+
+.criati-module-card-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--criati-space-sm);
+}
+
+.criati-module-card-header .criati-card-value {
+	margin-top: 0;
+}
+
+.criati-module-card .criati-card-sub {
+	flex: 1;
+	font-size: var(--criati-font-size-sm);
+	line-height: 1.5;
+}
+
+.criati-module-card .criati-btn {
+	align-self: flex-start;
+	margin-top: var(--criati-space-sm);
+}
+
+.criati-module-status {
+	flex: 0 0 auto;
+	padding: 4px 8px;
+	border: 1px solid var(--criati-border);
+	border-radius: 999px;
+	background: var(--criati-surface-hover);
+	color: var(--criati-text-muted);
+	font-size: var(--criati-font-size-xs);
+	font-weight: 600;
+}
+
 .criati-shortcuts {
 	display: flex;
 	flex-wrap: wrap;

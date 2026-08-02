@@ -7,7 +7,7 @@
 	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
 	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
-	<title>Aplicacoes · Criati</title>
+	<title>Módulos · Criati</title>
 	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
 	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
@@ -21,23 +21,25 @@
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 			<main class="criati-content">
-				<div class="criati-page-header">
-					<h1>Aplicacoes</h1>
-					<p>Solucoes habilitadas para a sua empresa ativa.</p>
+				<div class="criati-page-header criati-module-overview-header">
+					<p class="criati-page-eyebrow">Empresa ativa</p>
+					<h1>Seus módulos</h1>
+					<p>Escolha onde deseja trabalhar.</p>
 				</div>
 
-				<p id="criati-aplicacoes-carregando">Carregando aplicacoes...</p>
+				<p id="criati-aplicacoes-carregando" role="status">Carregando módulos...</p>
 
 				<div id="criati-aplicacoes-erro" class="criati-error-state" hidden>
-					<p>Nao foi possivel carregar as aplicacoes da sua empresa agora.</p>
+					<p>Não foi possível carregar os módulos desta empresa agora.</p>
+					<button type="button" id="criati-aplicacoes-retry" class="criati-btn criati-btn-ghost">Tentar novamente</button>
 				</div>
 
 				<div id="criati-aplicacoes-vazio" class="criati-empty-state" hidden>
-					<p>Nenhuma aplicacao habilitada para a sua empresa ainda.</p>
-					<p>Peca ao Superadministrador para habilitar uma solucao (Financeiro ou Clinica).</p>
+					<h2>Nenhum módulo disponível</h2>
+					<p>Esta empresa ainda não possui um módulo habilitado. Fale com o administrador da plataforma se precisar de acesso.</p>
 				</div>
 
-				<section class="criati-cards" aria-label="Aplicacoes da empresa ativa" id="criati-aplicacoes-lista"></section>
+				<section class="criati-cards criati-module-grid" aria-label="Módulos da empresa ativa" id="criati-aplicacoes-lista"></section>
 			</main>
 		</div>
 	</div>
@@ -59,6 +61,14 @@
 			CriatiContexto.iniciar();
 			CriatiAplicacoes.carregarSidebar();
 			CriatiAplicacoes.carregarListaAplicacoes();
+			var retryButton = document.getElementById("criati-aplicacoes-retry");
+			if (retryButton) {
+				retryButton.addEventListener("click", function () {
+					document.getElementById("criati-aplicacoes-erro").hidden = true;
+					document.getElementById("criati-aplicacoes-carregando").hidden = false;
+					CriatiAplicacoes.carregarListaAplicacoes();
+				});
+			}
 		});
 	</script>
 </body>

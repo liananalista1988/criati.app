@@ -175,12 +175,10 @@ class PaginaSidebarRecolhivelTests {
 		assertThat(corpo)
 				.contains("criati-nav-label")
 				.contains("Dashboard")
-				.contains("Aplicacoes")
-				.contains("Usuarios")
-				.contains("Convites")
-				.contains("Configuracoes")
 				.contains("data-tooltip=\"Dashboard\"")
-				.contains("aria-label=\"Dashboard\"");
+				.contains("aria-label=\"Dashboard\"")
+				.doesNotContain("href=\"/app/usuarios\"")
+				.doesNotContain("href=\"/app/convites\"");
 	}
 
 	@Test
@@ -193,7 +191,7 @@ class PaginaSidebarRecolhivelTests {
 		// compartilhado de sidebar/topbar continua acessivel a qualquer
 		// usuario autenticado.
 		mockMvc.perform(get("/app/dashboard").session(sessao)).andExpect(status().isOk());
-		mockMvc.perform(get("/app/aplicacoes").session(sessao)).andExpect(status().isOk());
+		mockMvc.perform(get("/app/aplicacoes").session(sessao)).andExpect(status().is3xxRedirection());
 	}
 
 	@Test

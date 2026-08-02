@@ -1,5 +1,8 @@
 package br.app.criati.pagina.web;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,6 +13,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import br.app.criati.aplicacao.service.AplicacaoService;
+import br.app.criati.aplicacao.service.ModuloDisponibilidadeService;
+import br.app.criati.aplicacao.service.ModuloDisponivelEmpresa;
 import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.security.UsuarioPrincipal;
 import br.app.criati.shared.enums.CodigoAplicacao;
@@ -23,10 +28,13 @@ public class PaginaController {
 
 	private final ContextoEmpresaService contextoEmpresaService;
 	private final AplicacaoService aplicacaoService;
+	private final ModuloDisponibilidadeService moduloDisponibilidadeService;
 
-	public PaginaController(ContextoEmpresaService contextoEmpresaService, AplicacaoService aplicacaoService) {
+	public PaginaController(ContextoEmpresaService contextoEmpresaService, AplicacaoService aplicacaoService,
+			ModuloDisponibilidadeService moduloDisponibilidadeService) {
 		this.contextoEmpresaService = contextoEmpresaService;
 		this.aplicacaoService = aplicacaoService;
+		this.moduloDisponibilidadeService = moduloDisponibilidadeService;
 	}
 
 	@GetMapping("/login")
@@ -54,23 +62,32 @@ public class PaginaController {
 		return "convite/aceitar";
 	}
 
-	// Usuario com exatamente uma empresa vinculada pula a "Visao geral"
-	// (CRIATI-UX-002): nao ha o que escolher, entao o dashboard redireciona
-	// direto para a lista de aplicacoes da propria empresa. Zero vinculos
-	// (ex.: Superadministrador) ou duas ou mais continuam no dashboard, que
-	// mostra o estado vazio ou o seletor de empresa, respectivamente. Decidido
-	// aqui (backend) e nao apenas ocultando o link no menu, para que acessar a
-	// URL diretamente tenha o mesmo comportamento.
+	// Uma unica empresa e selecionada no backend e a entrada passa a depender da
+	// quantidade de modulos dessa empresa: um abre diretamente; zero ou varios
+	// seguem para o panorama modular. Zero ou varias empresas permanecem no
+	// dashboard para o estado vazio ou para a escolha explicita da empresa.
 	@GetMapping("/app/dashboard")
-	public String dashboard(@AuthenticationPrincipal UsuarioPrincipal principal) {
+	public String dashboard(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
 		if (possuiExatamenteUmaEmpresa(principal)) {
-			return "redirect:/app/aplicacoes";
+			ContextoEmpresaAtual contexto = obterOuSelecionarUnicaEmpresa(session, principal).orElseThrow();
+			return "redirect:" + rotaInicial(contexto);
 		}
 		return "app/dashboard";
 	}
 
 	@GetMapping("/app/aplicacoes")
-	public String aplicacoes() {
+	public String aplicacoes(HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal, Model model) {
+		var contexto = obterOuSelecionarUnicaEmpresa(session, principal);
+		if (contexto.isEmpty()) {
+			return "redirect:/app/dashboard";
+		}
+		List<ModuloDisponivelEmpresa> modulos = moduloDisponibilidadeService.listarDisponiveis(contexto.get());
+		if (modulos.size() == 1) {
+			return "redirect:" + modulos.get(0).modulo().getRotaInicial();
+		}
+		model.addAttribute("modulosDisponiveis", modulos);
+		model.addAttribute("mostrarCatalogoModulos", true);
+		model.addAttribute("podeAdministrarEmpresa", contexto.get().perfil() == PerfilUsuario.ADMINISTRADOR);
 		return "app/aplicacoes";
 	}
 
@@ -444,6 +461,43 @@ public class PaginaController {
 	@ModelAttribute("mostrarVisaoGeral")
 	public boolean mostrarVisaoGeral(@AuthenticationPrincipal UsuarioPrincipal principal) {
 		return !possuiExatamenteUmaEmpresa(principal);
+	}
+
+	@ModelAttribute
+	public void prepararNavegacao(
+			Model model, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		model.addAttribute("modulosDisponiveis", List.of());
+		model.addAttribute("mostrarCatalogoModulos", false);
+		model.addAttribute("podeAdministrarEmpresa", false);
+		if (principal == null) {
+			return;
+		}
+		var contexto = contextoEmpresaService.obterContextoAtual(session, principal.getUsuario().getId());
+		if (contexto.isPresent()) {
+			List<ModuloDisponivelEmpresa> modulos = moduloDisponibilidadeService.listarDisponiveis(contexto.get());
+			model.addAttribute("modulosDisponiveis", modulos);
+			model.addAttribute("mostrarCatalogoModulos", modulos.size() != 1);
+			model.addAttribute("podeAdministrarEmpresa",
+					contexto.get().perfil() == PerfilUsuario.ADMINISTRADOR);
+		}
+	}
+
+	private Optional<ContextoEmpresaAtual> obterOuSelecionarUnicaEmpresa(
+			HttpSession session, UsuarioPrincipal principal) {
+		var contextoAtual = contextoEmpresaService.obterContextoAtual(session, principal.getUsuario().getId());
+		if (contextoAtual.isPresent()) {
+			return contextoAtual;
+		}
+		var vinculos = contextoEmpresaService.listarVinculosAtivos(principal.getUsuario().getId());
+		if (vinculos.size() != 1) {
+			return Optional.empty();
+		}
+		return Optional.of(contextoEmpresaService.selecionarEmpresaAtiva(
+				session, principal.getUsuario().getId(), vinculos.get(0).getEmpresa().getId()));
+	}
+
+	private String rotaInicial(ContextoEmpresaAtual contexto) {
+		return moduloDisponibilidadeService.rotaInicialQuandoUnico(contexto).orElse("/app/aplicacoes");
 	}
 
 	private boolean possuiExatamenteUmaEmpresa(UsuarioPrincipal principal) {

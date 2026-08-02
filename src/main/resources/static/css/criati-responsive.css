@@ -60,6 +60,10 @@
 }
 
 @media (max-width: 480px) {
+	.criati-module-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
 	.criati-login-card {
 		padding: 28px 20px;
 	}

@@ -266,6 +266,10 @@ O MVP será dividido em duas etapas:
   persistidos já existentes. Módulos futuros podem ser reconhecidos como `INDISPONIVEL`, sem seed, rota
   ou exposição para empresas. Habilitação técnica por `EmpresaAplicacao` não representa contratação,
   plano ou assinatura. Detalhes em `docs/PLATAFORMA_MODULOS.md`.
+- A entrada autenticada resolve primeiro o contexto de empresa e só então a quantidade de módulos: uma
+  empresa é selecionada automaticamente; um módulo abre direto; zero ou vários exibem o panorama modular.
+  Com várias empresas, o dashboard mantém a seleção explícita. A sidebar é derivada da mesma decisão do
+  backend e não anuncia módulos ou ações administrativas sem acesso.
 
 - Conceito novo: `Aplicacao` (tabela `aplicacao`, código único, nome, descrição, status) é o catálogo global de soluções que a Criati oferece — hoje `FINANCEIRO` (produto real) e `CLINICA` (demonstração), criado por `V4__criar_estrutura_aplicacoes.sql`. Uma aplicação inativa nunca pode ser utilizada por nenhuma empresa, mesmo que o vínculo esteja ativo.
 - `Aplicacao` e perfil (`PerfilUsuario`, ver seção "Multiempresa") são conceitos ortogonais e não devem ser confundidos: perfil é "o que o usuário pode fazer dentro da empresa" (ADMINISTRADOR/GESTOR/USUARIO); aplicação é "qual solução a empresa contratou/habilitou" (Financeiro, Clínica). Uma empresa pode ter várias aplicações habilitadas ao mesmo tempo; nenhuma delas concede papel novo ao usuário, e nenhum papel novo (`ROLE_FINANCEIRO`/`ROLE_CLINICA`) foi criado para representar acesso a uma aplicação — o controle é feito checando o vínculo `EmpresaAplicacao`, não uma authority do Spring Security.

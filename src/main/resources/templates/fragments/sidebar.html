@@ -27,27 +27,43 @@
 						<span class="criati-nav-label">Dashboard</span>
 					</a>
 				</li>
-				<li>
+				<li th:if="${mostrarCatalogoModulos}">
 					<a
 						class="criati-nav-link"
 						th:classappend="${paginaAtiva == 'aplicacoes'} ? 'is-active' : ''"
 						th:attr="aria-current=${paginaAtiva == 'aplicacoes'} ? 'page' : null"
-						aria-label="Aplicacoes"
-						data-tooltip="Aplicacoes"
+						aria-label="Módulos"
+						data-tooltip="Módulos"
 						href="/app/aplicacoes">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<rect x="4" y="4" width="16" height="4" rx="1" />
 							<rect x="4" y="10" width="16" height="4" rx="1" />
 							<rect x="4" y="16" width="16" height="4" rx="1" />
 						</svg>
-						<span class="criati-nav-label">Aplicacoes</span>
+						<span class="criati-nav-label">Módulos</span>
 					</a>
 				</li>
-				<!-- Aplicacoes especificas (Financeiro/Clinica) sao inseridas aqui pelo
-				     JavaScript (criati-aplicacoes.js), somente quando habilitadas para a
-				     empresa ativa; este item nunca e exibido. -->
-				<li id="criati-nav-apps-dinamicas" hidden></li>
 			</ul>
+
+			<div th:if="${!#lists.isEmpty(modulosDisponiveis)}" class="criati-nav-secao">
+				<p class="criati-nav-secao-titulo">Módulos</p>
+				<ul class="criati-nav">
+					<li th:each="disponivel : ${modulosDisponiveis}">
+						<a class="criati-nav-link"
+							th:classappend="${#strings.startsWith(paginaAtiva, disponivel.modulo.chaveVisual)} ? 'is-active' : ''"
+							th:attr="aria-current=${#strings.startsWith(paginaAtiva, disponivel.modulo.chaveVisual)} ? 'page' : null,
+								aria-label=${disponivel.modulo.nomeExibicao},data-tooltip=${disponivel.modulo.nomeExibicao}"
+							th:href="${disponivel.modulo.rotaInicial}">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+								<rect x="4" y="4" width="16" height="4" rx="1" />
+								<rect x="4" y="10" width="16" height="4" rx="1" />
+								<rect x="4" y="16" width="16" height="4" rx="1" />
+							</svg>
+							<span class="criati-nav-label" th:text="${disponivel.modulo.nomeExibicao}">Módulo</span>
+						</a>
+					</li>
+				</ul>
+			</div>
 
 			<div
 				th:if="${#strings.startsWith(paginaAtiva, 'financeiro-')}"
@@ -100,7 +116,7 @@
 				</div>
 			</div>
 
-			<div class="criati-nav-secao">
+			<div th:if="${podeAdministrarEmpresa}" class="criati-nav-secao">
 				<p class="criati-nav-secao-titulo">Administração</p>
 				<ul class="criati-nav">
 				<li>
@@ -133,23 +149,6 @@
 							<path d="m4 6 8 7 8-7" />
 						</svg>
 						<span class="criati-nav-label">Convites</span>
-					</a>
-				</li>
-				<li>
-					<a
-						class="criati-nav-link is-disabled"
-						href="#"
-						aria-disabled="true"
-						data-em-breve="true"
-						aria-label="Configuracoes (em breve)"
-						data-tooltip="Configuracoes (em breve)">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-							<circle cx="12" cy="12" r="3" />
-							<path
-								d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-						</svg>
-						<span class="criati-nav-label">Configuracoes</span>
-						<span class="criati-nav-badge">Em breve</span>
 					</a>
 				</li>
 			</ul>

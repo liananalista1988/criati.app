@@ -63,20 +63,19 @@
 						</article>
 					</section>
 
-					<section class="criati-cards" aria-label="Suas aplicacoes" style="margin-top: 24px;">
+					<section class="criati-cards criati-module-grid" aria-label="Módulos da empresa ativa">
 						<div id="criati-dashboard-aplicacoes-vazio" class="criati-empty-state" hidden>
-							<p>Nenhuma aplicacao habilitada para a sua empresa ainda.</p>
-							<p>Peca ao Superadministrador para habilitar uma solucao (Financeiro ou Clinica).</p>
+							<p>Nenhum módulo habilitado para esta empresa.</p>
 						</div>
-						<div id="criati-dashboard-aplicacoes" style="display: contents;"></div>
+						<div id="criati-dashboard-aplicacoes" class="criati-display-contents"></div>
 					</section>
 
-					<div class="criati-shortcuts">
+					<div th:if="${podeAdministrarEmpresa}" class="criati-shortcuts">
 						<a href="/app/usuarios" class="criati-shortcut">Usuarios</a>
 						<a href="/app/convites" class="criati-shortcut">Convites</a>
 					</div>
 
-					<div class="criati-next-steps">
+					<div th:if="${podeAdministrarEmpresa}" class="criati-next-steps">
 						<h2>Proximos passos</h2>
 						<ul>
 							<li>Revise os dados da sua empresa ativa no topo da tela.</li>
@@ -103,13 +102,6 @@
 			CriatiUI.initSidebarToggle();
 			CriatiUI.initUserMenu();
 			CriatiAuth.initLogout();
-
-			document.querySelectorAll("[data-em-breve]").forEach(function (link) {
-				link.addEventListener("click", function (evento) {
-					evento.preventDefault();
-					CriatiUI.showToast("info", "Este modulo chega em breve.");
-				});
-			});
 
 			var retryButton = document.getElementById("criati-dashboard-retry");
 			if (retryButton) {
