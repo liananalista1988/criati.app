@@ -457,36 +457,27 @@
 		});
 	}
 
-	function adicionarDetalhe(lista, rotulo, valor) {
-		var dt = document.createElement("dt");
-		dt.textContent = rotulo;
-		var dd = document.createElement("dd");
-		dd.textContent = valor === null || valor === undefined || valor === "" ? "—" : valor;
-		lista.append(dt, dd);
-	}
-
-	function hashAbreviado(hash) {
-		return hash && hash.length > 16 ? hash.slice(0, 16) + "…" : hash;
-	}
-
+	// "Dados do lote" deixou de ser um bloco proprio (CRIATI-IMP-002, ponto 8):
+	// campos so uteis para auditoria/suporte (hash SHA-256, tamanho em bytes)
+	// continuam disponiveis pela API, mas nao agregam valor operacional para
+	// quem esta revisando a importacao - so o resumo essencial aparece,
+	// direto no cabecalho da pagina.
 	function renderizarLote() {
 		var lote = loteAtual.lote;
 		el("importacao-detalhe-titulo").textContent = "Importação · " + lote.nomeOriginal;
-		var lista = el("importacao-dados");
-		lista.replaceChildren();
-		adicionarDetalhe(lista, "Conta", lote.contaNome);
-		adicionarDetalhe(lista, "Arquivo", lote.nomeOriginal);
-		adicionarDetalhe(lista, "Formato", lote.formato);
-		adicionarDetalhe(lista, "Tamanho", Math.ceil(lote.tamanhoBytes / 1024) + " KB");
-		adicionarDetalhe(lista, "Hash do arquivo (SHA-256)", hashAbreviado(lote.hashArquivo));
-		adicionarDetalhe(lista, "Transações no arquivo", lote.quantidadeTransacoes);
-		adicionarDetalhe(lista, "Duplicadas no arquivo", lote.quantidadeDuplicadasArquivo);
-		adicionarDetalhe(lista, "Possíveis duplicidades", lote.quantidadePossiveisDuplicadas);
-		adicionarDetalhe(lista, "Situação", STATUS_LOTE[lote.status] || lote.status);
-		adicionarDetalhe(lista, "Enviado em", dataHoraBr(lote.criadoEm));
+		var partesMeta = [
+			"Conta: " + lote.contaNome,
+			"Formato " + lote.formato,
+			STATUS_LOTE[lote.status] || lote.status,
+			"Enviado em " + dataHoraBr(lote.criadoEm)
+		];
 		if (lote.status === "DESCARTADO") {
-			adicionarDetalhe(lista, "Descartado em", dataHoraBr(lote.descartadoEm));
+			partesMeta.push("Descartado em " + dataHoraBr(lote.descartadoEm));
 		}
+		if (lote.quantidadePossiveisDuplicadas > 0) {
+			partesMeta.push(lote.quantidadePossiveisDuplicadas + " possível(is) duplicidade(s)");
+		}
+		el("importacao-detalhe-meta").textContent = partesMeta.join(" · ");
 
 		var descartavel = podeGerenciarAtual && lote.status !== "DESCARTADO";
 		if (el("importacao-descartar")) {

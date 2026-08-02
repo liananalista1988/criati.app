@@ -21,8 +21,16 @@
 			<div th:replace="~{fragments/topbar :: topbar}"></div>
 			<main class="criati-content">
 				<div class="criati-page-header financeiro-operacional-cabecalho">
-					<div><h1 id="importacao-detalhe-titulo">Pré-visualização da importação</h1><p>Transações extraídas do arquivo bancário (OFX, CSV ou XLSX). Nenhum lançamento financeiro é criado a partir desta tela.</p></div>
-					<a class="criati-btn" href="/app/financeiro/importacoes">Voltar</a>
+					<div>
+						<h1 id="importacao-detalhe-titulo">Pré-visualização da importação</h1>
+						<p>Nenhum lançamento financeiro é criado a partir desta tela.</p>
+						<p id="importacao-detalhe-meta" class="criati-card-sub">Carregando dados do arquivo...</p>
+					</div>
+					<div class="financeiro-operacional-acoes">
+						<button th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-danger"
+							id="importacao-descartar" type="button" hidden>Descartar lote</button>
+						<a class="criati-btn" href="/app/financeiro/importacoes">Voltar</a>
+					</div>
 				</div>
 				<div id="importacao-detalhe-mensagem" class="criati-alert" role="alert" hidden></div>
 				<p id="importacao-detalhe-carregando" aria-live="polite">Carregando importação...</p>
@@ -32,16 +40,6 @@
 				</div>
 
 				<div id="importacao-detalhe-conteudo" hidden>
-					<section class="criati-card financeiro-painel-operacional">
-						<div class="financeiro-cabecalho-secao">
-							<h2>Dados do lote</h2>
-							<button th:if="${podeGerenciarImportacoes}" class="criati-btn criati-btn-danger"
-								id="importacao-descartar" type="button">Descartar lote</button>
-						</div>
-						<dl class="financeiro-detalhes-lista" id="importacao-dados"></dl>
-						<p class="criati-card-sub">Duplicidades são apenas um alerta calculado pelo backend; nenhuma transação é excluída ou conciliada automaticamente.</p>
-					</section>
-
 					<section class="criati-card financeiro-painel-operacional" id="importacao-resumo" aria-live="polite" hidden>
 						<h2>Resumo da confirmação</h2>
 						<div class="financeiro-operacional-cards">
@@ -73,6 +71,7 @@
 									type="button" disabled>Confirmar selecionadas</button>
 							</div>
 						</div>
+						<p class="criati-card-sub">Duplicidades são apenas um alerta calculado pelo backend; nenhuma transação é excluída ou conciliada automaticamente.</p>
 						<div id="importacao-transacoes-vazio" class="criati-empty-state" hidden><p>Nenhuma transação extraída deste arquivo.</p></div>
 						<div id="importacao-transacoes-wrap" class="criati-table-wrap financeiro-tabela-operacional financeiro-tabela-confirmacao-ofx" hidden>
 							<table class="criati-table" aria-label="Transações da importação">
