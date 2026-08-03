@@ -1,0 +1,76 @@
+/* Criati Trabalho - chamadas HTTP do modulo (processos e tarefas), construidas
+   sobre CriatiApi (criati-api.js). Nunca cria um cliente HTTP novo: so monta
+   URLs e delega o fetch/CSRF/tratamento de erro ao cliente central. */
+(function (window) {
+	"use strict";
+
+	var BASE = "/api/contexto/trabalho";
+
+	function query(params) {
+		var partes = [];
+		Object.keys(params || {}).forEach(function (chave) {
+			var valor = params[chave];
+			if (valor !== undefined && valor !== null && valor !== "") {
+				partes.push(encodeURIComponent(chave) + "=" + encodeURIComponent(valor));
+			}
+		});
+		return partes.length ? "?" + partes.join("&") : "";
+	}
+
+	function recurso(caminhoBase) {
+		function url(id, acao) {
+			var caminho = caminhoBase;
+			if (id) {
+				caminho += "/" + id;
+			}
+			if (acao) {
+				caminho += "/" + acao;
+			}
+			return caminho;
+		}
+
+		return {
+			listar: function (filtros) {
+				return window.CriatiApi.get(url() + query(filtros));
+			},
+			criar: function (dados) {
+				return window.CriatiApi.post(url(), dados);
+			},
+			buscar: function (id) {
+				return window.CriatiApi.get(url(id));
+			},
+			editar: function (id, dados) {
+				return window.CriatiApi.request(url(id), { method: "PUT", body: dados });
+			},
+			atribuirResponsavel: function (id, responsavelId) {
+				return window.CriatiApi.post(url(id, "responsavel"), { responsavelId: responsavelId });
+			},
+			iniciar: function (id) {
+				return window.CriatiApi.post(url(id, "iniciar"));
+			},
+			concluir: function (id) {
+				return window.CriatiApi.post(url(id, "concluir"));
+			},
+			reabrir: function (id) {
+				return window.CriatiApi.post(url(id, "reabrir"));
+			},
+			cancelar: function (id) {
+				return window.CriatiApi.post(url(id, "cancelar"));
+			},
+			inativar: function (id) {
+				return window.CriatiApi.post(url(id, "inativar"));
+			},
+			historico: function (id) {
+				return window.CriatiApi.get(url(id, "historico"));
+			}
+		};
+	}
+
+	window.TrabalhoApi = {
+		processos: recurso(BASE + "/processos"),
+		tarefas: recurso(BASE + "/tarefas"),
+		integrantes: function () {
+			return window.CriatiApi.get("/api/contexto/usuarios?status=ATIVO");
+		}
+	};
+})(window);

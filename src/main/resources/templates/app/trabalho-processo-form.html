@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<th:block th:replace="~{fragments/layout :: csrfMeta}"></th:block>
+	<th:block th:replace="~{fragments/layout :: sidebarPreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: themePreload}"></th:block>
+	<th:block th:replace="~{fragments/layout :: estiloPreload}"></th:block>
+	<title th:text="${processoId} ? 'Editar processo · Trabalho · Criati' : 'Novo processo · Trabalho · Criati'">Novo processo · Trabalho · Criati</title>
+	<link rel="stylesheet" th:href="@{/css/criati-base.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-app.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-trabalho.css}" />
+	<link rel="stylesheet" th:href="@{/css/criati-responsive.css}" />
+</head>
+<body>
+	<div class="criati-app">
+		<div th:replace="~{fragments/sidebar :: sidebar('trabalho-processos')}"></div>
+		<div class="criati-sidebar-overlay"></div>
+
+		<div class="criati-main">
+			<div th:replace="~{fragments/topbar :: topbar}"></div>
+
+			<main class="criati-content">
+				<div class="criati-page-header">
+					<h1 id="trabalho-processo-form-titulo">Novo processo</h1>
+					<p>Preencha os dados do processo empresarial.</p>
+				</div>
+
+				<form class="criati-modal-form" id="trabalho-processo-form" style="max-width: 560px">
+					<input type="hidden" id="trabalho-processo-id" th:value="${processoId}" />
+					<div class="criati-field">
+						<label for="trabalho-processo-titulo">Título *</label>
+						<input class="criati-input" id="trabalho-processo-titulo" name="titulo" required maxlength="200" />
+					</div>
+					<div class="criati-field">
+						<label for="trabalho-processo-descricao">Descrição</label>
+						<textarea class="criati-input" id="trabalho-processo-descricao" name="descricao"></textarea>
+					</div>
+					<div class="criati-field">
+						<label for="trabalho-processo-responsavel">Responsável</label>
+						<select class="criati-select" id="trabalho-processo-responsavel" name="responsavelId">
+							<option value="">Sem responsável definido</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="trabalho-processo-prioridade">Prioridade</label>
+						<select class="criati-select" id="trabalho-processo-prioridade" name="prioridade">
+							<option value="BAIXA">Baixa</option>
+							<option value="MEDIA" selected>Média</option>
+							<option value="ALTA">Alta</option>
+							<option value="URGENTE">Urgente</option>
+						</select>
+					</div>
+					<div class="criati-field">
+						<label for="trabalho-processo-prazo">Prazo</label>
+						<input class="criati-input" id="trabalho-processo-prazo" name="prazo" type="date" />
+					</div>
+					<div class="criati-modal-acoes">
+						<a class="criati-btn criati-btn-ghost" th:href="@{/app/trabalho/processos}">Cancelar</a>
+						<button type="submit" class="criati-btn criati-btn-primary" id="trabalho-processo-salvar">Salvar</button>
+					</div>
+				</form>
+			</main>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/feedback :: toasts}"></div>
+
+	<script th:src="@{/js/criati-api.js}"></script>
+	<script th:src="@{/js/criati-tema.js}"></script>
+	<script th:src="@{/js/criati-estilo.js}"></script>
+	<script th:src="@{/js/criati-ui.js}"></script>
+	<script th:src="@{/js/criati-auth.js}"></script>
+	<script th:src="@{/js/criati-contexto.js}"></script>
+	<script th:src="@{/js/criati-aplicacoes.js}"></script>
+	<script th:src="@{/js/trabalho-formatacao.js}"></script>
+	<script th:src="@{/js/trabalho-api.js}"></script>
+	<script th:src="@{/js/trabalho-processo-form.js}"></script>
+	<script th:inline="javascript">
+		document.addEventListener("DOMContentLoaded", function () {
+			CriatiUI.initSidebarToggle();
+			CriatiUI.initUserMenu();
+			CriatiAuth.initLogout();
+			CriatiContexto.iniciar();
+			CriatiAplicacoes.carregarSidebar();
+			TrabalhoProcessoForm.iniciar();
+		});
+	</script>
+</body>
+</html>
