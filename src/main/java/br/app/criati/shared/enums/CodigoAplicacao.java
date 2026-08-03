@@ -10,8 +10,8 @@ public enum CodigoAplicacao {
 			"financeiro", "/app/financeiro", SituacaoDisponibilidadeModulo.OPERACIONAL, 10, true),
 	CLINICA("Gestão de Clínica", "Pacientes, profissionais, agenda e atendimentos",
 			"clinica", "/app/clinica", SituacaoDisponibilidadeModulo.DEMONSTRACAO, 20, true),
-	TAREFAS_PROCESSOS("Tarefas e Processos", "Organização de tarefas, fluxos e responsáveis",
-			"tarefas-processos", null, SituacaoDisponibilidadeModulo.INDISPONIVEL, 30, false),
+	TAREFAS_PROCESSOS("Tarefas e Processos", "Organize processos, responsáveis, prazos e tarefas",
+			"trabalho", "/app/trabalho/processos", SituacaoDisponibilidadeModulo.OPERACIONAL, 30, true),
 	ESTOQUE("Estoque", "Controle de itens, movimentações e disponibilidade",
 			"estoque", null, SituacaoDisponibilidadeModulo.INDISPONIVEL, 40, false);
 

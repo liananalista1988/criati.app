@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.app.criati.aplicacao.service.ModuloDisponibilidadeService;
 import br.app.criati.security.UsuarioPrincipal;
+import br.app.criati.shared.enums.CodigoAplicacao;
 import br.app.criati.shared.enums.PrioridadeTrabalho;
 import br.app.criati.shared.enums.SituacaoProcessoTrabalho;
 import br.app.criati.shared.enums.StatusCadastro;
@@ -34,11 +36,14 @@ public class ProcessoEmpresarialController {
 
 	private final ProcessoEmpresarialService processoService;
 	private final ContextoEmpresaService contextoEmpresaService;
+	private final ModuloDisponibilidadeService moduloDisponibilidadeService;
 
 	public ProcessoEmpresarialController(ProcessoEmpresarialService processoService,
-			ContextoEmpresaService contextoEmpresaService) {
+			ContextoEmpresaService contextoEmpresaService,
+			ModuloDisponibilidadeService moduloDisponibilidadeService) {
 		this.processoService = processoService;
 		this.contextoEmpresaService = contextoEmpresaService;
+		this.moduloDisponibilidadeService = moduloDisponibilidadeService;
 	}
 
 	@GetMapping
@@ -147,6 +152,9 @@ public class ProcessoEmpresarialController {
 	}
 
 	private ContextoEmpresaAtual exigirAcesso(HttpSession session, UsuarioPrincipal principal) {
-		return contextoEmpresaService.exigirContextoAtivo(session, principal.getUsuario().getId());
+		ContextoEmpresaAtual contexto = contextoEmpresaService.exigirContextoAtivo(
+				session, principal.getUsuario().getId());
+		moduloDisponibilidadeService.exigirVisualizacao(CodigoAplicacao.TAREFAS_PROCESSOS, contexto);
+		return contexto;
 	}
 }

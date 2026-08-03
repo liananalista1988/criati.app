@@ -62,6 +62,55 @@ class PaginaNavegacaoModularTests {
 	}
 
 	@Test
+	void umaEmpresaEApenasTrabalhoAbreProcessosDiretamente() throws Exception {
+		Usuario usuario = criarUsuario("modular.trabalho.unico@criati.test");
+		Empresa empresa = vincular(usuario, PerfilUsuario.USUARIO);
+		aplicacaoService.habilitar(empresa.getId(), "TAREFAS_PROCESSOS");
+
+		mockMvc.perform(get("/app/dashboard").session(login(usuario.getEmail())))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/app/trabalho/processos"));
+	}
+
+	@Test
+	void financeiroETrabalhoExibemPanoramaEGrupoDeTrabalhoAcessivel() throws Exception {
+		Usuario usuario = criarUsuario("modular.financeiro.trabalho@criati.test");
+		Empresa empresa = vincular(usuario, PerfilUsuario.USUARIO);
+		aplicacaoService.habilitar(empresa.getId(), "FINANCEIRO");
+		aplicacaoService.habilitar(empresa.getId(), "TAREFAS_PROCESSOS");
+		MockHttpSession sessao = login(usuario.getEmail());
+		mockMvc.perform(get("/app/dashboard").session(sessao))
+				.andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/app/aplicacoes"));
+
+		String panorama = mockMvc.perform(get("/app/aplicacoes").session(sessao))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+		assertThat(panorama)
+				.contains("data-menu-trabalho")
+				.contains("href=\"/app/trabalho/processos\"")
+				.contains("href=\"/app/trabalho/tarefas\"")
+				.contains("aria-expanded=\"false\"");
+
+		String processos = mockMvc.perform(get("/app/trabalho/processos").session(sessao))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+		assertThat(processos).contains("data-menu-trabalho").contains("aria-expanded=\"true\"");
+	}
+
+	@Test
+	void trabalhoSemHabilitacaoFicaOcultoEBloqueadoEmPaginaEApi() throws Exception {
+		Usuario usuario = criarUsuario("modular.trabalho.bloqueado@criati.test");
+		Empresa empresa = vincular(usuario, PerfilUsuario.USUARIO);
+		aplicacaoService.habilitar(empresa.getId(), "FINANCEIRO");
+		MockHttpSession sessao = login(usuario.getEmail());
+		mockMvc.perform(get("/app/dashboard").session(sessao)).andExpect(status().is3xxRedirection());
+
+		String financeiro = mockMvc.perform(get("/app/financeiro").session(sessao))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+		assertThat(financeiro).doesNotContain("data-menu-trabalho").doesNotContain("/app/trabalho/");
+		mockMvc.perform(get("/app/trabalho/processos").session(sessao)).andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/contexto/trabalho/processos").session(sessao)).andExpect(status().isForbidden());
+	}
+
+	@Test
 	void umaEmpresaEZeroOuVariosModulosUsaPanoramaSemLoop() throws Exception {
 		Usuario semModulo = criarUsuario("modular.zero@criati.test");
 		vincular(semModulo, PerfilUsuario.USUARIO);

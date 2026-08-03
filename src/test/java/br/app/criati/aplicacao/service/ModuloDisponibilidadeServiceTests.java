@@ -39,17 +39,20 @@ class ModuloDisponibilidadeServiceTests {
 		assertThat(catalogo).extracting(Enum::name).doesNotHaveDuplicates()
 				.containsExactly("FINANCEIRO", "CLINICA", "TAREFAS_PROCESSOS", "ESTOQUE");
 		assertThat(CodigoAplicacao.TAREFAS_PROCESSOS.getSituacaoDisponibilidade())
+				.isEqualTo(SituacaoDisponibilidadeModulo.OPERACIONAL);
+		assertThat(CodigoAplicacao.TAREFAS_PROCESSOS.getRotaInicial()).isEqualTo("/app/trabalho/processos");
+		assertThat(CodigoAplicacao.ESTOQUE.getSituacaoDisponibilidade())
 				.isEqualTo(SituacaoDisponibilidadeModulo.INDISPONIVEL);
-		assertThat(CodigoAplicacao.TAREFAS_PROCESSOS.getRotaInicial()).isNull();
 	}
 
 	@Test
 	void listaSomenteModulosConhecidosDisponiveisEHabilitadosParaAEmpresaAtual() {
 		when(aplicacaoService.listarAtivasDaEmpresa(contexto.empresaId())).thenReturn(List.of(
-				aplicacao("CLINICA"), aplicacao("DESCONHECIDA"), aplicacao("FINANCEIRO")));
+				aplicacao("TAREFAS_PROCESSOS"), aplicacao("CLINICA"),
+				aplicacao("DESCONHECIDA"), aplicacao("FINANCEIRO")));
 
 		assertThat(service.listarDisponiveis(contexto)).extracting(item -> item.modulo().name())
-				.containsExactly("FINANCEIRO", "CLINICA");
+				.containsExactly("FINANCEIRO", "CLINICA", "TAREFAS_PROCESSOS");
 		verify(aplicacaoService).listarAtivasDaEmpresa(contexto.empresaId());
 	}
 

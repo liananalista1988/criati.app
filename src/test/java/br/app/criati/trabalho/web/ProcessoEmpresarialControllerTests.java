@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import br.app.criati.acesso.model.UsuarioEmpresa;
 import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
+import br.app.criati.aplicacao.service.AplicacaoService;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
 import br.app.criati.shared.enums.PerfilUsuario;
@@ -55,6 +56,9 @@ class ProcessoEmpresarialControllerTests {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private AplicacaoService aplicacaoService;
 
 	@Test
 	void administradorCriaProcesso() throws Exception {
@@ -392,6 +396,7 @@ class ProcessoEmpresarialControllerTests {
 	}
 
 	private MockHttpSession autenticarNaEmpresa(String email, UUID empresaId) throws Exception {
+		aplicacaoService.habilitar(empresaId, "TAREFAS_PROCESSOS");
 		MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""

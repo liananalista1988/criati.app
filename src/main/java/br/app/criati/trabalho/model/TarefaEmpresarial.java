@@ -83,7 +83,6 @@ public class TarefaEmpresarial {
 	@Column(name = "criado_em", nullable = false, updatable = false)
 	private OffsetDateTime criadoEm;
 
-	@Generated(event = EventType.INSERT)
 	@ColumnDefault("CURRENT_TIMESTAMP")
 	@Column(name = "atualizado_em", nullable = false)
 	private OffsetDateTime atualizadoEm;

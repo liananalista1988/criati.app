@@ -48,7 +48,8 @@
 			<div th:if="${!#lists.isEmpty(modulosDisponiveis)}" class="criati-nav-secao">
 				<p class="criati-nav-secao-titulo">Módulos</p>
 				<ul class="criati-nav">
-					<li th:each="disponivel : ${modulosDisponiveis}">
+					<li th:each="disponivel : ${modulosDisponiveis}"
+						th:if="${disponivel.modulo.name() != 'TAREFAS_PROCESSOS'}">
 						<a class="criati-nav-link"
 							th:classappend="${#strings.startsWith(paginaAtiva, disponivel.modulo.chaveVisual)} ? 'is-active' : ''"
 							th:attr="aria-current=${#strings.startsWith(paginaAtiva, disponivel.modulo.chaveVisual)} ? 'page' : null,
@@ -63,6 +64,26 @@
 						</a>
 					</li>
 				</ul>
+			</div>
+
+			<div th:if="${trabalhoDisponivel}" class="criati-menu-trabalho" data-menu-trabalho
+				th:with="grupoAberto=${#strings.startsWith(paginaAtiva, 'trabalho-')}">
+				<div class="criati-nav-secao" data-nav-grupo>
+					<button type="button" class="criati-nav-secao-titulo criati-nav-secao-toggle"
+						th:attr="aria-expanded=${grupoAberto}" aria-controls="menu-trabalho">Tarefas e Processos</button>
+					<ul class="criati-nav" id="menu-trabalho" th:attr="hidden=${grupoAberto} ? null : 'hidden'">
+						<li><a class="criati-nav-link"
+							th:classappend="${paginaAtiva == 'trabalho-processos'} ? 'is-active' : ''"
+							th:attr="aria-current=${paginaAtiva == 'trabalho-processos'} ? 'page' : null"
+							href="/app/trabalho/processos" aria-label="Processos" data-tooltip="Processos">
+							<span aria-hidden="true">◇</span><span class="criati-nav-label">Processos</span></a></li>
+						<li><a class="criati-nav-link"
+							th:classappend="${paginaAtiva == 'trabalho-tarefas'} ? 'is-active' : ''"
+							th:attr="aria-current=${paginaAtiva == 'trabalho-tarefas'} ? 'page' : null"
+							href="/app/trabalho/tarefas" aria-label="Tarefas" data-tooltip="Tarefas">
+							<span aria-hidden="true">✓</span><span class="criati-nav-label">Tarefas</span></a></li>
+					</ul>
+				</div>
 			</div>
 
 			<div

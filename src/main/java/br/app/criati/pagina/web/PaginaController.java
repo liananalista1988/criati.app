@@ -16,6 +16,7 @@ import br.app.criati.aplicacao.service.AplicacaoService;
 import br.app.criati.aplicacao.service.ModuloDisponibilidadeService;
 import br.app.criati.aplicacao.service.ModuloDisponivelEmpresa;
 import br.app.criati.exception.AcessoNegadoException;
+import br.app.criati.pagina.service.NavegacaoPaginaService;
 import br.app.criati.security.UsuarioPrincipal;
 import br.app.criati.shared.enums.CodigoAplicacao;
 import br.app.criati.shared.enums.PerfilUsuario;
@@ -29,12 +30,15 @@ public class PaginaController {
 	private final ContextoEmpresaService contextoEmpresaService;
 	private final AplicacaoService aplicacaoService;
 	private final ModuloDisponibilidadeService moduloDisponibilidadeService;
+	private final NavegacaoPaginaService navegacaoPaginaService;
 
 	public PaginaController(ContextoEmpresaService contextoEmpresaService, AplicacaoService aplicacaoService,
-			ModuloDisponibilidadeService moduloDisponibilidadeService) {
+			ModuloDisponibilidadeService moduloDisponibilidadeService,
+			NavegacaoPaginaService navegacaoPaginaService) {
 		this.contextoEmpresaService = contextoEmpresaService;
 		this.aplicacaoService = aplicacaoService;
 		this.moduloDisponibilidadeService = moduloDisponibilidadeService;
+		this.navegacaoPaginaService = navegacaoPaginaService;
 	}
 
 	@GetMapping("/login")
@@ -85,9 +89,7 @@ public class PaginaController {
 		if (modulos.size() == 1) {
 			return "redirect:" + modulos.get(0).modulo().getRotaInicial();
 		}
-		model.addAttribute("modulosDisponiveis", modulos);
-		model.addAttribute("mostrarCatalogoModulos", true);
-		model.addAttribute("podeAdministrarEmpresa", contexto.get().perfil() == PerfilUsuario.ADMINISTRADOR);
+		navegacaoPaginaService.prepararComContexto(model, contexto.get());
 		return "app/aplicacoes";
 	}
 
@@ -443,43 +445,10 @@ public class PaginaController {
 				.orElse(false);
 	}
 
-	// Disponivel em todo template renderizado por este controller (inclusive
-	// paginas publicas, onde o principal e nulo): usado pelo fragmento da
-	// sidebar para mostrar a secao "Administracao da plataforma" somente para
-	// quem tem ROLE_SUPERADMIN - nunca concede acesso, apenas exibe o link
-	// (a autorizacao real continua inteiramente no SecurityConfig).
-	@ModelAttribute("superAdministrador")
-	public boolean superAdministrador(@AuthenticationPrincipal UsuarioPrincipal principal) {
-		return principal != null && principal.getUsuario().isSuperAdministrador();
-	}
-
-	// Disponivel em todo template renderizado por este controller: o link de
-	// "Visao geral"/Dashboard so aparece na sidebar quando faz sentido escolher
-	// entre empresas (zero vinculos - ex.: Superadministrador - ou duas ou
-	// mais); com exatamente uma empresa o proprio GET /app/dashboard ja
-	// redireciona (ver acima), entao mostrar o link seria um beco sem saida.
-	@ModelAttribute("mostrarVisaoGeral")
-	public boolean mostrarVisaoGeral(@AuthenticationPrincipal UsuarioPrincipal principal) {
-		return !possuiExatamenteUmaEmpresa(principal);
-	}
-
 	@ModelAttribute
 	public void prepararNavegacao(
 			Model model, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
-		model.addAttribute("modulosDisponiveis", List.of());
-		model.addAttribute("mostrarCatalogoModulos", false);
-		model.addAttribute("podeAdministrarEmpresa", false);
-		if (principal == null) {
-			return;
-		}
-		var contexto = contextoEmpresaService.obterContextoAtual(session, principal.getUsuario().getId());
-		if (contexto.isPresent()) {
-			List<ModuloDisponivelEmpresa> modulos = moduloDisponibilidadeService.listarDisponiveis(contexto.get());
-			model.addAttribute("modulosDisponiveis", modulos);
-			model.addAttribute("mostrarCatalogoModulos", modulos.size() != 1);
-			model.addAttribute("podeAdministrarEmpresa",
-					contexto.get().perfil() == PerfilUsuario.ADMINISTRADOR);
-		}
+		navegacaoPaginaService.preparar(model, session, principal);
 	}
 
 	private Optional<ContextoEmpresaAtual> obterOuSelecionarUnicaEmpresa(

@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.app.criati.exception.AcessoNegadoException;
 import br.app.criati.shared.enums.CodigoAplicacao;
 import br.app.criati.tenant.ContextoEmpresaAtual;
 
@@ -48,6 +49,13 @@ public class ModuloDisponibilidadeService {
 			return false;
 		}
 		return aplicacaoService.possuiAplicacaoAtiva(contexto.empresaId(), modulo.name());
+	}
+
+	@Transactional(readOnly = true)
+	public void exigirVisualizacao(CodigoAplicacao modulo, ContextoEmpresaAtual contexto) {
+		if (!podeVisualizar(modulo, contexto)) {
+			throw new AcessoNegadoException();
+		}
 	}
 
 	@Transactional(readOnly = true)

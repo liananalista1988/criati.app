@@ -9,11 +9,16 @@ código estável, nome de exibição, descrição curta, chave visual, rota inic
 |---|---|---|---|
 | `FINANCEIRO` | Operacional | catálogo e vínculo por empresa | `/app/financeiro` |
 | `CLINICA` | Demonstração | catálogo e vínculo por empresa | `/app/clinica` |
-| `TAREFAS_PROCESSOS` | Indisponível | não persistido | nenhuma |
+| `TAREFAS_PROCESSOS` | Operacional | catálogo e vínculo por empresa | `/app/trabalho/processos` |
 | `ESTOQUE` | Indisponível | não persistido | nenhuma |
 
 Módulo indisponível não é semeado no banco, não aparece para empresas e não possui rota navegável.
 Reconhecê-lo no catálogo técnico apenas reserva código e metadados para integração futura.
+
+Tarefas e Processos reutiliza a mesma habilitação técnica de `EmpresaAplicacao`. Com o módulo habilitado,
+todos os perfis empresariais válidos podem consultar processos e tarefas; `ADMINISTRADOR` mantém as escritas
+estruturais e o responsável pode atualizar somente o andamento das próprias tarefas, conforme as regras do módulo.
+Página e API repetem o gate modular no backend, independentemente da visibilidade do menu.
 
 ## Disponibilidade para a empresa
 
@@ -36,7 +41,8 @@ contratação, plano, pagamento ou assinatura. Esses conceitos comerciais contin
 ser inferidos pelo catálogo ou exibidos como produtos contratados.
 
 Nenhuma migration foi necessária: `aplicacao` e `empresa_aplicacao`, criadas anteriormente, já suportam
-a disponibilidade persistida dos módulos atualmente integrados.
+a disponibilidade persistida dos módulos atualmente integrados. A integração de Trabalho incorpora somente a
+`V25__criar_processos_tarefas_empresariais.sql` criada pelo próprio módulo; não cria migration adicional.
 
 ## Entrada e navegação
 
@@ -54,5 +60,5 @@ topbar retorna a essa entrada central, de modo que um módulo da empresa anterio
 
 A sidebar recebe do backend somente módulos tecnicamente disponíveis e habilitados para a empresa.
 Links de administração empresarial são renderizados apenas para `ADMINISTRADOR`; a ocultação é apoio de
-interface, e as rotas continuam protegidas no backend. Os grupos internos do Financeiro permanecem
-recolhidos por padrão, abrindo automaticamente apenas o grupo da página atual.
+interface, e as rotas continuam protegidas no backend. Os grupos internos do Financeiro e o grupo de Tarefas e
+Processos permanecem recolhidos por padrão, abrindo automaticamente apenas o grupo da página atual.
