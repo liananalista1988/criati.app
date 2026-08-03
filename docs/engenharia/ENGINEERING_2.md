@@ -1,14 +1,16 @@
 # Criati Engineering 2.0
 
 Última atualização: **2026-08-02**
-Progresso oficial: **18%**
+Progresso oficial: **38%** (anterior: 18%)
 
 ## Finalidade
 
-Esta é a referência operacional de evolução da Criati Engineering 2.0. O
-[CRIATI Protocol](CRIATI_PROTOCOL.md) continua sendo a fonte normativa; este
-documento apenas organiza medição, classificação e orçamento. O registro por
-tarefa está em [Engineering Metrics](ENGINEERING_METRICS.md).
+Esta é a referência de objetivo, etapas, progresso, estado atual, próximos
+passos e bloqueios do programa Criati Engineering 2.0. O
+[CRIATI Protocol](CRIATI_PROTOCOL.md) continua sendo a fonte normativa
+(classificação de risco, autonomia, ciclo); o registro por tarefa, o score e o
+orçamento operacional estão em
+[Engineering Metrics](ENGINEERING_METRICS.md).
 
 ## Baseline do processo atual
 
@@ -20,65 +22,62 @@ responsabilidades são os definidos no protocolo, sem regras paralelas aqui.
 
 ## Classificação
 
-| Nível | Escopo típico | Gatilhos |
-|---|---|---|
-| **PEQUENA** | CSS, texto, documentação, teste isolado ou correção localizada sem domínio | Um arquivo ou conjunto pequeno, impacto local e reversível |
-| **MÉDIA** | Endpoint, tela, serviço, funcionalidade sem migration ou vários arquivos relacionados | Impacto funcional delimitado, sem gatilho crítico |
-| **CRÍTICA** | Mudança de alto risco ou integração estrutural | Migration, dinheiro, autenticação, autorização, multiempresa, dados, concorrência, infraestrutura ou produção |
+PEQUENA, MÉDIA e CRÍTICA são normativas em
+[CRIATI Protocol](CRIATI_PROTOCOL.md), Camada 3 ("Classificação de risco") e
+"Promoção automática de risco" — inclusive a lista oficial de gatilhos que
+tornam uma tarefa CRÍTICA e a regra de que crítica nunca é rebaixada
+automaticamente. Este documento usa os três mesmos níveis apenas para medir
+progresso; não os redefine.
 
-A classificação pode ser promovida automaticamente `PEQUENA → MÉDIA → CRÍTICA`
-quando o diagnóstico revelar risco maior. Nunca há rebaixamento automático de
-uma tarefa crítica; eventual reclassificação exige justificativa humana
-registrada.
-
-## Orçamento operacional inicial
-
-| Nível | Agentes e validação esperada |
-|---|---|
-| **PEQUENA** | Um agente, testes focados e suíte final somente quando o protocolo exigir; sem auditoria cruzada por padrão |
-| **MÉDIA** | Um implementador, testes focados, suíte completa final e auditoria independente quando o risco justificar |
-| **CRÍTICA** | Implementação, testes focados, suíte completa, auditoria independente e PostgreSQL real quando aplicável; intervenção humana nos critérios de parada |
-
-Um ciclo de correção é uma tentativa completa de corrigir a mesma causa seguida
-da repetição da validação que falhou. Após **dois ciclos sem solução**, o agente
-para e apresenta diagnóstico, evidências e opções. Critérios de parada do
-protocolo continuam imediatos e não aguardam dois ciclos. O limite pode ser
-recalibrado depois de dados reais; não autoriza reduzir testes ou segurança.
+Orçamento operacional (agentes e validação esperada por nível, limite de
+ciclos de correção) está em
+[Engineering Metrics](ENGINEERING_METRICS.md#orçamento-operacional).
 
 ## Medidor Engineering 2.0
 
 | Etapa | Peso | Crédito atual | Estado |
 |---|---:|---:|---|
-| 1. Baseline e métricas | 10% | 6% | Em andamento: modelo e baseline histórico criados; falta uso prospectivo e calibração |
-| 2. Controle de custo/eficiência | 10% | 2% | Em andamento: score e orçamento definidos; falta coleta e calibração reais |
-| 3. Protocolo 2.0 compacto | 15% | 6% | Em andamento: protocolo central existe, mas ainda não é a versão 2.0 compacta |
-| 4. Skills/comandos Codex + Claude | 15% | 0% | Próxima |
-| 5. Níveis de autonomia | 10% | 2% | Parcial: autorizações e paradas existem, sem níveis formalizados |
-| 6. Auditoria independente | 10% | 2% | Parcial: auditoria está no ciclo, sem capacidade independente padronizada |
+| 1. Baseline e métricas | 10% | 7% | Em andamento: modelo, baseline histórico e primeiro uso prospectivo (registro da própria CRIATI-ENG-003); falta amostra comparável e calibração |
+| 2. Controle de custo/eficiência | 10% | 3% | Em andamento: score e orçamento definidos, orçamento consolidado em local único; falta coleta e calibração em amostra real |
+| 3. Protocolo 2.0 compacto | 15% | 15% | Concluída: `CRIATI_PROTOCOL.md` reestruturado em camadas, com formatos compactos de tarefa/relatório, integrado à branch de integração |
+| 4. Skills/comandos Codex + Claude | 15% | 0% | Próxima: `CRIATI_COMMANDS.md` define o contrato conceitual dos comandos, mas nenhuma Skill foi implementada |
+| 5. Níveis de autonomia | 10% | 10% | Concluída: Manual, Assistido e Automático controlado formalizados e alinhados com classificação e orçamento |
+| 6. Auditoria independente | 10% | 3% | Parcial: critérios obrigatória/opcional agora formalizados no protocolo e um primeiro ensaio de auditoria em duas passagens foi registrado (CRIATI-ENG-003); segue sem capacidade real de revisão cruzada por outro agente |
 | 7. CI automatizada | 10% | 0% | Próxima |
 | 8. Playwright E2E essencial | 10% | 0% | Próxima |
-| 9. Teste em tarefas reais | 5% | 0% | Bloqueada pelas capacidades anteriores |
+| 9. Teste em tarefas reais | 5% | 0% | Bloqueada: um único registro documental não equivale a teste representativo em tarefa real de cada classe |
 | 10. Comparação antes × depois | 5% | 0% | Bloqueada por amostra futura suficiente |
-| **Total** | **100%** | **18%** | — |
+| **Total** | **100%** | **38%** | — |
 
-O baseline oficial anterior de 12% foi mapeado conservadoramente em: etapa 1
-(2%), etapa 3 (6%), etapa 5 (2%) e etapa 6 (2%). Esta tarefa acrescenta quatro
-pontos verificáveis à etapa 1 e dois à etapa 2. Ela não conclui nenhuma das duas
-etapas e, por isso, o total não sobe automaticamente para 22%.
+Percentual anterior: 18%. Percentual novo: 38% (+20 pontos). A CRIATI-ENG-003
+integrou o protocolo compacto e os níveis de autonomia da ENG-002 à branch
+principal — documentação normativa implementada conclui as etapas 3 e 5
+(+9 e +8). As etapas 1, 2 e 6 recebem incremento pequeno e explícito pelo
+primeiro uso prospectivo do registro e pela formalização dos critérios de
+auditoria (+1 cada). Comandos desenhados (etapa 4) não equivalem a Skill
+implementada e CI/Playwright (etapas 7–8) seguem não implementados: todos
+permanecem em 0%, sem elevação artificial.
+
+Próximo marco: implementar ao menos um comando (`/criati-audit` ou
+`/criati-task`) como Skill real e obter uma auditoria independente executada
+por um segundo agente — as duas lacunas que hoje seguram as etapas 4 e 6.
 
 Percentual só aumenta quando a capacidade existe e, quando aplicável, foi
 testada. Criar mais documentação, por si só, não gera crédito.
 
 ### Próximas evidências necessárias
 
-- usar o registro em tarefas pequenas, médias e críticas reais;
-- calibrar score e limite de ciclos com uma amostra comparável;
+- usar o registro em tarefas pequenas, médias e críticas reais além da
+  CRIATI-ENG-003, até formar amostra comparável;
+- calibrar score e limite de ciclos com essa amostra;
 - automatizar coleta sem alterar o significado das métricas;
-- implementar protocolo compacto, níveis de autonomia e auditoria independente;
+- implementar comandos como Skill real e obter auditoria independente por um
+  segundo agente (não simulada pelo mesmo agente);
 - somente depois avançar CI, Playwright e comparação antes × depois.
 
 Bloqueio atual: não existe telemetria confiável de tokens, interações e duração
-de ponta a ponta.
+de ponta a ponta; auditoria independente real depende de um segundo agente,
+indisponível neste ambiente de execução.
 
 ## Preparação para automação
 

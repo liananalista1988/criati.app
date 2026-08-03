@@ -149,7 +149,7 @@ foi incluído e o diff contém apenas o escopo autorizado.
 |---|---|
 | **Pequena** | documentação, CSS/texto isolado, ajuste visual, correção pontual, teste isolado; sem migration; sem regra de negócio nova. |
 | **Média** | funcionalidade backend/tela/service/integração interna nova ou alterada; sem dinheiro, sem migration não autorizada, sem tocar segurança/autenticação/autorização/multiempresa. |
-| **Crítica** | qualquer gatilho de "Promoção automática de risco" abaixo (migration, dinheiro, multiempresa, segurança, infraestrutura compartilhada, produção, dado real, decisão de produto, conflito de integração, push/merge/PR). |
+| **Crítica** | qualquer gatilho de "Promoção automática de risco" abaixo: migration, dinheiro, autenticação, autorização, multiempresa, dados, concorrência relevante, integração estrutural, infraestrutura compartilhada ou produção. |
 
 A classificação é proposta pela tarefa e confirmada pelo agente durante o
 diagnóstico; discrepância segue "Promoção automática de risco" abaixo.
@@ -180,9 +180,13 @@ pequenas; padronização; auditoria mecânica.
 O agente pode concluir e comitar sozinho, **sem push**.
 
 Nunca usar automático controlado para: dinheiro; autenticação; autorização;
-multiempresa; migrations; infraestrutura; exclusão de dados; produção — essas
-áreas sempre promovem a tarefa a crítica (ver "Promoção automática de risco")
-e exigem, no mínimo, autonomia assistida.
+multiempresa; migration; infraestrutura; dados reais; exclusão de dados;
+produção — essas áreas sempre promovem a tarefa a crítica (ver "Promoção
+automática de risco") e exigem, no mínimo, autonomia assistida.
+
+Independentemente do nível de autonomia, push, merge e PR sempre exigem
+autorização explícita (Camada 1) — nenhum nível, nem o automático
+controlado, dispensa essa autorização.
 
 ## Camada 5 — Formato compacto de tarefa
 
@@ -228,9 +232,9 @@ executada.
 
 - Pequena pode virar média; média pode virar crítica.
 - Crítica nunca é rebaixada automaticamente.
-- Migration, dinheiro, multiempresa (alteração de isolamento/contexto),
-  alteração de segurança e infraestrutura compartilhada sempre promovem a
-  tarefa a crítica.
+- Migration, dinheiro, autenticação, autorização, multiempresa, dados,
+  concorrência relevante, integração estrutural, infraestrutura compartilhada
+  e produção sempre promovem a tarefa a crítica.
 - Ao promover: registre o motivo, aplique os gates da nova classificação
   (Camadas 3 e 4) e **não continue silenciosamente** se a nova classificação
   exigir autorização humana — pare e informe.

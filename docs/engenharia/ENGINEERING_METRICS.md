@@ -1,9 +1,9 @@
 # Engineering Metrics
 
 Formato manual mínimo para comparar tarefas semelhantes da Criati Engineering
-2.0. Política, classificação, orçamento e medidor estão em
-[Criati Engineering 2.0](ENGINEERING_2.md); regras normativas permanecem no
-[CRIATI Protocol](CRIATI_PROTOCOL.md).
+2.0. Progresso e medidor estão em [Criati Engineering 2.0](ENGINEERING_2.md);
+classificação de risco, autonomia e demais regras normativas permanecem no
+[CRIATI Protocol](CRIATI_PROTOCOL.md). Orçamento operacional está abaixo.
 
 ## Registro compacto por tarefa
 
@@ -37,6 +37,41 @@ score: 0..100|NAO_CALCULADO
 de commit isolado não informa início nem duração. `agente` também não deve ser
 inferido do autor Git.
 
+## Primeiro registro operacional
+
+Primeiro uso real do formato acima, preenchido pela própria CRIATI-ENG-003.
+Prova que o formato é utilizável; não é ainda uma amostra comparável nem uma
+comparação antes/depois completa.
+
+```yaml
+id: CRIATI-ENG-003
+classificacao: CRÍTICA  # integração estrutural do protocolo operacional
+agente: Claude Code
+inicio: INDISPONIVEL
+fim: INDISPONIVEL
+duracao_aprox: INDISPONIVEL
+mudancas: {arquivos: 4, adicionadas: 554, removidas: 307}
+testes_focados: ["nenhum — tarefa exclusivamente documental, sem código-fonte alterado"]
+suite: {execucoes: 0, resultado_final: NAO_APLICAVEL}
+postgresql_real: NAO_APLICAVEL
+migration: NAO
+ciclos_correcao: 0
+retrabalho: NAO
+auditoria_independente: NAO
+commit: "540d2df (cherry-pick preservado da ENG-002) + commit de compatibilização registrado no git log de HEAD (hash autorreferente, não citável neste bloco)"
+resultado: CONCLUIDA
+bloqueios: ["auditoria independente real por um segundo agente indisponível neste ambiente de execução"]
+contexto: {comando: GRANDE, interacoes_humanas: 0, perguntas_agente: 0, retomadas: 0, agente_adicional: NAO}
+TOKEN_REAL: INDISPONIVEL
+score: NAO_CALCULADO
+```
+
+`score` fica `NAO_CALCULADO`: `inicio`/`fim`/`duracao_aprox` são
+`INDISPONIVEL` e a classificação CRÍTICA exige auditoria independente (seção
+"Auditoria independente" do protocolo, por envolver integração estrutural),
+que não esteve disponível neste ambiente de agente único — ver "Auditoria
+independente simulada" no relatório da tarefa.
+
 ## Score de eficiência
 
 Calcular somente quando os insumos necessários forem observáveis:
@@ -64,6 +99,26 @@ critério de parada são registrados, mas não recebem essas deduções.
 O score compara tarefas de mesma classe e natureza; não é medida absoluta de
 produtividade. Se um campo necessário estiver `INDISPONIVEL`, usar
 `NAO_CALCULADO`, sem completar lacunas por suposição.
+
+## Orçamento operacional
+
+Classificação (PEQUENA, MÉDIA, CRÍTICA) e promoção automática de risco são
+normativas em [CRIATI Protocol](CRIATI_PROTOCOL.md), Camada 3 e "Promoção
+automática de risco". Este orçamento só define agentes e validação esperados
+por nível — não redefine risco.
+
+| Nível | Agentes e validação esperada |
+|---|---|
+| **PEQUENA** | Um agente, testes focados e suíte final somente quando o protocolo exigir; sem auditoria cruzada por padrão |
+| **MÉDIA** | Um implementador, testes focados, suíte completa final e auditoria independente quando o risco justificar |
+| **CRÍTICA** | Implementação, testes focados, suíte completa, auditoria independente e PostgreSQL real quando aplicável; intervenção humana nos critérios de parada |
+
+Um ciclo de correção é uma tentativa completa de corrigir a mesma causa seguida
+da repetição da validação que falhou. Após **dois ciclos sem solução**, o agente
+para e apresenta diagnóstico, evidências e opções — mesmo limite do "Limites de
+consumo" do protocolo. Critérios de parada do protocolo continuam imediatos e
+não aguardam dois ciclos. O limite pode ser recalibrado depois de dados reais;
+não autoriza reduzir testes ou segurança.
 
 ## Baseline histórico verificável
 
