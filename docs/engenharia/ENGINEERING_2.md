@@ -1,6 +1,6 @@
 # Criati Engineering 2.0
 
-Última atualização: **2026-08-02**  
+Última atualização: **2026-08-02**
 Progresso oficial: **18%**
 
 ## Finalidade
