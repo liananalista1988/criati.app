@@ -148,7 +148,7 @@ foi incluído e o diff contém apenas o escopo autorizado.
 | Risco | Características |
 |---|---|
 | **Pequena** | documentação, CSS/texto isolado, ajuste visual, correção pontual, teste isolado; sem migration; sem regra de negócio nova. |
-| **Média** | funcionalidade backend/tela/service/integração interna nova ou alterada; sem dinheiro, sem migration não autorizada, sem tocar segurança/autenticação/autorização/multiempresa. |
+| **Média** | funcionalidade backend/tela/service/integração interna nova ou alterada; sem dinheiro, sem migration nem alteração estrutural de banco (ver "Promoção automática de risco" — autorização não reduz o risco), sem tocar segurança/autenticação/autorização/multiempresa. |
 | **Crítica** | qualquer gatilho de "Promoção automática de risco" abaixo: migration, dinheiro, autenticação, autorização, multiempresa, dados, concorrência relevante, integração estrutural, infraestrutura compartilhada ou produção. |
 
 A classificação é proposta pela tarefa e confirmada pelo agente durante o
@@ -190,12 +190,22 @@ controlado, dispensa essa autorização.
 
 ## Camada 5 — Formato compacto de tarefa
 
-Identificador: `CRIATI-<ÁREA>-<NÚMERO>` (área maiúscula, número de três
-dígitos; sufixo alfabético como `CRIATI-FIN-015A` só para extensão
-explicitamente relacionada à tarefa original).
+Identificador canônico: `CRIATI-<DOMÍNIO>-<TIPO>-<NÚMERO>` (domínio e tipo em
+maiúsculas, número de três dígitos; sufixo alfabético como
+`CRIATI-FIN-FEAT-015A` só para extensão explicitamente relacionada à tarefa
+original). IDs históricos (dois ou três blocos, ex.: `CRIATI-OPS-002`,
+`CRIATI-WRK-001`) permanecem válidos como referência legada e não são
+renomeados; tarefas novas sempre usam o formato canônico.
+
+Vocabulário controlado de `<TIPO>`: `FEAT` funcionalidade · `FIX` correção ·
+`DOC` documentação/protocolo · `AUDIT` auditoria · `TEST` testes · `SEC`
+segurança · `DB` banco/migration · `UX` experiência/interface · `CI`
+integração/qualidade · `OPS` operação/engenharia. Evite sinônimos arbitrários
+para o mesmo significado; tipo não coberto é definido pelo GPT antes da
+execução.
 
 ```text
-ID: CRIATI-XXX-000
+ID: CRIATI-XXX-XXX-000
 Objetivo: <resultado esperado em 1 frase>
 Escopo: <arquivos/módulos autorizados>
 Fora de escopo: <o que não deve ser tocado>
@@ -232,9 +242,12 @@ executada.
 
 - Pequena pode virar média; média pode virar crítica.
 - Crítica nunca é rebaixada automaticamente.
-- Migration, dinheiro, autenticação, autorização, multiempresa, dados,
-  concorrência relevante, integração estrutural, infraestrutura compartilhada
-  e produção sempre promovem a tarefa a crítica.
+- Migration, estrutura persistente (schema, tabela, coluna, constraint,
+  índice estrutural, relacionamento persistido), dinheiro, autenticação,
+  autorização, multiempresa, dados, concorrência relevante, integração
+  estrutural, infraestrutura compartilhada e produção sempre promovem a
+  tarefa a crítica; autorização para executar migration não reduz essa
+  classificação.
 - Ao promover: registre o motivo, aplique os gates da nova classificação
   (Camadas 3 e 4) e **não continue silenciosamente** se a nova classificação
   exigir autorização humana — pare e informe.
@@ -244,7 +257,7 @@ executada.
 **Pequena**
 
 ```text
-Execute CRIATI-XXX-000.
+Execute CRIATI-XXX-XXX-000.
 Tipo: pequena.
 Objetivo: corrigir alinhamento do cabeçalho.
 Migration: proibida.
@@ -254,7 +267,7 @@ Commit: autorizado.
 **Média**
 
 ```text
-Execute CRIATI-XXX-000.
+Execute CRIATI-XXX-XXX-000.
 Tipo: média.
 Objetivo: criar endpoint e tela de cadastro.
 Migration: proibida.
@@ -265,7 +278,7 @@ Commit: autorizado.
 **Crítica**
 
 ```text
-Execute CRIATI-XXX-000.
+Execute CRIATI-XXX-XXX-000.
 Tipo: crítica.
 Objetivo: adicionar persistência de regras.
 Migration permitida: V26.

@@ -9,9 +9,12 @@ classificação de risco, autonomia e demais regras normativas permanecem no
 
 Use datas ISO 8601 quando observáveis. Contagens começam em zero. Não estime
 tokens, duração ou interações ausentes e nunca registre segredos ou credenciais.
+`id` segue o formato canônico de [CRIATI Protocol](CRIATI_PROTOCOL.md), Camada
+5 (`CRIATI-<DOMÍNIO>-<TIPO>-<NÚMERO>`); IDs históricos, como o registro
+abaixo, permanecem válidos e não são renomeados.
 
 ```yaml
-id: CRIATI-XXX-000
+id: CRIATI-XXX-XXX-000
 classificacao: PEQUENA|MÉDIA|CRÍTICA
 agente: <nome>|INDISPONIVEL
 inicio: <ISO-8601>|INDISPONIVEL
@@ -39,9 +42,10 @@ inferido do autor Git.
 
 ## Primeiro registro operacional
 
-Primeiro uso real do formato acima, preenchido pela própria CRIATI-ENG-003.
-Prova que o formato é utilizável; não é ainda uma amostra comparável nem uma
-comparação antes/depois completa.
+Primeiro uso real do formato acima, preenchido pela própria `CRIATI-ENG-003`
+— ID histórico, mantido sem renomear (compatibilidade legada, Camada 5 de
+`CRIATI_PROTOCOL.md`). Prova que o formato é utilizável; não é ainda uma
+amostra comparável nem uma comparação antes/depois completa.
 
 ```yaml
 id: CRIATI-ENG-003
