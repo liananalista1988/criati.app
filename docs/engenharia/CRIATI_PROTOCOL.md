@@ -281,6 +281,12 @@ Contrato conceitual — sem script e sem Skill instalada ainda — definido em
 [`CRIATI_COMMANDS.md`](CRIATI_COMMANDS.md): `/criati-task`, `/criati-audit`,
 `/criati-migration`, `/criati-integrate`, `/criati-release`.
 
+Mecanismo previsto: uma Skill encapsula o procedimento reutilizável (os passos
+fixos de um dos comandos acima); a tarefa que a invoca fornece apenas contexto
+e objetivo específicos, no formato compacto da Camada 5, sem repetir o
+procedimento. Os cinco comandos de `CRIATI_COMMANDS.md` são as candidatas
+atuais a Skill; nenhuma é implementada por este protocolo.
+
 ## Auditoria independente
 
 **Obrigatória para**: migration; financeiro; autenticação; autorização;
