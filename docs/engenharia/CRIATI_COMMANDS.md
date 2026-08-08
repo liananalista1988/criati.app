@@ -4,11 +4,12 @@ Tarefa de origem: `CRIATI-ENG-002`.
 
 Este documento define o **contrato operacional** de comandos futuros do
 protocolo Criati (Camada "Comandos operacionais futuros" de
-[`CRIATI_PROTOCOL.md`](CRIATI_PROTOCOL.md)). Nenhum destes comandos está
-implementado como script ou Skill — este arquivo apenas fixa finalidade,
-entradas mínimas, comportamento, critérios de parada e saída esperada, para
-que a implementação futura (se e quando decidida) não precise redefinir a
-política.
+[`CRIATI_PROTOCOL.md`](CRIATI_PROTOCOL.md)). Destes comandos, apenas
+`/criati-audit` está implementado como Skill (ver seção correspondente
+abaixo); os demais permanecem apenas conceituais — este arquivo fixa
+finalidade, entradas mínimas, comportamento, critérios de parada e saída
+esperada, para que a implementação futura (se e quando decidida) não
+precise redefinir a política.
 
 Todos os comandos herdam integralmente as Camadas 1 (regras inegociáveis), 2
 (ciclo padrão) e 3–4 (risco e autonomia), além das seções "Auditoria
@@ -46,6 +47,10 @@ comando.
   escopo auditado; autoria incerta; necessidade de decisão humana.
 - **Saída esperada**: lista de achados (achado, severidade, evidência,
   recomendação) e veredito — aprovado, aprovado com ressalvas ou reprovado.
+- **Skill instalada**: `.claude/skills/criati-audit/SKILL.md` implementa
+  este contrato como Skill real do Claude Code (nome `criati-audit`),
+  restrita a auditoria somente leitura. Os demais comandos desta seção
+  seguem apenas conceituais, sem Skill.
 
 ## `/criati-migration`
 

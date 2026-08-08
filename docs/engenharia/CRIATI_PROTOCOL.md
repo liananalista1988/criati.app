@@ -290,15 +290,17 @@ Push: proibido.
 
 ## Comandos operacionais futuros
 
-Contrato conceitual — sem script e sem Skill instalada ainda — definido em
-[`CRIATI_COMMANDS.md`](CRIATI_COMMANDS.md): `/criati-task`, `/criati-audit`,
-`/criati-migration`, `/criati-integrate`, `/criati-release`.
+Contrato conceitual definido em [`CRIATI_COMMANDS.md`](CRIATI_COMMANDS.md):
+`/criati-task`, `/criati-audit`, `/criati-migration`, `/criati-integrate`,
+`/criati-release`. Destes, `/criati-audit` já está implementado como Skill
+real (`.claude/skills/criati-audit/SKILL.md`); os demais seguem apenas
+conceituais, sem script nem Skill.
 
 Mecanismo previsto: uma Skill encapsula o procedimento reutilizável (os passos
 fixos de um dos comandos acima); a tarefa que a invoca fornece apenas contexto
 e objetivo específicos, no formato compacto da Camada 5, sem repetir o
-procedimento. Os cinco comandos de `CRIATI_COMMANDS.md` são as candidatas
-atuais a Skill; nenhuma é implementada por este protocolo.
+procedimento. Os cinco comandos de `CRIATI_COMMANDS.md` são as candidatas a
+Skill; `criati-audit` é a primeira implementada, as demais continuam futuras.
 
 ## Auditoria independente
 
