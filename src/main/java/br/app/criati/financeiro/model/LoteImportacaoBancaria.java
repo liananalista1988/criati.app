@@ -41,9 +41,32 @@ public class LoteImportacaoBancaria {
 	@JoinColumn(name = "empresa_id", nullable = false, updatable = false)
 	private Empresa empresa;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "conta_id", nullable = false, updatable = false)
+	// Nulo enquanto a importacao estiver em revisao sem conta resolvida
+	// (CRIATI-IMP-FEAT-004); resolverConta() define uma unica vez.
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "conta_id")
 	private ContaFinanceira conta;
+
+	// Sugestao de autodetecao (nunca confirma nada sozinha) - preenchida so
+	// quando o OFX fornece BANKID+BRANCHID+ACCTID completos e ha exatamente
+	// uma conta compativel na empresa atual.
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "conta_sugerida_id", updatable = false)
+	private ContaFinanceira contaSugerida;
+
+	// Metadados do extrato (BANKID/BRANCHID/ACCTID/ACCTTYPE), armazenados uma
+	// unica vez por lote - nunca repetidos por transacao.
+	@Column(name = "identificacao_banco_id", length = 20, updatable = false)
+	private String identificacaoBancoId;
+
+	@Column(name = "identificacao_agencia", length = 20, updatable = false)
+	private String identificacaoAgencia;
+
+	@Column(name = "identificacao_numero_conta", length = 30, updatable = false)
+	private String identificacaoNumeroConta;
+
+	@Column(name = "identificacao_tipo_conta", length = 20, updatable = false)
+	private String identificacaoTipoConta;
 
 	@Column(name = "hash_arquivo", nullable = false, length = 64, updatable = false)
 	private String hashArquivo;
@@ -88,9 +111,11 @@ public class LoteImportacaoBancaria {
 	public LoteImportacaoBancaria(Empresa empresa, ContaFinanceira conta, FormatoArquivoImportacao formato,
 			String hashArquivo,
 			String nomeOriginal, long tamanhoBytes, int quantidadeTransacoes, int quantidadeDuplicadasArquivo,
-			int quantidadePossiveisDuplicadas, Usuario autor) {
+			int quantidadePossiveisDuplicadas, Usuario autor,
+			ContaFinanceira contaSugerida, String identificacaoBancoId, String identificacaoAgencia,
+			String identificacaoNumeroConta, String identificacaoTipoConta) {
 		this.empresa = Objects.requireNonNull(empresa, "empresa nao pode ser nula");
-		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
+		this.conta = conta;
 		this.hashArquivo = Objects.requireNonNull(hashArquivo, "hashArquivo nao pode ser nulo");
 		this.formato = Objects.requireNonNull(formato, "formato nao pode ser nulo");
 		this.nomeOriginal = Objects.requireNonNull(nomeOriginal, "nomeOriginal nao pode ser nulo");
@@ -101,6 +126,25 @@ public class LoteImportacaoBancaria {
 		this.quantidadePossiveisDuplicadas = quantidadePossiveisDuplicadas;
 		this.criadoEm = OffsetDateTime.now();
 		this.criadoPor = Objects.requireNonNull(autor, "autor nao pode ser nulo");
+		this.contaSugerida = contaSugerida;
+		this.identificacaoBancoId = identificacaoBancoId;
+		this.identificacaoAgencia = identificacaoAgencia;
+		this.identificacaoNumeroConta = identificacaoNumeroConta;
+		this.identificacaoTipoConta = identificacaoTipoConta;
+	}
+
+	/**
+	 * Resolve a conta financeira do lote inteiro (todas as suas transacoes
+	 * sao atualizadas pelo chamador na mesma transacao) - so pode ser feito
+	 * uma unica vez; um lote com conta ja resolvida e imutavel quanto a isso,
+	 * mesmo que a escolha final divirja da sugestao automatica (selecao
+	 * manual sempre permitida, sem bloqueio - CRIATI-IMP-FEAT-004).
+	 */
+	public void resolverConta(ContaFinanceira conta) {
+		if (this.conta != null) {
+			throw new DadosInvalidosException("Lote de importacao ja possui conta financeira resolvida");
+		}
+		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
 	}
 
 	public void descartar(Usuario autor) {

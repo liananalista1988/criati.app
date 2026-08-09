@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Optional;
+
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
 import br.app.criati.exception.AcessoNegadoException;
@@ -34,13 +36,16 @@ import br.app.criati.exception.LoteImportacaoNaoEncontradoException;
 import br.app.criati.exception.LoteImportacaoStatusInvalidoException;
 import br.app.criati.exception.UsuarioNaoEncontradoException;
 import br.app.criati.financeiro.model.ContaFinanceira;
+import br.app.criati.financeiro.model.InstituicaoFinanceira;
 import br.app.criati.financeiro.model.LoteImportacaoBancaria;
 import br.app.criati.financeiro.model.TransacaoBancariaImportada;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
+import br.app.criati.financeiro.repository.InstituicaoFinanceiraRepository;
 import br.app.criati.financeiro.repository.LoteImportacaoBancariaRepository;
 import br.app.criati.financeiro.repository.TransacaoBancariaImportadaRepository;
 import br.app.criati.shared.enums.FormatoArquivoImportacao;
 import br.app.criati.shared.enums.PerfilUsuario;
+import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.shared.enums.StatusLoteImportacao;
 import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.usuario.model.Usuario;
@@ -52,6 +57,7 @@ public class ImportacaoBancariaService {
 	private final LoteImportacaoBancariaRepository loteRepository;
 	private final TransacaoBancariaImportadaRepository transacaoRepository;
 	private final ContaFinanceiraRepository contaRepository;
+	private final InstituicaoFinanceiraRepository instituicaoRepository;
 	private final EmpresaRepository empresaRepository;
 	private final UsuarioRepository usuarioRepository;
 	private final OfxParser ofxParser;
@@ -65,6 +71,7 @@ public class ImportacaoBancariaService {
 			LoteImportacaoBancariaRepository loteRepository,
 			TransacaoBancariaImportadaRepository transacaoRepository,
 			ContaFinanceiraRepository contaRepository,
+			InstituicaoFinanceiraRepository instituicaoRepository,
 			EmpresaRepository empresaRepository,
 			UsuarioRepository usuarioRepository,
 			OfxParser ofxParser,
@@ -76,6 +83,7 @@ public class ImportacaoBancariaService {
 		this.loteRepository = loteRepository;
 		this.transacaoRepository = transacaoRepository;
 		this.contaRepository = contaRepository;
+		this.instituicaoRepository = instituicaoRepository;
 		this.empresaRepository = empresaRepository;
 		this.usuarioRepository = usuarioRepository;
 		this.ofxParser = ofxParser;
@@ -92,26 +100,37 @@ public class ImportacaoBancariaService {
 	@Transactional
 	public PreviaImportacaoBancaria importar(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
 		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.OFX, ".ofx",
-				tamanhoMaximoOfxBytes, ofxParser::parse);
+				tamanhoMaximoOfxBytes, ofxParser::parse, ofxParser::identificarConta);
 	}
 
 	@Transactional
 	public PreviaImportacaoBancaria importarCsv(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
 		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.CSV, ".csv",
-				tamanhoMaximoCsvBytes, csvParser::parse);
+				tamanhoMaximoCsvBytes, csvParser::parse, bytes -> Optional.empty());
 	}
 
 	@Transactional
 	public PreviaImportacaoBancaria importarXlsx(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto) {
 		return importar(contaId, arquivo, contexto, FormatoArquivoImportacao.XLSX, ".xlsx",
-				tamanhoMaximoXlsxBytes, xlsxParser::parse);
+				tamanhoMaximoXlsxBytes, xlsxParser::parse, bytes -> Optional.empty());
 	}
 
+	/**
+	 * contaId e sempre opcional (CRIATI-IMP-FEAT-004): sem ele, o lote e as
+	 * transacoes ficam sem conta ate a revisao resolver (resolverConta) - a
+	 * confirmacao financeira continua exigindo conta resolvida
+	 * (ConfirmacaoImportacaoBancariaService). Quando o formato fornece
+	 * identificacao bancaria (hoje so OFX) e nenhuma conta foi informada,
+	 * tenta-se sugerir automaticamente uma unica conta compativel da empresa
+	 * atual - nunca confirma nada sozinha, e nunca escolhe se houver 0, 2+
+	 * candidatas ou dado incompleto.
+	 */
 	private PreviaImportacaoBancaria importar(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto,
 			FormatoArquivoImportacao formato, String extensao, long tamanhoMaximoBytes,
-			Function<byte[], List<TransacaoBancariaExtraida>> parser) {
+			Function<byte[], List<TransacaoBancariaExtraida>> parser,
+			Function<byte[], Optional<IdentificacaoBancariaOfx>> identificador) {
 		exigirEscrita(contexto);
-		ContaFinanceira conta = buscarConta(contaId, contexto.empresaId());
+		ContaFinanceira conta = contaId == null ? null : buscarConta(contaId, contexto.empresaId());
 		String nomeOriginal = validarNomeOriginal(arquivo == null ? null : arquivo.getOriginalFilename(), formato,
 				extensao);
 		if (arquivo == null || arquivo.isEmpty() || arquivo.getSize() == 0) {
@@ -137,6 +156,13 @@ public class ImportacaoBancariaService {
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 		Usuario autor = buscarAutor(contexto.usuarioId());
 
+		IdentificacaoBancariaOfx identificacao = null;
+		ContaFinanceira contaSugerida = null;
+		if (conta == null) {
+			identificacao = identificador.apply(bytes).orElse(null);
+			contaSugerida = autodetectarConta(identificacao, contexto.empresaId());
+		}
+
 		Set<String> chavesNoArquivo = new HashSet<>();
 		List<TransacaoPreparada> preparadas = new ArrayList<>();
 		int duplicadasArquivo = 0;
@@ -145,7 +171,10 @@ public class ImportacaoBancariaService {
 			TransacaoBancariaExtraida extraida = extraidas.get(indice);
 			String chave = chaveDuplicidade(extraida);
 			boolean duplicadaNoArquivo = !chavesNoArquivo.add(chave);
-			boolean possivelmenteJaImportada = transacaoRepository
+			// Sem conta resolvida nao ha como comparar contra o historico de outros
+			// lotes (a checagem e por empresa+conta+chave) - a deduplicacao dentro do
+			// proprio arquivo acima independe de conta e continua funcionando.
+			boolean possivelmenteJaImportada = conta != null && transacaoRepository
 					.existsByEmpresaIdAndContaIdAndChaveDuplicidade(
 							contexto.empresaId(), conta.getId(), chave);
 			if (duplicadaNoArquivo) {
@@ -159,7 +188,11 @@ public class ImportacaoBancariaService {
 		}
 
 		LoteImportacaoBancaria lote = new LoteImportacaoBancaria(empresa, conta, formato, hashArquivo, nomeOriginal,
-				bytes.length, preparadas.size(), duplicadasArquivo, possiveisDuplicadas, autor);
+				bytes.length, preparadas.size(), duplicadasArquivo, possiveisDuplicadas, autor, contaSugerida,
+				identificacao == null ? null : identificacao.bankId(),
+				identificacao == null ? null : identificacao.branchId(),
+				identificacao == null ? null : identificacao.acctId(),
+				identificacao == null ? null : identificacao.acctType());
 		try {
 			lote = loteRepository.saveAndFlush(lote);
 		} catch (DataIntegrityViolationException excecao) {
@@ -173,6 +206,49 @@ public class ImportacaoBancariaService {
 					preparada.chave(), preparada.duplicadaNoArquivo(), preparada.possivelmenteJaImportada()));
 		}
 		return new PreviaImportacaoBancaria(lote, transacaoRepository.saveAll(transacoes));
+	}
+
+	// Sempre escopada por empresa (contaRepository.findAll...EmpresaId...) -
+	// conta de outra empresa jamais pode ser sugerida, mesmo com banco/agencia/
+	// numero identicos. So sugere quando ha EXATAMENTE uma conta compativel.
+	private ContaFinanceira autodetectarConta(IdentificacaoBancariaOfx identificacao, UUID empresaId) {
+		if (identificacao == null || !identificacao.completaParaAutodetecao()) {
+			return null;
+		}
+		String bancoNormalizado = normalizarCodigoBanco(identificacao.bankId());
+		List<UUID> instituicaoIds = instituicaoRepository.listarDisponiveis(empresaId, StatusCadastro.ATIVO).stream()
+				.filter(instituicao -> instituicao.getCodigo() != null
+						&& normalizarCodigoBanco(instituicao.getCodigo()).equals(bancoNormalizado))
+				.map(InstituicaoFinanceira::getId)
+				.toList();
+		List<ContaFinanceira> candidatas = new ArrayList<>();
+		for (UUID instituicaoId : instituicaoIds) {
+			candidatas.addAll(contaRepository
+					.findAllByEmpresaIdAndInstituicaoIdAndAgenciaBancariaAndNumeroContaBancariaAndStatus(
+							empresaId, instituicaoId, identificacao.branchId(), identificacao.acctId(),
+							StatusCadastro.ATIVO));
+		}
+		return candidatas.size() == 1 ? candidatas.get(0) : null;
+	}
+
+	private String normalizarCodigoBanco(String codigo) {
+		String semZeros = codigo.replaceFirst("^0+", "");
+		return semZeros.isEmpty() ? "0" : semZeros;
+	}
+
+	@Transactional
+	public PreviaImportacaoBancaria resolverConta(UUID loteId, UUID contaId, ContextoEmpresaAtual contexto) {
+		exigirEscrita(contexto);
+		LoteImportacaoBancaria lote = buscarLoteParaAtualizar(loteId, contexto.empresaId());
+		if (lote.getStatus() == StatusLoteImportacao.DESCARTADO) {
+			throw new LoteImportacaoStatusInvalidoException("Lote descartado nao pode ser processado");
+		}
+		ContaFinanceira conta = buscarConta(contaId, contexto.empresaId());
+		lote.resolverConta(conta);
+		loteRepository.save(lote);
+		transacaoRepository.atualizarContaDoLote(contexto.empresaId(), lote.getId(), conta);
+		return new PreviaImportacaoBancaria(lote,
+				transacaoRepository.findAllByEmpresaIdAndLoteIdOrderBySequenciaAsc(contexto.empresaId(), lote.getId()));
 	}
 
 	@Transactional(readOnly = true)

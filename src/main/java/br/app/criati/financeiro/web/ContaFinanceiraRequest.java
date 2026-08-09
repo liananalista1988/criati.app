@@ -18,5 +18,8 @@ public record ContaFinanceiraRequest(
 		@NotBlank(message = "Moeda e obrigatoria") @Pattern(regexp = "BRL", message = "Moeda deve ser BRL") String moeda,
 		@NotNull(message = "Saldo inicial e obrigatorio") BigDecimal saldoInicial,
 		@NotNull(message = "Data do saldo inicial e obrigatoria") LocalDate dataSaldoInicial,
-		@NotNull(message = "Configuracao de conciliacao e obrigatoria") Boolean permiteConciliacao) {
+		@NotNull(message = "Configuracao de conciliacao e obrigatoria") Boolean permiteConciliacao,
+		@Size(max = 20) String agenciaBancaria,
+		@Size(max = 30) String numeroContaBancaria,
+		@Size(max = 5) String digitoContaBancaria) {
 }

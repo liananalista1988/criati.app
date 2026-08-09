@@ -11,6 +11,12 @@ public record LoteImportacaoBancariaResponse(
 		UUID id,
 		UUID contaId,
 		String contaNome,
+		UUID contaSugeridaId,
+		String contaSugeridaNome,
+		String identificacaoBancoId,
+		String identificacaoAgencia,
+		String identificacaoNumeroConta,
+		String identificacaoTipoConta,
 		String hashArquivo,
 		FormatoArquivoImportacao formato,
 		String nomeOriginal,
@@ -25,7 +31,13 @@ public record LoteImportacaoBancariaResponse(
 		UUID descartadoPorUsuarioId) {
 
 	public static LoteImportacaoBancariaResponse from(LoteImportacaoBancaria lote) {
-		return new LoteImportacaoBancariaResponse(lote.getId(), lote.getConta().getId(), lote.getConta().getNome(),
+		return new LoteImportacaoBancariaResponse(lote.getId(),
+				lote.getConta() == null ? null : lote.getConta().getId(),
+				lote.getConta() == null ? null : lote.getConta().getNome(),
+				lote.getContaSugerida() == null ? null : lote.getContaSugerida().getId(),
+				lote.getContaSugerida() == null ? null : lote.getContaSugerida().getNome(),
+				lote.getIdentificacaoBancoId(), lote.getIdentificacaoAgencia(), lote.getIdentificacaoNumeroConta(),
+				lote.getIdentificacaoTipoConta(),
 				lote.getHashArquivo(), lote.getFormato(), lote.getNomeOriginal(), lote.getTamanhoBytes(), lote.getStatus(),
 				lote.getQuantidadeTransacoes(), lote.getQuantidadeDuplicadasArquivo(),
 				lote.getQuantidadePossiveisDuplicadas(), lote.getCriadoEm(), lote.getCriadoPor().getId(),

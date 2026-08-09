@@ -5,9 +5,11 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import br.app.criati.financeiro.model.ContaFinanceira;
 import br.app.criati.financeiro.model.TransacaoBancariaImportada;
 import br.app.criati.shared.enums.SituacaoTransacaoImportada;
 import jakarta.persistence.LockModeType;
@@ -40,4 +42,12 @@ public interface TransacaoBancariaImportadaRepository extends JpaRepository<Tran
 			UUID empresaId, UUID contaId, String chaveDuplicidade);
 
 	long countByEmpresaId(UUID empresaId);
+
+	// Propaga a conta resolvida do lote (CRIATI-IMP-FEAT-004) para todas as
+	// suas transacoes de uma vez - chamado exatamente uma vez, dentro da
+	// mesma transacao de LoteImportacaoBancaria.resolverConta.
+	@Modifying
+	@Query("update TransacaoBancariaImportada t set t.conta = :conta where t.empresa.id = :empresaId and t.lote.id = :loteId")
+	int atualizarContaDoLote(
+			@Param("empresaId") UUID empresaId, @Param("loteId") UUID loteId, @Param("conta") ContaFinanceira conta);
 }

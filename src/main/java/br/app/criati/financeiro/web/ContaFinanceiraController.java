@@ -104,7 +104,8 @@ public class ContaFinanceiraController {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		ContaFinanceira conta = contaService.criar(
 				request.nome(), request.titularId(), request.instituicaoId(), request.tipo(), request.moeda(),
-				request.saldoInicial(), request.dataSaldoInicial(), request.permiteConciliacao(), contexto);
+				request.saldoInicial(), request.dataSaldoInicial(), request.permiteConciliacao(),
+				request.agenciaBancaria(), request.numeroContaBancaria(), request.digitoContaBancaria(), contexto);
 		return ResponseEntity.status(HttpStatus.CREATED).body(paraResponse(conta));
 	}
 
@@ -123,7 +124,8 @@ public class ContaFinanceiraController {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		return paraResponse(contaService.editar(
 				id, request.nome(), request.titularId(), request.instituicaoId(), request.tipo(), request.moeda(),
-				request.saldoInicial(), request.dataSaldoInicial(), request.permiteConciliacao(), contexto));
+				request.saldoInicial(), request.dataSaldoInicial(), request.permiteConciliacao(),
+				request.agenciaBancaria(), request.numeroContaBancaria(), request.digitoContaBancaria(), contexto));
 	}
 
 	@PostMapping("/{id}/inativar")

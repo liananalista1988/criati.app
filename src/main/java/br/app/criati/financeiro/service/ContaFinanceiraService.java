@@ -128,6 +128,9 @@ public class ContaFinanceiraService {
 			BigDecimal saldoInicial,
 			LocalDate dataSaldoInicial,
 			boolean permiteConciliacao,
+			String agenciaBancaria,
+			String numeroContaBancaria,
+			String digitoContaBancaria,
 			ContextoEmpresaAtual contexto) {
 		exigirAdministrador(contexto);
 		DadosConta dados = validarDados(nome, titularId, instituicaoId, tipo, moeda, saldoInicial,
@@ -135,9 +138,12 @@ public class ContaFinanceiraService {
 		Empresa empresa = empresaRepository.findById(contexto.empresaId())
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 		Usuario autor = buscarAutor(contexto.usuarioId());
-		return contaRepository.save(new ContaFinanceira(
+		ContaFinanceira conta = new ContaFinanceira(
 				empresa, dados.titular(), dados.instituicao(), dados.nome(), tipo,
-				dados.saldoInicial(), dataSaldoInicial, permiteConciliacao, autor));
+				dados.saldoInicial(), dataSaldoInicial, permiteConciliacao, autor);
+		conta.atualizarIdentificacaoBancaria(normalizarIdentificador(agenciaBancaria),
+				normalizarIdentificador(numeroContaBancaria), normalizarIdentificador(digitoContaBancaria));
+		return contaRepository.save(conta);
 	}
 
 	@Transactional
@@ -151,6 +157,9 @@ public class ContaFinanceiraService {
 			BigDecimal saldoInicial,
 			LocalDate dataSaldoInicial,
 			boolean permiteConciliacao,
+			String agenciaBancaria,
+			String numeroContaBancaria,
+			String digitoContaBancaria,
 			ContextoEmpresaAtual contexto) {
 		exigirAdministrador(contexto);
 		ContaFinanceira conta = buscarDaEmpresa(contaId, contexto.empresaId());
@@ -162,7 +171,19 @@ public class ContaFinanceiraService {
 		}
 		conta.atualizarDados(dados.titular(), dados.instituicao(), dados.nome(), tipo,
 				dados.saldoInicial(), dataSaldoInicial, permiteConciliacao, buscarAutor(contexto.usuarioId()));
+		conta.atualizarIdentificacaoBancaria(normalizarIdentificador(agenciaBancaria),
+				normalizarIdentificador(numeroContaBancaria), normalizarIdentificador(digitoContaBancaria));
 		return contaRepository.save(conta);
+	}
+
+	// Preserva zeros a esquerda (agencia/numero/digito sao codigos, nao numeros);
+	// so normaliza espacos e trata vazio como ausente.
+	private String normalizarIdentificador(String valor) {
+		if (valor == null) {
+			return null;
+		}
+		String normalizado = valor.trim();
+		return normalizado.isEmpty() ? null : normalizado;
 	}
 
 	// Contratos legados mantidos para integrações anteriores. Novas operações devem informar titular e data.
@@ -181,7 +202,8 @@ public class ContaFinanceiraService {
 		}
 		return editar(contaId, nome, conta.getTitular().getId(),
 				conta.getInstituicao() == null ? null : conta.getInstituicao().getId(), tipo, "BRL", saldoInicial,
-				conta.getDataSaldoInicial(), conta.isPermiteConciliacao(), contexto);
+				conta.getDataSaldoInicial(), conta.isPermiteConciliacao(),
+				conta.getAgenciaBancaria(), conta.getNumeroContaBancaria(), conta.getDigitoContaBancaria(), contexto);
 	}
 
 	@Transactional

@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,16 +26,15 @@ public class OfxParser {
 
 	private static final Pattern BLOCO_TRANSACAO = Pattern.compile(
 			"(?is)<STMTTRN\\b[^>]*>(.*?)(?=<STMTTRN\\b|</BANKTRANLIST>|</OFX>)");
+	private static final Pattern BLOCO_CONTA_ORIGEM = Pattern.compile(
+			"(?is)<(BANKACCTFROM|CCACCTFROM)\\b[^>]*>(.*?)</\\1>");
 	private static final Pattern CABECALHO_ENCODING = Pattern.compile("(?im)^\\s*ENCODING\\s*:\\s*([^\\r\\n]+)");
 	private static final Pattern CABECALHO_CHARSET = Pattern.compile("(?im)^\\s*CHARSET\\s*:\\s*([^\\r\\n]+)");
 	private static final List<PerfilOfx> PERFIS = List.of(new PerfilOfxBancoBrasil(), new PerfilOfxGenerico());
 
 	public List<TransacaoBancariaExtraida> parse(byte[] conteudo) {
-		String texto = decodificar(conteudo).replace("\uFEFF", "");
+		String texto = validarConteudoBasico(conteudo);
 		String caixaAlta = texto.toUpperCase(Locale.ROOT);
-		if (texto.indexOf('\0') >= 0 || caixaAlta.contains("<!DOCTYPE") || caixaAlta.contains("<!ENTITY")) {
-			throw invalido();
-		}
 		if (!caixaAlta.contains("<OFX>") || !caixaAlta.contains("<BANKTRANLIST>")) {
 			throw invalido();
 		}
@@ -53,6 +53,38 @@ public class OfxParser {
 			throw new DadosInvalidosException("Arquivo OFX nao possui transacoes bancarias");
 		}
 		return List.copyOf(transacoes);
+	}
+
+	/**
+	 * Metadado de identificacao da conta de origem (BANKACCTFROM/CCACCTFROM),
+	 * usado apenas para sugerir automaticamente a conta financeira do lote -
+	 * nunca para decidir transacao alguma. Somente leitura: nao lanca excecao
+	 * por ausencia da secao (nem todo banco a inclui) nem por tag faltante,
+	 * apenas pelas mesmas violacoes de seguranca ja aplicadas em {@link #parse}.
+	 * Chamar somente apos {@link #parse} ja ter validado o arquivo com sucesso.
+	 */
+	public Optional<IdentificacaoBancariaOfx> identificarConta(byte[] conteudo) {
+		String texto = validarConteudoBasico(conteudo);
+		Matcher matcher = BLOCO_CONTA_ORIGEM.matcher(texto);
+		if (!matcher.find()) {
+			return Optional.empty();
+		}
+		String bloco = matcher.group(2);
+		IdentificacaoBancariaOfx identificacao = new IdentificacaoBancariaOfx(
+				normalizar(tag(bloco, "BANKID")), normalizar(tag(bloco, "BRANCHID")),
+				normalizar(tag(bloco, "ACCTID")), normalizar(tag(bloco, "ACCTTYPE")));
+		boolean tudoVazio = identificacao.bankId() == null && identificacao.branchId() == null
+				&& identificacao.acctId() == null && identificacao.acctType() == null;
+		return tudoVazio ? Optional.empty() : Optional.of(identificacao);
+	}
+
+	private String validarConteudoBasico(byte[] conteudo) {
+		String texto = decodificar(conteudo).replace("﻿", "");
+		String caixaAlta = texto.toUpperCase(Locale.ROOT);
+		if (texto.indexOf('\0') >= 0 || caixaAlta.contains("<!DOCTYPE") || caixaAlta.contains("<!ENTITY")) {
+			throw invalido();
+		}
+		return texto;
 	}
 
 	private DadosTransacaoOfx lerDados(String bloco) {

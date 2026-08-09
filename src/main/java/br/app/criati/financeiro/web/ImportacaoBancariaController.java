@@ -42,7 +42,7 @@ public class ImportacaoBancariaController {
 
 	@PostMapping(value = "/ofx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<PreviaImportacaoBancariaResponse> importarOfx(
-			@RequestParam UUID contaId,
+			@RequestParam(required = false) UUID contaId,
 			@RequestPart("arquivo") MultipartFile arquivo,
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
@@ -53,7 +53,7 @@ public class ImportacaoBancariaController {
 
 	@PostMapping(value = "/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<PreviaImportacaoBancariaResponse> importarCsv(
-			@RequestParam UUID contaId,
+			@RequestParam(required = false) UUID contaId,
 			@RequestPart("arquivo") MultipartFile arquivo,
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
@@ -64,13 +64,22 @@ public class ImportacaoBancariaController {
 
 	@PostMapping(value = "/xlsx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<PreviaImportacaoBancariaResponse> importarXlsx(
-			@RequestParam UUID contaId,
+			@RequestParam(required = false) UUID contaId,
 			@RequestPart("arquivo") MultipartFile arquivo,
 			HttpSession session,
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		PreviaImportacaoBancariaResponse resposta = PreviaImportacaoBancariaResponse.from(
 				service.importarXlsx(contaId, arquivo, exigirAcesso(session, principal)));
 		return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+	}
+
+	@PostMapping("/{id}/conta")
+	public PreviaImportacaoBancariaResponse resolverConta(
+			@PathVariable UUID id, @jakarta.validation.Valid @RequestBody ResolverContaImportacaoRequest request,
+			HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return PreviaImportacaoBancariaResponse.from(
+				service.resolverConta(id, request.contaId(), contexto), confirmacaoService.sugestoesPorTransacao(id, contexto));
 	}
 
 	@GetMapping

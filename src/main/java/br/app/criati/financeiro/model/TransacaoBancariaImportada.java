@@ -46,8 +46,10 @@ public class TransacaoBancariaImportada {
 	@JoinColumn(name = "lote_id", nullable = false, updatable = false)
 	private LoteImportacaoBancaria lote;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "conta_id", nullable = false, updatable = false)
+	// Nulo enquanto o lote nao tiver conta resolvida (CRIATI-IMP-FEAT-004);
+	// atualizada em bloco quando LoteImportacaoBancaria.resolverConta e chamado.
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "conta_id")
 	private ContaFinanceira conta;
 
 	@Column(name = "sequencia", nullable = false, updatable = false)
@@ -119,7 +121,7 @@ public class TransacaoBancariaImportada {
 			boolean possivelmenteJaImportada) {
 		this.empresa = Objects.requireNonNull(empresa, "empresa nao pode ser nula");
 		this.lote = Objects.requireNonNull(lote, "lote nao pode ser nulo");
-		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
+		this.conta = conta;
 		this.sequencia = sequencia;
 		this.dataTransacao = Objects.requireNonNull(dataTransacao, "dataTransacao nao pode ser nula");
 		this.valor = Objects.requireNonNull(valor, "valor nao pode ser nulo");

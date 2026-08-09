@@ -126,6 +126,12 @@ public class ConfirmacaoImportacaoBancariaService {
 	@Transactional(readOnly = true)
 	public Map<UUID, RegraClassificacaoImportacao> sugestoesPorTransacao(UUID loteId, ContextoEmpresaAtual contexto) {
 		LoteImportacaoBancaria lote = buscarLote(loteId, exigirContexto(contexto).empresaId());
+		if (lote.getConta() == null) {
+			// Sem conta resolvida nao ha como filtrar regras por conta - a tela de
+			// revisao continua funcionando, apenas sem sugestao de classificacao
+			// ate a conta ser definida (CRIATI-IMP-FEAT-004).
+			return Map.of();
+		}
 		List<TransacaoBancariaImportada> pendentes = transacaoRepository
 				.findAllByEmpresaIdAndLoteIdAndSituacaoOrderBySequenciaAsc(
 						contexto.empresaId(), lote.getId(), SituacaoTransacaoImportada.PENDENTE);
@@ -160,6 +166,7 @@ public class ConfirmacaoImportacaoBancariaService {
 
 		LoteImportacaoBancaria lote = buscarLoteParaAtualizar(loteId, contexto.empresaId());
 		exigirLoteConfirmavel(lote);
+		exigirContaResolvida(lote);
 		List<TransacaoBancariaImportada> transacoes = transacaoRepository.findAllForUpdate(
 				contexto.empresaId(), lote.getId(), new ArrayList<>(ids));
 		if (transacoes.size() != ids.size()) {
@@ -338,6 +345,15 @@ public class ConfirmacaoImportacaoBancariaService {
 	private void exigirLoteConfirmavel(LoteImportacaoBancaria lote) {
 		if (lote.getStatus() == StatusLoteImportacao.DESCARTADO) {
 			throw new LoteImportacaoStatusInvalidoException("Lote descartado nao pode ser processado");
+		}
+	}
+
+	// Nenhum LancamentoFinanceiro pode ser criado sem conta (CRIATI-IMP-FEAT-004);
+	// a conta e sempre a do lote, nunca inferida da transacao individual.
+	private void exigirContaResolvida(LoteImportacaoBancaria lote) {
+		if (lote.getConta() == null) {
+			throw new LoteImportacaoStatusInvalidoException(
+					"Lote de importacao ainda nao possui conta financeira resolvida");
 		}
 	}
 

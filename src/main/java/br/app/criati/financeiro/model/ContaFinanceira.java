@@ -72,6 +72,15 @@ public class ContaFinanceira {
 	@Column(name = "permite_conciliacao", nullable = false)
 	private boolean permiteConciliacao;
 
+	@Column(name = "agencia_bancaria", length = 20)
+	private String agenciaBancaria;
+
+	@Column(name = "numero_conta_bancaria", length = 30)
+	private String numeroContaBancaria;
+
+	@Column(name = "digito_conta_bancaria", length = 5)
+	private String digitoContaBancaria;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false, length = 20)
 	private StatusCadastro status;
@@ -156,6 +165,18 @@ public class ContaFinanceira {
 		this.dataSaldoInicial = Objects.requireNonNull(dataSaldoInicial, "dataSaldoInicial nao pode ser nula");
 		this.permiteConciliacao = permiteConciliacao;
 		registrarAlteracao(autor);
+	}
+
+	/**
+	 * Identificadores bancarios sao sempre opcionais e nao dependem de haver
+	 * lancamento na conta (nao sao dado financeiro, apenas metadado usado
+	 * pela sugestao automatica de conta na importacao bancaria - CRIATI-IMP-FEAT-004).
+	 */
+	public void atualizarIdentificacaoBancaria(
+			String agenciaBancaria, String numeroContaBancaria, String digitoContaBancaria) {
+		this.agenciaBancaria = agenciaBancaria;
+		this.numeroContaBancaria = numeroContaBancaria;
+		this.digitoContaBancaria = digitoContaBancaria;
 	}
 
 	public void inativar() {

@@ -26,6 +26,13 @@ public interface ContaFinanceiraRepository extends JpaRepository<ContaFinanceira
 
 	Optional<ContaFinanceira> findByIdAndEmpresaId(UUID id, UUID empresaId);
 
+	// Autodeteccao de conta na importacao bancaria (CRIATI-IMP-FEAT-004): sempre
+	// escopada por empresa - nunca pode retornar conta de outra empresa, mesmo
+	// com banco/agencia/numero identicos.
+	List<ContaFinanceira> findAllByEmpresaIdAndInstituicaoIdAndAgenciaBancariaAndNumeroContaBancariaAndStatus(
+			UUID empresaId, UUID instituicaoId, String agenciaBancaria, String numeroContaBancaria,
+			StatusCadastro status);
+
 	boolean existsByEmpresaIdAndNomeIgnoreCaseAndStatus(UUID empresaId, String nome, StatusCadastro status);
 
 	boolean existsByEmpresaIdAndNomeIgnoreCaseAndStatusAndIdNot(

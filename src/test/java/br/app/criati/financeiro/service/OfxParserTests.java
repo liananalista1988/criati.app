@@ -122,6 +122,49 @@ class OfxParserTests {
 				.isInstanceOf(DadosInvalidosException.class).hasMessageContaining("Valor invalido");
 	}
 
+	@Test
+	void identificarContaExtraiBankidBranchidAcctidEAcctypeDeBankacctfrom() {
+		byte[] arquivo = ("OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><BANKACCTFROM><BANKID>0077<BRANCHID>0001"
+				+ "<ACCTID>123456<ACCTTYPE>CHECKING</BANKACCTFROM><BANKTRANLIST>" + transacaoValida()
+				+ "</BANKTRANLIST></OFX>").getBytes(StandardCharsets.UTF_8);
+
+		var identificacao = parser.identificarConta(arquivo);
+
+		assertThat(identificacao).isPresent();
+		assertThat(identificacao.get().bankId()).isEqualTo("0077");
+		assertThat(identificacao.get().branchId()).isEqualTo("0001");
+		assertThat(identificacao.get().acctId()).isEqualTo("123456");
+		assertThat(identificacao.get().acctType()).isEqualTo("CHECKING");
+		assertThat(identificacao.get().completaParaAutodetecao()).isTrue();
+	}
+
+	@Test
+	void identificarContaLeCcacctfromDeExtratoDeCartao() {
+		byte[] arquivo = ("OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><CCACCTFROM><ACCTID>9999</CCACCTFROM>"
+				+ "<BANKTRANLIST>" + transacaoValida() + "</BANKTRANLIST></OFX>").getBytes(StandardCharsets.UTF_8);
+
+		var identificacao = parser.identificarConta(arquivo);
+
+		assertThat(identificacao).isPresent();
+		assertThat(identificacao.get().acctId()).isEqualTo("9999");
+		assertThat(identificacao.get().bankId()).isNull();
+		assertThat(identificacao.get().completaParaAutodetecao()).isFalse();
+	}
+
+	@Test
+	void identificarContaRetornaVazioQuandoOfxNaoTemSecaoDeConta() {
+		assertThat(parser.identificarConta(ofx(transacaoValida()))).isEmpty();
+	}
+
+	@Test
+	void identificarContaComApenasBankidEIncompletaParaAutodetecao() {
+		var identificacao = parser.identificarConta(ofxBb(transacaoValida()));
+		assertThat(identificacao).isPresent();
+		assertThat(identificacao.get().bankId()).isEqualTo("001");
+		assertThat(identificacao.get().branchId()).isNull();
+		assertThat(identificacao.get().completaParaAutodetecao()).isFalse();
+	}
+
 	private byte[] ofx(String transacoes) {
 		return ("OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><BANKTRANLIST>" + transacoes
 				+ "</BANKTRANLIST></OFX>").getBytes(StandardCharsets.UTF_8);
