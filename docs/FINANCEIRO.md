@@ -160,7 +160,7 @@ Toda consulta financeira é obrigatoriamente filtrada por `empresa_id` do contex
 
 ## Limitações desta fase (fora do escopo do MVP)
 
-Registradas como evoluções futuras, não implementadas nesta tarefa: conciliação bancária, integração bancária automática, boleto, Pix, contas a pagar recorrentes complexas, centro de custo, fluxo de caixa projetado, cobrança, emissão fiscal, importação de planilha, anexos e aprovação em múltiplas etapas. A fundação de importação manual OFX existe apenas como área de preparação segura, descrita em `docs/empresas/financeiro-les/IMPLEMENTACAO-CRIATI-FIN-014-OFX.md`; ela não categoriza, concilia ou gera lançamentos.
+Registradas como evoluções futuras, não implementadas nesta tarefa: integração bancária automática (open finance/API do banco), boleto, Pix, contas a pagar recorrentes complexas, centro de custo, fluxo de caixa projetado, cobrança, emissão fiscal, anexos e aprovação em múltiplas etapas. A importação bancária manual (OFX/CSV/XLSX) deixou de ser só uma área de preparação: categoriza, concilia pagamento de fatura e gera lançamento, com o detalhamento e as pendências reais registrados em "Evolução IMP-002/IMP-002A — importação bancária" abaixo.
 
 ## Evolução LES-F2-005 — lançamentos financeiros básicos
 
@@ -181,3 +181,57 @@ imutável. Pagamentos, estornos, cancelamentos e tela permanecem fora desta entr
 
 O contrato completo e a migration `V18` estão registrados em
 `docs/empresas/financeiro-les/IMPLEMENTACAO-F3-004.md`.
+
+## Evolução IMP-002/IMP-002A — importação bancária
+
+**Status: CRIATI-IMP-002 e CRIATI-IMP-002A encerradas.** A importação bancária manual (OFX, CSV e
+XLSX) evoluiu de área de preparação para fluxo completo de revisão e confirmação, escopado por
+`empresa_id` como o restante do módulo. Concluído e validado:
+
+- revisão de importação simplificada (bloco técnico "Dados do lote" deixou de ser seção própria;
+  hash/tamanho continuam disponíveis pela API para auditoria/suporte, sem ocupar espaço
+  operacional na tela);
+- seleção de categoria na revisão agrupada em Receitas/Despesas;
+- natureza da transação (Receita/Despesa) decidida exclusivamente pelo sinal do valor, nunca por
+  palavra da descrição bancária;
+- tipo bancário original (débito/crédito) preservado como metadado informativo ao lado da
+  descrição editável, sem influenciar a classificação contábil;
+- toda transação confirmada gera lançamento já liquidado (reflete um fato bancário ocorrido; não
+  existe transação importada "a pagar");
+- regras de classificação bancária (`regra_classificacao_importacao`): sugestão/pré-preenchimento
+  durante a revisão, nunca confirmação automática de dinheiro; classificação automática bloqueada
+  para padrões ambíguos (`CONTEM`, termos genéricos, padrões curtos) tanto por `CHECK` no banco
+  quanto por validação no serviço;
+- reclassificação manual: alterar a sugestão antes de confirmar volta a origem para `MANUAL` sem
+  incrementar o uso da regra;
+- conciliação de pagamento de fatura de cartão: confirmação de transação importada reaproveita
+  `PagamentoFaturaCartaoService.registrarPagamento` (lock pessimista, saldo recalculado) em vez de
+  criar lançamento genérico duplicado;
+- isolamento multiempresa em toda consulta de lote/transação/regra (`empresaId` obrigatório, nunca
+  `findById` isolado).
+
+Migrations relacionadas: `V20` (lote e transação importada), `V21` (confirmação/situação), `V22`
+(formato CSV), `V23` (formato XLSX), `V24` (regras de classificação). Validadas contra PostgreSQL
+18 real (Flyway `V1`→`V25` aplicado sequencialmente, sem reaplicação em reinício; Hibernate
+`validate` sem divergência) e cobertas pela suíte completa (896/896 testes aprovados).
+
+Detalhamento técnico de cada etapa permanece em
+`docs/empresas/financeiro-les/IMPLEMENTACAO-CRIATI-FIN-014-OFX.md`,
+`IMPLEMENTACAO-CRIATI-FIN-017-CONFIRMACAO-OFX.md`, `IMPLEMENTACAO-CRIATI-FIN-019-CSV.md`,
+`IMPLEMENTACAO-CRIATI-FIN-021-XLSX.md` e `IMPLEMENTACAO-CRIATI-FIN-023-PERFIS-BANCARIOS.md`.
+
+### Backlog — importação bancária (pendências abertas, fora de IMP-002/IMP-002A)
+
+Exclusões de escopo deliberadas nas tarefas encerradas acima, registradas aqui como backlog
+técnico separado — nenhuma delas está implementada, e nenhuma deve ser lida como concluída:
+
+1. **Conta financeira opcional + autodetecção na importação** — status: NÃO IMPLEMENTADO. Hoje
+   `conta_id` é obrigatório tanto em `lote_importacao_bancaria` quanto em
+   `transacao_bancaria_importada` (`V20`); a importação deve poder ocorrer sem selecionar a conta
+   previamente, com autodetecção futura a partir de dados bancários do próprio arquivo (agência/
+   número), quando disponíveis. Exige decisão de modelagem (colunas novas em `conta_financeira`)
+   e migration. Classificação de risco: **crítica** (estrutura persistente/schema).
+2. **Vínculo estrutural de transação importada com empréstimo** — status: NÃO IMPLEMENTADO. Hoje
+   existe apenas `encaminhamentoSugerido` como rótulo informativo, sem chave estrangeira, contrato
+   ou parcela de empréstimo de fato associados. Mantido como backlog separado, sem assumir
+   implementação nem propor modelagem aqui.
