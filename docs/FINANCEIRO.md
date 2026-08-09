@@ -220,18 +220,49 @@ Detalhamento técnico de cada etapa permanece em
 `IMPLEMENTACAO-CRIATI-FIN-017-CONFIRMACAO-OFX.md`, `IMPLEMENTACAO-CRIATI-FIN-019-CSV.md`,
 `IMPLEMENTACAO-CRIATI-FIN-021-XLSX.md` e `IMPLEMENTACAO-CRIATI-FIN-023-PERFIS-BANCARIOS.md`.
 
-### Backlog — importação bancária (pendências abertas, fora de IMP-002/IMP-002A)
+## Evolução IMP-FEAT-004 (+ FIX-007/FIX-009/FIX-011) — conta opcional e autodetecção na importação bancária
 
-Exclusões de escopo deliberadas nas tarefas encerradas acima, registradas aqui como backlog
-técnico separado — nenhuma delas está implementada, e nenhuma deve ser lida como concluída:
+**Status: implementada e validada.** Resolve o item que a evolução IMP-002/IMP-002A acima
+registrava como backlog crítico ("conta financeira opcional + autodetecção"). A conta financeira
+deixou de ser obrigatória no momento do upload:
 
-1. **Conta financeira opcional + autodetecção na importação** — status: NÃO IMPLEMENTADO. Hoje
-   `conta_id` é obrigatório tanto em `lote_importacao_bancaria` quanto em
-   `transacao_bancaria_importada` (`V20`); a importação deve poder ocorrer sem selecionar a conta
-   previamente, com autodetecção futura a partir de dados bancários do próprio arquivo (agência/
-   número), quando disponíveis. Exige decisão de modelagem (colunas novas em `conta_financeira`)
-   e migration. Classificação de risco: **crítica** (estrutura persistente/schema).
-2. **Vínculo estrutural de transação importada com empréstimo** — status: NÃO IMPLEMENTADO. Hoje
+- upload de OFX/CSV/XLSX aceita `contaId` ausente; o lote e suas transações ficam com conta
+  pendente de resolução até a revisão;
+- confirmação financeira continua exigindo conta resolvida — nenhum `LancamentoFinanceiro` é
+  criado sem conta, em nenhum caminho (`ConfirmacaoImportacaoBancariaService.exigirContaResolvida`);
+- quando o arquivo OFX fornece identificação bancária completa (`BANKID`+`BRANCHID`+`ACCTID`), o
+  sistema sugere automaticamente a única conta compatível da empresa atual — nunca confirma nada
+  sozinha, nunca escolhe se houver 0, 2+ candidatas ou dado incompleto; a sugestão é calculada com
+  ou sem conta já informada no upload, justamente para permitir avisar divergência mesmo quando o
+  usuário já escolheu uma conta diferente da que os dados do arquivo indicam;
+- resolução manual da conta sempre permitida via `POST /api/contexto/financeiro/importacoes-bancarias/{id}/conta`,
+  mesmo divergindo da sugestão — nunca bloqueada, nunca altera a escolha do usuário silenciosamente;
+  a tela de revisão mostra um aviso visual persistente e não bloqueante quando isso acontece;
+- ao resolver a conta a posteriori, a duplicidade histórica (`empresa_id`+`conta_id`+
+  `chave_duplicidade`) de todas as transações do lote é recalculada na mesma operação transacional,
+  para nunca confirmar a partir de um indicador de duplicidade desatualizado;
+- identificadores bancários (agência/número/dígito) ficam opcionais em `conta_financeira`,
+  reaproveitando `instituicao_id` já existente, sem tabela nova; nunca expostos brutos pela API
+  para nenhum perfil — dados da própria conta só em texto completo para `ADMINISTRADOR` (mascarados
+  para os demais), e metadados do extrato OFX importado nunca em texto bruto para ninguém (só uma
+  flag booleana de presença, já que a tela nunca precisou do valor cru);
+- isolamento multiempresa em toda consulta de autodetecção (`empresa_id` obrigatório, nunca cruza
+  empresas mesmo com banco/agência/número idênticos).
+
+Migration: `V26` (`permite conta opcional importacao bancaria`) — única migration nova desta
+evolução; `V1`-`V25` preservadas sem alteração. Validada contra PostgreSQL 18 real (Flyway
+aplicado, reinícios consecutivos sem reaplicação, Hibernate `validate` sem divergência); evidência
+objetiva preservada em `docs/engenharia/VALIDACOES-POSTGRESQL-REAL.md`. Suíte completa atual:
+926/926 testes aprovados — número atual do módulo, não confundir com o `896/896` registrado na
+evolução IMP-002/IMP-002A acima, que reflete o estado daquela entrega específica na época em que
+foi validada.
+
+O vínculo estrutural de transação importada com empréstimo (item do backlog abaixo) **não** foi
+tocado por esta evolução e permanece não implementado.
+
+### Backlog — importação bancária (pendências abertas)
+
+1. **Vínculo estrutural de transação importada com empréstimo** — status: NÃO IMPLEMENTADO. Hoje
    existe apenas `encaminhamentoSugerido` como rótulo informativo, sem chave estrangeira, contrato
    ou parcela de empréstimo de fato associados. Mantido como backlog separado, sem assumir
    implementação nem propor modelagem aqui.

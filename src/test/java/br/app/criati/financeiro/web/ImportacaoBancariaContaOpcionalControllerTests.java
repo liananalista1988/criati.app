@@ -2,6 +2,7 @@ package br.app.criati.financeiro.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -137,11 +138,20 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.lote.contaId").doesNotExist())
 				.andExpect(jsonPath("$.lote.contaSugeridaId").value(conta.getId().toString()))
-				.andExpect(jsonPath("$.lote.identificacaoBancoId").value("0341"))
-				.andExpect(jsonPath("$.lote.identificacaoAgencia").value("0001"))
-				.andExpect(jsonPath("$.lote.identificacaoNumeroConta").value("654321"))
+				// CRIATI-IMP-FIX-011: banco/agencia/numero brutos nunca vao na API - so
+				// a flag de presenca; os valores extraidos sao verificados no repositorio.
+				.andExpect(jsonPath("$.lote.identificacaoBancariaPresente").value(true))
+				.andExpect(jsonPath("$.lote.identificacaoAgencia").doesNotExist())
+				.andExpect(jsonPath("$.lote.identificacaoNumeroConta").doesNotExist())
 				.andReturn();
 		assertThat(criado.getResponse().getContentAsString()).contains(conta.getId().toString());
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+		assertThat(loteRepository.findByIdAndEmpresaId(UUID.fromString(loteId), c.empresa().getId()))
+				.get().satisfies(lote -> {
+					assertThat(lote.getIdentificacaoBancoId()).isEqualTo("0341");
+					assertThat(lote.getIdentificacaoAgencia()).isEqualTo("0001");
+					assertThat(lote.getIdentificacaoNumeroConta()).isEqualTo("654321");
+				});
 	}
 
 	@Test
@@ -177,11 +187,20 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 		String semAgenciaNemConta = "OFXHEADER:100\nENCODING:UTF-8\n\n<OFX><BANKACCTFROM><BANKID>0344</BANKACCTFROM>"
 				+ "<BANKTRANLIST>" + transacaoOfx("inc-1", "Incompleto") + "</BANKTRANLIST></OFX>";
 
-		mockMvc.perform(uploadOfxSemConta(c, arquivo("incompleto.ofx", semAgenciaNemConta)))
+		MvcResult criado = mockMvc.perform(uploadOfxSemConta(c, arquivo("incompleto.ofx", semAgenciaNemConta)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist())
-				.andExpect(jsonPath("$.lote.identificacaoBancoId").value("0344"))
-				.andExpect(jsonPath("$.lote.identificacaoAgencia").doesNotExist());
+				// Mesmo incompleto (so BANKID, sem agencia/numero), ha ALGUM dado
+				// bancario no arquivo - a flag reflete presenca, nao completude.
+				.andExpect(jsonPath("$.lote.identificacaoBancariaPresente").value(true))
+				.andExpect(jsonPath("$.lote.identificacaoAgencia").doesNotExist())
+				.andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+		assertThat(loteRepository.findByIdAndEmpresaId(UUID.fromString(loteId), c.empresa().getId()))
+				.get().satisfies(lote -> {
+					assertThat(lote.getIdentificacaoBancoId()).isEqualTo("0344");
+					assertThat(lote.getIdentificacaoAgencia()).isNull();
+				});
 	}
 
 	@Test
@@ -463,15 +482,24 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 	void metadadosOfxSaoPersistidosMesmoComContaInformadaNoUpload() throws Exception {
 		Cenario c = cenario("11100000000121", PerfilUsuario.ADMINISTRADOR);
 		ContaFinanceira conta = contaSimples(c, "Conta ja informada no upload");
-		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("com-conta-e-metadados.ofx",
+		MvcResult criado = mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("com-conta-e-metadados.ofx",
 				umaTransacao("meta-1", "Com conta e metadados"), "0347", "0009", "888777"))
 				.param("contaId", conta.getId().toString()).session(c.session()).with(csrf()))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.lote.contaId").value(conta.getId().toString()))
-				.andExpect(jsonPath("$.lote.identificacaoBancoId").value("0347"))
-				.andExpect(jsonPath("$.lote.identificacaoAgencia").value("0009"))
-				.andExpect(jsonPath("$.lote.identificacaoNumeroConta").value("888777"))
-				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
+				.andExpect(jsonPath("$.lote.identificacaoBancariaPresente").value(true))
+				.andExpect(jsonPath("$.lote.identificacaoAgencia").doesNotExist())
+				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist())
+				.andReturn();
+		// Persistencia dos metadados brutos e verificada no repositorio, nunca
+		// exposta pela API (CRIATI-IMP-FIX-011).
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+		assertThat(loteRepository.findByIdAndEmpresaId(UUID.fromString(loteId), c.empresa().getId()))
+				.get().satisfies(lote -> {
+					assertThat(lote.getIdentificacaoBancoId()).isEqualTo("0347");
+					assertThat(lote.getIdentificacaoAgencia()).isEqualTo("0009");
+					assertThat(lote.getIdentificacaoNumeroConta()).isEqualTo("888777");
+				});
 	}
 
 	// ---- CRIATI-IMP-FIX-009: autodetecao roda tambem quando contaId e
@@ -564,6 +592,55 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.lote.contaId").value(contaEscolhidaA.getId().toString()))
 				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
+	}
+
+	// CRIATI-IMP-FIX-011: banco/agencia/numero/tipo brutos do OFX nunca podem
+	// ser expostos pela API, para nenhum perfil (nem ADMINISTRADOR, que nao
+	// precisa desse dado bruto para nada na tela) - so a flag de presenca.
+	// Cobre listagem e detalhe, para os tres perfis com acesso de leitura.
+	@Test
+	void identificacaoBancariaBrutaNuncaEExpostaParaNenhumPerfilNaListagemNemNoDetalhe() throws Exception {
+		Cenario admin = cenario("11100000000128", PerfilUsuario.ADMINISTRADOR);
+		MockHttpSession sessaoGestor = adicionarUsuario(admin, PerfilUsuario.GESTOR, "gestor-seg");
+		MockHttpSession sessaoUsuario = adicionarUsuario(admin, PerfilUsuario.USUARIO, "usuario-seg");
+
+		MvcResult criado = mockMvc.perform(uploadOfxSemConta(admin, arquivoOfx("seguranca-bancaria.ofx",
+				umaTransacao("seg-1", "Seguranca bancaria"), "0355", "0015", "222333")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.identificacaoBancariaPresente").value(true))
+				.andExpect(jsonPath("$.lote.identificacaoAgencia").doesNotExist())
+				.andExpect(jsonPath("$.lote.identificacaoNumeroConta").doesNotExist())
+				.andExpect(jsonPath("$.lote.identificacaoBancoId").doesNotExist())
+				.andExpect(jsonPath("$.lote.identificacaoTipoConta").doesNotExist())
+				.andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+
+		for (MockHttpSession sessao : List.of(admin.session(), sessaoGestor, sessaoUsuario)) {
+			mockMvc.perform(get(URL + "/" + loteId).session(sessao))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.lote.identificacaoBancariaPresente").value(true))
+					.andExpect(jsonPath("$.lote.identificacaoAgencia").doesNotExist())
+					.andExpect(jsonPath("$.lote.identificacaoNumeroConta").doesNotExist())
+					.andExpect(jsonPath("$.lote.identificacaoBancoId").doesNotExist())
+					.andExpect(jsonPath("$.lote.identificacaoTipoConta").doesNotExist());
+			mockMvc.perform(get(URL).session(sessao))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$[0].identificacaoBancariaPresente").value(true))
+					.andExpect(jsonPath("$[0].identificacaoAgencia").doesNotExist())
+					.andExpect(jsonPath("$[0].identificacaoNumeroConta").doesNotExist())
+					.andExpect(jsonPath("$[0].identificacaoBancoId").doesNotExist())
+					.andExpect(jsonPath("$[0].identificacaoTipoConta").doesNotExist());
+		}
+
+		// Confirma no repositorio que os valores continuam persistidos - a
+		// protecao e so na API, nunca no dado internamente usado pela
+		// autodetecao.
+		assertThat(loteRepository.findByIdAndEmpresaId(UUID.fromString(loteId), admin.empresa().getId()))
+				.get().satisfies(lote -> {
+					assertThat(lote.getIdentificacaoBancoId()).isEqualTo("0355");
+					assertThat(lote.getIdentificacaoAgencia()).isEqualTo("0015");
+					assertThat(lote.getIdentificacaoNumeroConta()).isEqualTo("222333");
+				});
 	}
 
 	private static void aguardar(CountDownLatch inicio) {
@@ -710,6 +787,17 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 				.contentType(MediaType.APPLICATION_JSON).content("{\"empresaId\":\"%s\"}".formatted(empresaId)))
 				.andExpect(status().isOk());
 		return session;
+	}
+
+	// Adiciona um segundo (ou terceiro) usuario, com outro perfil, na MESMA
+	// empresa do cenario base - usado para testes de exposicao que precisam
+	// comparar perfis diferentes vendo o mesmo lote (CRIATI-IMP-FIX-011).
+	private MockHttpSession adicionarUsuario(Cenario cenario, PerfilUsuario perfil, String sufixo) throws Exception {
+		Usuario usuario = usuarioRepository.saveAndFlush(new Usuario("Usuario " + sufixo,
+				sufixo + "." + cenario.empresa().getCnpj() + "@criati.test", passwordEncoder.encode(SENHA),
+				StatusCadastro.ATIVO));
+		usuarioEmpresaRepository.saveAndFlush(new UsuarioEmpresa(usuario, cenario.empresa(), perfil, StatusCadastro.ATIVO));
+		return autenticarNaEmpresa(usuario.getEmail(), cenario.empresa().getId());
 	}
 
 	private record Cenario(Empresa empresa, Usuario usuario, MockHttpSession session) {

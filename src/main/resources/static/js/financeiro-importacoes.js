@@ -542,7 +542,7 @@
 		if (lote.contaSugeridaId) {
 			textoSugestao.textContent = "Sugestão automática pelos dados bancários do arquivo: \"" + lote.contaSugeridaNome
 				+ "\". Confirme se está correta ou escolha outra conta antes de definir.";
-		} else if (lote.identificacaoBancoId || lote.identificacaoAgencia || lote.identificacaoNumeroConta) {
+		} else if (lote.identificacaoBancariaPresente) {
 			textoSugestao.textContent = "Não foi possível sugerir automaticamente uma conta compatível com os dados bancários deste arquivo. Selecione manualmente.";
 		} else {
 			textoSugestao.textContent = "Selecione a conta financeira desta importação. Nenhuma transação pode ser confirmada antes disso.";
