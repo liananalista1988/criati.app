@@ -370,7 +370,9 @@
 		resumo: function (id) {
 			return window.CriatiApi.get(IMPORTACOES_BASE + "/" + id + "/resumo");
 		},
-		// comandos: [{transacaoId, categoriaId, descricaoFinal, confirmarDuplicidade}].
+		// comandos: [{transacaoId, categoriaId|faturaId|parcelaEmprestimoId, descricaoFinal, confirmarDuplicidade}]
+		// (exatamente um entre categoriaId/faturaId/parcelaEmprestimoId, nunca
+		// mais de um nem nenhum - CRIATI-FIN-FEAT-015/CRIATI-IMP-FEAT-017).
 		// O backend e o unico responsavel por criar o LancamentoFinanceiro,
 		// decidir receita/despesa pelo sinal do valor e validar duplicidade.
 		confirmar: function (id, comandos) {

@@ -49,6 +49,8 @@
 	var categoriasAtivas = [];
 	var faturasEmAberto = [];
 	var nomeCartaoPorId = {};
+	var parcelasEmprestimoAptas = [];
+	var emprestimoPorId = {};
 	var selecionadas = new Set();
 	var OPCAO_NOVA_CATEGORIA = "__nova__";
 	var selectCategoriaAlvo = null;
@@ -77,6 +79,13 @@
 		PENDENTE: "pendente",
 		CONFIRMADA: "pago",
 		IGNORADA: "cancelado"
+	};
+	var SITUACAO_PARCELA_EMPRESTIMO_LABEL = {
+		PENDENTE: "pendente",
+		PARCIALMENTE_PAGO: "parcialmente paga",
+		ATRASADO: "atrasada",
+		PAGO: "paga",
+		CANCELADO: "cancelada"
 	};
 	var TIPO_BANCARIO_LABEL = {
 		DEBIT: "Débito",
@@ -228,7 +237,10 @@
 				el("categoria-rapida-form").reset();
 				atualizarTodosSelectsCategoria(resposta.data.id);
 				selectCategoriaAlvo = null;
-				if (alvo) { alvo.dataset.valorAnterior = alvo.value; }
+				if (alvo) {
+					alvo.dataset.valorAnterior = alvo.value;
+					aplicarDestinoExclusivo(alvo);
+				}
 				window.CriatiUI.showToast("sucesso", "Categoria cadastrada com sucesso.");
 			})
 			.catch(function (erro) {
@@ -253,6 +265,52 @@
 
 	function dataHoraBr(isoDateTime) {
 		return isoDateTime ? formatacao.dataBr(isoDateTime.slice(0, 10)) : "—";
+	}
+
+	// Rotulo de uma parcela apta no select de recebimento de emprestimo:
+	// devedor e identificacao do emprestimo vem do lookup emprestimoPorId
+	// (endpoint /emprestimos-concedidos ja existente), nunca duplicados aqui -
+	// contexto minimo para o usuario nao escolher a parcela errada
+	// (CRIATI-IMP-FEAT-017, item 2).
+	function rotuloParcelaEmprestimo(parcela) {
+		var emprestimo = emprestimoPorId[parcela.emprestimoId];
+		var devedor = emprestimo ? emprestimo.parteFinanceiraNome : "Devedor não identificado";
+		var identificacao = emprestimo && emprestimo.descricao ? emprestimo.descricao : "Empréstimo sem descrição";
+		return devedor + " — " + identificacao + " — parcela " + parcela.numero + "/" + parcela.totalParcelas
+			+ " — vence " + formatacao.dataBr(parcela.vencimento)
+			+ " — saldo " + formatacao.moeda(parcela.saldoPendente)
+			+ " (" + (SITUACAO_PARCELA_EMPRESTIMO_LABEL[parcela.situacao] || parcela.situacao) + ")";
+	}
+
+	// XOR de destino (categoria/fatura/parcela de emprestimo) tambem no
+	// frontend (CRIATI-IMP-FEAT-017, item 6) - o backend continua sendo a
+	// autoridade final (ConfirmacaoImportacaoBancariaService rejeita mais de
+	// um ou nenhum), isto e so uma conveniencia de UI para nunca deixar o
+	// usuario montar uma selecao que o backend vai recusar. So limpa os
+	// outros dois quando o de origem recebe um valor - nunca desabilita, para
+	// o usuario poder trocar livremente entre Categoria/Fatura/Empréstimo em
+	// qualquer ordem (troca direta, sem precisar "desmarcar" o anterior
+	// primeiro). Localiza os tres selects pela linha da tabela (nao por
+	// closure) para funcionar tambem quando chamado a partir do fluxo de
+	// "cadastrar categoria" (modal compartilhado entre linhas, ver
+	// salvarCategoriaRapida).
+	function aplicarDestinoExclusivo(selectOrigem) {
+		if (!selectOrigem.value) {
+			return;
+		}
+		var linha = selectOrigem.closest("tr");
+		if (!linha) {
+			return;
+		}
+		[
+			linha.querySelector(".importacao-transacao-categoria"),
+			linha.querySelector(".importacao-transacao-fatura"),
+			linha.querySelector(".importacao-transacao-parcela-emprestimo")
+		].forEach(function (select) {
+			if (select && select !== selectOrigem) {
+				select.value = "";
+			}
+		});
 	}
 
 	// ---- Historico ----
@@ -426,23 +484,42 @@
 			? "Arquivo importado com sucesso. Revise a pré-visualização antes de decidir os próximos passos."
 			: null;
 		if (podeGerenciarAtual) {
-			// Categorias e faturas em aberto so sao necessarias para quem pode
-			// confirmar transacoes; usuarios somente leitura nao fazem essas
-			// chamadas extras.
+			// Categorias, faturas e parcelas de emprestimo aptas so sao
+			// necessarias para quem pode confirmar transacoes; usuarios somente
+			// leitura nao fazem essas chamadas extras (CRIATI-IMP-FEAT-017).
+			// Parcela "apta" reaproveita os dois status que ja significam
+			// "com saldo pendente" no dominio (ParcelaEmprestimoService) - nenhum
+			// endpoint novo foi criado, so duas chamadas extras ao endpoint ja
+			// existente de parcelas-emprestimo, mais uma para nome do devedor/
+			// identificacao do emprestimo (emprestimos-concedidos ATIVO).
 			Promise.all([
 				api.categorias.listar({ status: "ATIVO" }),
 				api.faturas.listar({ status: "ABERTA" }),
-				api.cartoes.listar({ status: "ATIVO" })
+				api.cartoes.listar({ status: "ATIVO" }),
+				api.parcelasEmprestimo.listar({ status: "PENDENTE" }),
+				api.parcelasEmprestimo.listar({ status: "PARCIALMENTE_PAGO" }),
+				api.emprestimos.listar({ status: "ATIVO" })
 			]).then(function (respostas) {
 				categoriasAtivas = respostas[0].data || [];
 				faturasEmAberto = respostas[1].data || [];
 				nomeCartaoPorId = {};
 				(respostas[2].data || []).forEach(function (cartao) { nomeCartaoPorId[cartao.id] = cartao.nome; });
+				// Saldo pendente e responsabilidade exclusiva do backend
+				// (ParcelaEmprestimo.getSaldoPendente); o filtro abaixo e so uma
+				// dupla checagem defensiva, nunca a fonte de verdade do calculo.
+				parcelasEmprestimoAptas = (respostas[3].data || []).concat(respostas[4].data || [])
+					.filter(function (parcela) { return Number(parcela.saldoPendente) > 0; })
+					.sort(function (a, b) { return (a.vencimento || "").localeCompare(b.vencimento || ""); });
+				emprestimoPorId = {};
+				(respostas[5].data || []).forEach(function (emprestimo) { emprestimoPorId[emprestimo.id] = emprestimo; });
 			}).catch(function () {
 				categoriasAtivas = categoriasAtivas.length ? categoriasAtivas : [];
 				faturasEmAberto = [];
 				nomeCartaoPorId = {};
-				window.CriatiUI.showToast("erro", "Não foi possível carregar categorias, cartões e/ou faturas em aberto.");
+				parcelasEmprestimoAptas = [];
+				emprestimoPorId = {};
+				window.CriatiUI.showToast("erro",
+					"Não foi possível carregar categorias, cartões, faturas e/ou parcelas de empréstimo em aberto.");
 			}).then(function () {
 				carregarDetalhe(mensagemInicial);
 			});
@@ -683,6 +760,7 @@
 					return;
 				}
 				selectCategoria.dataset.valorAnterior = selectCategoria.value;
+				aplicarDestinoExclusivo(selectCategoria);
 			});
 			celulaCategoria.appendChild(selectCategoria);
 
@@ -707,16 +785,49 @@
 				selectFatura.appendChild(opcao);
 			});
 			selectFatura.addEventListener("change", function () {
-				selectCategoria.disabled = Boolean(selectFatura.value);
+				aplicarDestinoExclusivo(selectFatura);
 			});
 			celulaCategoria.appendChild(selectFatura);
+
+			// Parcela de emprestimo concedido (CRIATI-IMP-FEAT-017): terceira via
+			// alternativa a categoria/fatura - so faz sentido para transacao de
+			// credito/entrada (transacao.valor > 0, mesmo sinal usado pelo
+			// backend em ConfirmacaoImportacaoBancariaService.tipoDa); em debito a
+			// opcao fica desabilitada com indicacao coerente, nunca escondida sem
+			// explicacao. O backend continua sendo a autoridade final da
+			// elegibilidade - este filtro e so uma conveniencia de UI.
+			var selectParcelaEmprestimo = document.createElement("select");
+			selectParcelaEmprestimo.className = "criati-select importacao-transacao-parcela-emprestimo";
+			selectParcelaEmprestimo.setAttribute("aria-label",
+				"Recebimento de parcela de empréstimo (alternativa à categoria) da transação " + transacao.sequencia);
+			var transacaoCredito = Number(transacao.valor) > 0;
+			var opcaoSemParcela = document.createElement("option");
+			opcaoSemParcela.value = "";
+			if (transacaoCredito) {
+				opcaoSemParcela.textContent = "— Não é recebimento de empréstimo —";
+				selectParcelaEmprestimo.appendChild(opcaoSemParcela);
+				parcelasEmprestimoAptas.forEach(function (parcela) {
+					var opcao = document.createElement("option");
+					opcao.value = parcela.id;
+					opcao.textContent = rotuloParcelaEmprestimo(parcela);
+					selectParcelaEmprestimo.appendChild(opcao);
+				});
+			} else {
+				opcaoSemParcela.textContent = "— Disponível apenas para transações de crédito —";
+				selectParcelaEmprestimo.appendChild(opcaoSemParcela);
+				selectParcelaEmprestimo.disabled = true;
+			}
+			selectParcelaEmprestimo.addEventListener("change", function () {
+				aplicarDestinoExclusivo(selectParcelaEmprestimo);
+			});
+			celulaCategoria.appendChild(selectParcelaEmprestimo);
 
 			if (transacao.aplicacaoSugestao) {
 				var aviso = document.createElement("p");
 				aviso.className = "financeiro-sugestao-regra";
 				if (transacao.encaminhamentoSugerido) {
 					aviso.textContent = "Sugestão (regra): " + (ENCAMINHAMENTO_LABEL[transacao.encaminhamentoSugerido] || transacao.encaminhamentoSugerido)
-						+ " — selecione a fatura acima se aplicável.";
+						+ " — selecione a fatura ou a parcela de empréstimo acima, se aplicável.";
 				} else {
 					aviso.textContent = (transacao.aplicacaoSugestao === "AUTOMATICA" ? "Preenchido automaticamente" : "Sugestão")
 						+ " pela regra: " + transacao.categoriaSugeridaNome;
@@ -837,13 +948,19 @@
 			var sequencia = linha.dataset.sequencia;
 			var selectCategoria = linha.querySelector(".importacao-transacao-categoria");
 			var selectFatura = linha.querySelector(".importacao-transacao-fatura");
+			var selectParcelaEmprestimo = linha.querySelector(".importacao-transacao-parcela-emprestimo");
 			var inputDescricao = linha.querySelector(".importacao-transacao-descricao");
 			var checkDuplicidade = linha.querySelector(".importacao-transacao-confirmar-duplicidade");
-			var faturaId = selectFatura ? selectFatura.value : "";
-			var categoriaId = (!faturaId && selectCategoria) ? selectCategoria.value : "";
+			// Ordem de prioridade so importa como defesa extra: a exclusividade
+			// real ja e garantida em UI por aplicarDestinoExclusivo (limpa os
+			// outros dois assim que um e escolhido).
+			var parcelaEmprestimoId = selectParcelaEmprestimo ? selectParcelaEmprestimo.value : "";
+			var faturaId = (!parcelaEmprestimoId && selectFatura) ? selectFatura.value : "";
+			var categoriaId = (!faturaId && !parcelaEmprestimoId && selectCategoria) ? selectCategoria.value : "";
 			var descricaoFinal = inputDescricao ? inputDescricao.value.trim() : "";
-			if (!faturaId && !categoriaId) {
-				erroValidacao = "Selecione a categoria (ou a fatura, se for pagamento de cartão) da transação #" + sequencia + " antes de confirmar.";
+			if (!faturaId && !categoriaId && !parcelaEmprestimoId) {
+				erroValidacao = "Selecione a categoria (ou a fatura de cartão, ou a parcela de empréstimo) da transação #"
+					+ sequencia + " antes de confirmar.";
 				return;
 			}
 			if (!descricaoFinal) {
@@ -858,6 +975,7 @@
 				transacaoId: transacaoId,
 				categoriaId: categoriaId || null,
 				faturaId: faturaId || null,
+				parcelaEmprestimoId: parcelaEmprestimoId || null,
 				regraClassificacaoId: linha.dataset.regraSugeridaId || null,
 				descricaoFinal: descricaoFinal,
 				confirmarDuplicidade: Boolean(checkDuplicidade && checkDuplicidade.checked)

@@ -1133,7 +1133,8 @@
 	text-transform: none;
 }
 
-.importacao-transacao-fatura {
+.importacao-transacao-fatura,
+.importacao-transacao-parcela-emprestimo {
 	margin-top: 6px;
 }
 
