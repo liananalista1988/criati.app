@@ -26,6 +26,7 @@ import br.app.criati.financeiro.model.CategoriaFinanceira;
 import br.app.criati.financeiro.model.LancamentoFinanceiro;
 import br.app.criati.financeiro.model.LoteImportacaoBancaria;
 import br.app.criati.financeiro.model.PagamentoFaturaCartao;
+import br.app.criati.financeiro.model.RecebimentoParcelaEmprestimo;
 import br.app.criati.financeiro.model.RegraClassificacaoImportacao;
 import br.app.criati.financeiro.model.TransacaoBancariaImportada;
 import br.app.criati.financeiro.repository.CategoriaFinanceiraRepository;
@@ -50,7 +51,7 @@ import br.app.criati.usuario.repository.UsuarioRepository;
  * Confirma (ou ignora) transacoes bancarias importadas, sempre por acao
  * explicita do usuario (CRIATI-FIN-018, evoluido por CRIATI-IMP-002A).
  *
- * <p>Cada transacao confirmada segue exatamente um de dois caminhos,
+ * <p>Cada transacao confirmada segue exatamente um de tres caminhos,
  * decidido pelo comando recebido (nunca inferido automaticamente):
  * <ul>
  *   <li>{@code categoriaId} informado: cria um LancamentoFinanceiro comum
@@ -65,6 +66,21 @@ import br.app.criati.usuario.repository.UsuarioRepository;
  *       aqui; se o usuario nao souber qual fatura corresponde, a transacao
  *       simplesmente nao e submetida nesta rodada e permanece pendente para
  *       revisao posterior.</li>
+ *   <li>{@code parcelaEmprestimoId} informado: a transacao representa o
+ *       recebimento (integral ou parcial) de uma parcela de emprestimo
+ *       concedido ja existente - registrado via
+ *       RecebimentoParcelaEmprestimoService.receberParcial (lock pessimista
+ *       na parcela, saldo pendente validado, cria seu proprio
+ *       LancamentoFinanceiro). O vinculo transacao-emprestimo/parcela e
+ *       persistente e auditavel via o mesmo LancamentoFinanceiro referenciado
+ *       por TransacaoBancariaImportada e por RecebimentoParcelaEmprestimo -
+ *       sem migration nova, reaproveitando a estrutura ja existente
+ *       (CRIATI-FIN-FEAT-015, substitui o antigo rotulo puramente informativo
+ *       de EncaminhamentoSugeridoRegraImportacao). A parcela e sempre
+ *       escolhida explicitamente pelo usuario - nunca vinculada
+ *       automaticamente so por descricao/valor; se a parcela pertencer a
+ *       outra empresa, a confirmacao falha (ParcelaEmprestimoNaoEncontradaException),
+ *       nunca revelando a existencia do emprestimo de outra empresa.</li>
  * </ul>
  *
  * <p>regraClassificacaoId (opcional) so e considerado "efetivamente usado"
@@ -84,6 +100,7 @@ public class ConfirmacaoImportacaoBancariaService {
 	private final RegraClassificacaoImportacaoRepository regraRepository;
 	private final RegraClassificacaoImportacaoService regraService;
 	private final PagamentoFaturaCartaoService pagamentoFaturaCartaoService;
+	private final RecebimentoParcelaEmprestimoService recebimentoParcelaEmprestimoService;
 	private final UsuarioRepository usuarioRepository;
 
 	public ConfirmacaoImportacaoBancariaService(LoteImportacaoBancariaRepository loteRepository,
@@ -93,6 +110,7 @@ public class ConfirmacaoImportacaoBancariaService {
 			RegraClassificacaoImportacaoRepository regraRepository,
 			RegraClassificacaoImportacaoService regraService,
 			PagamentoFaturaCartaoService pagamentoFaturaCartaoService,
+			RecebimentoParcelaEmprestimoService recebimentoParcelaEmprestimoService,
 			UsuarioRepository usuarioRepository) {
 		this.loteRepository = loteRepository;
 		this.transacaoRepository = transacaoRepository;
@@ -101,6 +119,7 @@ public class ConfirmacaoImportacaoBancariaService {
 		this.regraRepository = regraRepository;
 		this.regraService = regraService;
 		this.pagamentoFaturaCartaoService = pagamentoFaturaCartaoService;
+		this.recebimentoParcelaEmprestimoService = recebimentoParcelaEmprestimoService;
 		this.usuarioRepository = usuarioRepository;
 	}
 
@@ -157,9 +176,11 @@ public class ConfirmacaoImportacaoBancariaService {
 			if (comando == null || comando.transacaoId() == null || !ids.add(comando.transacaoId())) {
 				throw new DadosInvalidosException("Transacoes selecionadas devem ser unicas e validas");
 			}
-			if ((comando.categoriaId() == null) == (comando.faturaId() == null)) {
-				throw new DadosInvalidosException(
-						"Informe categoria (lancamento comum) ou fatura (pagamento de fatura), nunca os dois nem nenhum");
+			int informados = (comando.categoriaId() != null ? 1 : 0) + (comando.faturaId() != null ? 1 : 0)
+					+ (comando.parcelaEmprestimoId() != null ? 1 : 0);
+			if (informados != 1) {
+				throw new DadosInvalidosException("Informe categoria (lancamento comum), fatura (pagamento de fatura) "
+						+ "ou parcela de emprestimo (recebimento), nunca mais de um nem nenhum");
 			}
 			porId.put(comando.transacaoId(), comando);
 		}
@@ -194,13 +215,21 @@ public class ConfirmacaoImportacaoBancariaService {
 					comando.regraClassificacaoId(), contexto.empresaId());
 			String descricao = normalizarDescricao(comando.descricaoFinal());
 			if (comando.faturaId() != null) {
-				validadas.add(new ConfirmacaoValidada(transacao, null, tipo, descricao, comando.faturaId(), regraReferenciada));
+				validadas.add(new ConfirmacaoValidada(transacao, null, tipo, descricao, comando.faturaId(), null,
+						regraReferenciada));
+			} else if (comando.parcelaEmprestimoId() != null) {
+				if (tipo != TipoFinanceiro.RECEITA) {
+					throw new DadosInvalidosException(
+							"Recebimento de parcela de emprestimo exige transacao de credito (valor positivo)");
+				}
+				validadas.add(new ConfirmacaoValidada(transacao, null, tipo, descricao, null,
+						comando.parcelaEmprestimoId(), regraReferenciada));
 			} else {
 				CategoriaFinanceira categoria = buscarCategoria(comando.categoriaId(), contexto.empresaId(), categorias);
 				if (categoria.getTipo() != tipo) {
 					throw new DadosInvalidosException("Categoria deve possuir o mesmo tipo financeiro da transacao");
 				}
-				validadas.add(new ConfirmacaoValidada(transacao, categoria, tipo, descricao, null, regraReferenciada));
+				validadas.add(new ConfirmacaoValidada(transacao, categoria, tipo, descricao, null, null, regraReferenciada));
 			}
 		}
 		for (ConfirmacaoValidada validada : validadas) {
@@ -229,6 +258,21 @@ public class ConfirmacaoImportacaoBancariaService {
 			lancamento = pagamento.getLancamentoFinanceiro();
 			regraEfetivamenteUsada = validada.regra() != null
 					&& validada.regra().getEncaminhamentoSugerido() == EncaminhamentoSugeridoRegraImportacao.FATURA_CARTAO;
+		} else if (validada.parcelaEmprestimoId() != null) {
+			// Recebimento de parcela de emprestimo concedido: RecebimentoParcelaEmprestimoService
+			// ja garante lock pessimista na parcela, saldo pendente validado (nunca aceita
+			// receber mais do que falta, prevenindo recebimento duplicado sobre a mesma
+			// parcela) e cria seu proprio LancamentoFinanceiro - nunca criamos um
+			// LancamentoFinanceiro generico aqui. Vinculo persistente e auditavel: este
+			// mesmo LancamentoFinanceiro fica referenciado tanto por
+			// TransacaoBancariaImportada.lancamentoFinanceiro quanto por
+			// RecebimentoParcelaEmprestimo.lancamentoFinanceiro (CRIATI-FIN-FEAT-015).
+			RecebimentoParcelaEmprestimo recebimento = recebimentoParcelaEmprestimoService.receberParcial(
+					validada.parcelaEmprestimoId(), lote.getConta().getId(), validada.transacao().getValor().abs(),
+					validada.transacao().getDataTransacao(), null, null, contexto);
+			lancamento = recebimento.getLancamentoFinanceiro();
+			regraEfetivamenteUsada = validada.regra() != null && validada.regra()
+					.getEncaminhamentoSugerido() == EncaminhamentoSugeridoRegraImportacao.EMPRESTIMO_RECEBIMENTO_PARCELA;
 		} else {
 			PessoaFinanceira pessoaSugerida = null;
 			boolean categoriaBateComRegra = validada.regra() != null
@@ -369,6 +413,7 @@ public class ConfirmacaoImportacaoBancariaService {
 	}
 
 	private record ConfirmacaoValidada(TransacaoBancariaImportada transacao, CategoriaFinanceira categoria,
-			TipoFinanceiro tipo, String descricao, UUID faturaId, RegraClassificacaoImportacao regra) {
+			TipoFinanceiro tipo, String descricao, UUID faturaId, UUID parcelaEmprestimoId,
+			RegraClassificacaoImportacao regra) {
 	}
 }
