@@ -120,10 +120,14 @@ public class ImportacaoBancariaService {
 	 * transacoes ficam sem conta ate a revisao resolver (resolverConta) - a
 	 * confirmacao financeira continua exigindo conta resolvida
 	 * (ConfirmacaoImportacaoBancariaService). Quando o formato fornece
-	 * identificacao bancaria (hoje so OFX) e nenhuma conta foi informada,
-	 * tenta-se sugerir automaticamente uma unica conta compativel da empresa
-	 * atual - nunca confirma nada sozinha, e nunca escolhe se houver 0, 2+
-	 * candidatas ou dado incompleto.
+	 * identificacao bancaria (hoje so OFX), tenta-se sugerir automaticamente
+	 * uma unica conta compativel da empresa atual - com ou sem contaId
+	 * informado no upload (CRIATI-IMP-FIX-009) - nunca confirma nada
+	 * sozinha, nunca substitui a conta ja escolhida pelo usuario, e nunca
+	 * escolhe se houver 0, 2+ candidatas ou dado incompleto. A sugestao
+	 * continua sendo calculada mesmo com contaId informado justamente para
+	 * permitir detectar e avisar divergencia entre a conta escolhida e a
+	 * conta que os dados bancarios do arquivo indicam.
 	 */
 	private PreviaImportacaoBancaria importar(UUID contaId, MultipartFile arquivo, ContextoEmpresaAtual contexto,
 			FormatoArquivoImportacao formato, String extensao, long tamanhoMaximoBytes,
@@ -156,12 +160,14 @@ public class ImportacaoBancariaService {
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 		Usuario autor = buscarAutor(contexto.usuarioId());
 
-		// Metadados do extrato (BANKID/BRANCHID/ACCTID/ACCTTYPE) sao persistidos
-		// sempre que o formato fornecer, tenha ou nao contaId sido informado no
-		// upload (CRIATI-IMP-FIX-007) - autodetecao (contaSugerida), por outro
-		// lado, so faz sentido quando ainda nao ha conta resolvida.
+		// Metadados do extrato (BANKID/BRANCHID/ACCTID/ACCTTYPE) e a autodetecao
+		// (contaSugerida) rodam sempre que o formato fornecer, com ou sem contaId
+		// informado no upload (CRIATI-IMP-FIX-009) - contaSugerida e sempre so
+		// informativa: nunca substitui a conta escolhida pelo usuario, mesmo
+		// quando divergente (o aviso visual de divergencia depende de comparar
+		// as duas, entao a sugestao precisa existir tambem quando ha conta).
 		IdentificacaoBancariaOfx identificacao = identificador.apply(bytes).orElse(null);
-		ContaFinanceira contaSugerida = conta == null ? autodetectarConta(identificacao, contexto.empresaId()) : null;
+		ContaFinanceira contaSugerida = autodetectarConta(identificacao, contexto.empresaId());
 
 		Set<String> chavesNoArquivo = new HashSet<>();
 		List<TransacaoPreparada> preparadas = new ArrayList<>();

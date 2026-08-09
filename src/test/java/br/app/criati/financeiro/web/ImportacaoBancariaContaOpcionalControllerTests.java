@@ -455,8 +455,10 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 
 	// CRIATI-IMP-FIX-007, item 5: metadados OFX (BANKID/BRANCHID/ACCTID/
 	// ACCTTYPE) devem ser persistidos sempre que existirem no arquivo, com ou
-	// sem contaId informado no upload - autodetecao (contaSugerida), por sua
-	// vez, so faz sentido e so roda quando a conta ainda esta em aberto.
+	// sem contaId informado no upload. Autodetecao (contaSugerida) tambem
+	// roda nos dois casos desde a CRIATI-IMP-FIX-009 (ver testes de
+	// divergencia abaixo) - aqui simplesmente nao ha instituicao cadastrada
+	// com o codigo do OFX, entao nao ha candidata alguma para sugerir.
 	@Test
 	void metadadosOfxSaoPersistidosMesmoComContaInformadaNoUpload() throws Exception {
 		Cenario c = cenario("11100000000121", PerfilUsuario.ADMINISTRADOR);
@@ -469,6 +471,98 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 				.andExpect(jsonPath("$.lote.identificacaoBancoId").value("0347"))
 				.andExpect(jsonPath("$.lote.identificacaoAgencia").value("0009"))
 				.andExpect(jsonPath("$.lote.identificacaoNumeroConta").value("888777"))
+				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
+	}
+
+	// ---- CRIATI-IMP-FIX-009: autodetecao roda tambem quando contaId e
+	// informado no upload, para permitir o aviso de divergencia na tela de
+	// revisao - a conta escolhida pelo usuario nunca e substituida.
+
+	@Test
+	void ofxComContaInformadaESugestaoIgualNaoIndicaDivergencia() throws Exception {
+		Cenario c = cenario("11100000000122", PerfilUsuario.ADMINISTRADOR);
+		InstituicaoFinanceira instituicao = instituicao(c, "Banco Igual", "0350");
+		ContaFinanceira conta = contaComIdentificacao(c, instituicao, "0010", "111222");
+
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("igual.ofx",
+				umaTransacao("igual-1", "Sugestao igual"), "0350", "0010", "111222"))
+				.param("contaId", conta.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.contaId").value(conta.getId().toString()))
+				.andExpect(jsonPath("$.lote.contaSugeridaId").value(conta.getId().toString()));
+	}
+
+	@Test
+	void ofxComContaInformadaESugestaoDiferentePreservaEscolhaEExpoeAmbasParaDivergencia() throws Exception {
+		Cenario c = cenario("11100000000123", PerfilUsuario.ADMINISTRADOR);
+		InstituicaoFinanceira instituicao = instituicao(c, "Banco Divergente Upload", "0351");
+		ContaFinanceira contaSugerida = contaComIdentificacao(c, instituicao, "0011", "333444");
+		ContaFinanceira contaEscolhida = contaSimples(c, "Conta escolhida no upload");
+
+		MvcResult criado = mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("divergente-upload.ofx",
+				umaTransacao("div-upload-1", "Sugestao diferente"), "0351", "0011", "333444"))
+				.param("contaId", contaEscolhida.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.contaId").value(contaEscolhida.getId().toString()))
+				.andExpect(jsonPath("$.lote.contaSugeridaId").value(contaSugerida.getId().toString()))
+				.andReturn();
+
+		// A conta persistida no lote e exatamente a informada no upload, nunca a
+		// sugerida - confirmado tanto na resposta quanto direto no repositorio.
+		String loteId = com.jayway.jsonpath.JsonPath.read(criado.getResponse().getContentAsString(), "$.lote.id");
+		assertThat(loteRepository.findByIdAndEmpresaId(UUID.fromString(loteId), c.empresa().getId()))
+				.get().satisfies(lote -> {
+					assertThat(lote.getConta().getId()).isEqualTo(contaEscolhida.getId());
+					assertThat(lote.getContaSugerida().getId()).isEqualTo(contaSugerida.getId());
+				});
+		assertThat(transacaoRepository.findAllByEmpresaIdAndLoteIdOrderBySequenciaAsc(
+				c.empresa().getId(), UUID.fromString(loteId)))
+				.allSatisfy(t -> assertThat(t.getConta().getId()).isEqualTo(contaEscolhida.getId()));
+	}
+
+	@Test
+	void ofxComContaInformadaESemCandidataCompativelNaoSugereNada() throws Exception {
+		Cenario c = cenario("11100000000124", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira contaEscolhida = contaSimples(c, "Conta sem candidata compativel");
+
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("sem-candidata-upload.ofx",
+				umaTransacao("sc-upload-1", "Sem candidata"), "0352", "0012", "555666"))
+				.param("contaId", contaEscolhida.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.contaId").value(contaEscolhida.getId().toString()))
+				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
+	}
+
+	@Test
+	void ofxComContaInformadaEMultiplasCandidatasNaoSugereNada() throws Exception {
+		Cenario c = cenario("11100000000125", PerfilUsuario.ADMINISTRADOR);
+		InstituicaoFinanceira instituicao = instituicao(c, "Banco Ambiguo Upload", "0353");
+		contaComIdentificacao(c, instituicao, "0013", "777888");
+		contaComIdentificacao(c, instituicao, "0013", "777888");
+		ContaFinanceira contaEscolhida = contaSimples(c, "Conta escolhida com ambiguidade");
+
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("ambiguo-upload.ofx",
+				umaTransacao("amb-upload-1", "Ambiguo com conta"), "0353", "0013", "777888"))
+				.param("contaId", contaEscolhida.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.contaId").value(contaEscolhida.getId().toString()))
+				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
+	}
+
+	@Test
+	void isolamentoMultiempresaNaAutodetecaoComContaInformadaNoUpload() throws Exception {
+		Cenario a = cenario("11100000000126", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("11100000000127", PerfilUsuario.ADMINISTRADOR);
+		InstituicaoFinanceira instituicaoB = instituicao(b, "Banco De B Upload", "0354");
+		// Conta com os mesmos dados bancarios do OFX existe apenas na empresa B.
+		contaComIdentificacao(b, instituicaoB, "0014", "999000");
+		ContaFinanceira contaEscolhidaA = contaSimples(a, "Conta escolhida na empresa A");
+
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("isolamento-upload.ofx",
+				umaTransacao("iso-upload-1", "Isolamento com conta"), "0354", "0014", "999000"))
+				.param("contaId", contaEscolhidaA.getId().toString()).session(a.session()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.contaId").value(contaEscolhidaA.getId().toString()))
 				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
 	}
 
