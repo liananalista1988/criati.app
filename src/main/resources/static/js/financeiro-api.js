@@ -343,18 +343,26 @@
 		buscar: function (id) {
 			return window.CriatiApi.get(IMPORTACOES_BASE + "/" + id);
 		},
-		// contaId vai na query string (o backend le via @RequestParam), o corpo
-		// multipart carrega somente o arquivo - nunca recalcula hash, duplicidade
-		// ou natureza financeira aqui, isso e responsabilidade exclusiva do
-		// backend. formato ("OFX", "CSV" ou "XLSX") so escolhe o endpoint de
-		// upload; os tres usam o mesmo parser/servico/contrato de resposta no
-		// backend.
+		// contaId e sempre opcional (CRIATI-IMP-FEAT-004/FIX-007): quando
+		// informado, vai na query string (o backend le via @RequestParam,
+		// required=false); quando omitido, o lote fica pendente de resolucao
+		// (ver resolverConta abaixo). O corpo multipart carrega somente o
+		// arquivo - nunca recalcula hash, duplicidade ou natureza financeira
+		// aqui, isso e responsabilidade exclusiva do backend. formato ("OFX",
+		// "CSV" ou "XLSX") so escolhe o endpoint de upload; os tres usam o
+		// mesmo parser/servico/contrato de resposta no backend.
 		importar: function (contaId, arquivo, formato) {
 			var caminho = formato === "CSV" ? "/csv" : formato === "XLSX" ? "/xlsx" : "/ofx";
 			var formData = new FormData();
 			formData.append("arquivo", arquivo);
-			return window.CriatiApi.upload(
-					IMPORTACOES_BASE + caminho + "?contaId=" + encodeURIComponent(contaId), formData);
+			var url = IMPORTACOES_BASE + caminho + (contaId ? "?contaId=" + encodeURIComponent(contaId) : "");
+			return window.CriatiApi.upload(url, formData);
+		},
+		// Resolve a conta de um lote criado sem contaId; o backend recalcula a
+		// duplicidade historica de todas as transacoes do lote nessa mesma
+		// chamada (CRIATI-IMP-FIX-007) - so pode ser chamado uma vez por lote.
+		resolverConta: function (id, contaId) {
+			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/conta", { contaId: contaId });
 		},
 		descartar: function (id) {
 			return window.CriatiApi.post(IMPORTACOES_BASE + "/" + id + "/descartar");

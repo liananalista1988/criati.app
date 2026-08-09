@@ -12,7 +12,13 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -28,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.app.criati.acesso.model.UsuarioEmpresa;
@@ -35,21 +42,25 @@ import br.app.criati.acesso.repository.UsuarioEmpresaRepository;
 import br.app.criati.aplicacao.service.AplicacaoService;
 import br.app.criati.empresa.model.Empresa;
 import br.app.criati.empresa.repository.EmpresaRepository;
+import br.app.criati.exception.DadosInvalidosException;
 import br.app.criati.financeiro.model.CategoriaFinanceira;
 import br.app.criati.financeiro.model.ContaFinanceira;
 import br.app.criati.financeiro.model.InstituicaoFinanceira;
+import br.app.criati.financeiro.model.TransacaoBancariaImportada;
 import br.app.criati.financeiro.repository.CategoriaFinanceiraRepository;
 import br.app.criati.financeiro.repository.ContaFinanceiraRepository;
 import br.app.criati.financeiro.repository.InstituicaoFinanceiraRepository;
 import br.app.criati.financeiro.repository.LancamentoFinanceiroRepository;
 import br.app.criati.financeiro.repository.LoteImportacaoBancariaRepository;
 import br.app.criati.financeiro.repository.TransacaoBancariaImportadaRepository;
+import br.app.criati.financeiro.service.ImportacaoBancariaService;
 import br.app.criati.financeiro.shared.model.PessoaFinanceira;
 import br.app.criati.financeiro.shared.repository.PessoaFinanceiraRepository;
 import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.shared.enums.TipoContaFinanceira;
 import br.app.criati.shared.enums.TipoFinanceiro;
+import br.app.criati.tenant.ContextoEmpresaAtual;
 import br.app.criati.usuario.model.Usuario;
 import br.app.criati.usuario.repository.UsuarioRepository;
 
@@ -81,6 +92,7 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 	@Autowired private CategoriaFinanceiraRepository categoriaRepository;
 	@Autowired private AplicacaoService aplicacaoService;
 	@Autowired private PasswordEncoder passwordEncoder;
+	@Autowired private ImportacaoBancariaService importacaoBancariaService;
 
 	@Test
 	void uploadOfxSemContaCriaLotePendenteDeResolucaoSemSugestao() throws Exception {
@@ -266,6 +278,209 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
 	}
 
+	// CRIATI-IMP-FIX-007, item 1: resolverConta precisa recalcular a
+	// duplicidade historica de TODAS as transacoes do lote, nao so detectar
+	// duplicidade em uploads futuros. Aqui o historico ja existe ANTES do
+	// lote sem conta ser sequer criado.
+	@Test
+	void resolverContaDetectaDuplicidadeHistoricaJaExistente() throws Exception {
+		Cenario c = cenario("11100000000114", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira conta = contaSimples(c, "Conta historico previo");
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("previo.ofx", umaTransacao("hist-previo", "Ja importada")))
+				.param("contaId", conta.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated());
+
+		MvcResult semConta = mockMvc.perform(uploadOfxSemConta(c,
+				arquivoOfx("posterior.ofx", umaTransacao("hist-previo", "Mesma transacao, arquivo novo"))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.quantidadePossiveisDuplicadas").value(0))
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(false))
+				.andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(semConta.getResponse().getContentAsString(), "$.lote.id");
+
+		mockMvc.perform(resolverConta(c, loteId, conta.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lote.quantidadePossiveisDuplicadas").value(1))
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
+		assertThat(transacaoRepository.findAllByEmpresaIdAndLoteIdOrderBySequenciaAsc(c.empresa().getId(),
+				UUID.fromString(loteId))).singleElement()
+				.satisfies(t -> assertThat(t.isPossivelmenteJaImportada()).isTrue());
+	}
+
+	@Test
+	void resolverContaSemDuplicidadeHistoricaMantemContadorZerado() throws Exception {
+		Cenario c = cenario("11100000000115", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira conta = contaSimples(c, "Conta sem historico");
+		MvcResult semConta = mockMvc.perform(uploadOfxSemConta(c,
+				arquivoOfx("inedito.ofx", umaTransacao("inedito-1", "Nunca importada"))))
+				.andExpect(status().isCreated()).andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(semConta.getResponse().getContentAsString(), "$.lote.id");
+
+		mockMvc.perform(resolverConta(c, loteId, conta.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lote.quantidadePossiveisDuplicadas").value(0))
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(false));
+	}
+
+	// CRIATI-IMP-FIX-007, item 1: isolamento multiempresa no recalculo -
+	// historico de OUTRA empresa nunca pode marcar duplicidade aqui, mesmo
+	// com o mesmo identificador bancario (FITID) e a mesma conta escolhida
+	// (contas de empresas diferentes nunca compartilham UUID por construcao,
+	// mas o teste confirma que a query correta e usada).
+	@Test
+	void resolverContaRecalculaDuplicidadeIsoladaPorEmpresa() throws Exception {
+		Cenario a = cenario("11100000000116", PerfilUsuario.ADMINISTRADOR);
+		Cenario b = cenario("11100000000117", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira contaA = contaSimples(a, "Conta A isolamento");
+		ContaFinanceira contaB = contaSimples(b, "Conta B isolamento");
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("empresa-a.ofx", umaTransacao("iso-dedup", "Empresa A")))
+				.param("contaId", contaA.getId().toString()).session(a.session()).with(csrf()))
+				.andExpect(status().isCreated());
+
+		MvcResult semContaB = mockMvc.perform(uploadOfxSemConta(b,
+				arquivoOfx("empresa-b.ofx", umaTransacao("iso-dedup", "Empresa B"))))
+				.andExpect(status().isCreated()).andReturn();
+		String loteIdB = com.jayway.jsonpath.JsonPath.read(semContaB.getResponse().getContentAsString(), "$.lote.id");
+
+		mockMvc.perform(resolverConta(b, loteIdB, contaB.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lote.quantidadePossiveisDuplicadas").value(0))
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(false));
+	}
+
+	// CRIATI-IMP-FIX-007, item 1: nao permitir confirmacao usando estado de
+	// duplicidade desatualizado - apos resolverConta recalcular, confirmar
+	// sem aceitar a duplicidade sinalizada deve continuar exigindo o aceite
+	// explicito (mesma regra ja aplicada a duplicidade detectada no upload).
+	@Test
+	void confirmacaoRespeitaDuplicidadeRecalculadaAposResolverConta() throws Exception {
+		Cenario c = cenario("11100000000118", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira conta = contaSimples(c, "Conta confirmacao dedup");
+		CategoriaFinanceira despesa = categoria(c, "Despesa dedup recalculada", TipoFinanceiro.DESPESA);
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("original.ofx", umaTransacao("conf-dedup", "Original")))
+				.param("contaId", conta.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated());
+
+		MvcResult semConta = mockMvc.perform(uploadOfxSemConta(c,
+				arquivoOfx("repique.ofx", umaTransacao("conf-dedup", "Repique sem conta"))))
+				.andExpect(status().isCreated()).andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(semConta.getResponse().getContentAsString(), "$.lote.id");
+		String transacaoId = com.jayway.jsonpath.JsonPath.read(semConta.getResponse().getContentAsString(), "$.transacoes[0].id");
+
+		mockMvc.perform(resolverConta(c, loteId, conta.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.transacoes[0].possivelmenteJaImportada").value(true));
+
+		mockMvc.perform(confirmar(c, loteId, transacaoId, despesa.getId(), "Sem aceitar duplicidade"))
+				.andExpect(status().isConflict());
+		mockMvc.perform(confirmarComDuplicidade(c, loteId, transacaoId, despesa.getId(), "Aceitando duplicidade"))
+				.andExpect(status().isOk());
+		// So a transacao "repique" foi confirmada nesta tarefa - "original" segue
+		// PENDENTE (nunca confirmada), logo exatamente 1 lancamento existe.
+		assertThat(lancamentoRepository.findAllByEmpresaId(c.empresa().getId())).hasSize(1);
+	}
+
+	// CRIATI-IMP-FIX-007, item 6: segunda resolucao sequencial deve ser
+	// rejeitada - o lote so pode ter a conta definida uma unica vez.
+	@Test
+	void segundaResolucaoDeContaNoMesmoLoteERejeitada() throws Exception {
+		Cenario c = cenario("11100000000119", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira primeira = contaSimples(c, "Primeira conta resolvida");
+		ContaFinanceira segunda = contaSimples(c, "Segunda tentativa de conta");
+		MvcResult semConta = mockMvc.perform(uploadOfxSemConta(c,
+				arquivoOfx("unica-resolucao.ofx", umaTransacao("unica-1", "Resolucao unica"))))
+				.andExpect(status().isCreated()).andReturn();
+		String loteId = com.jayway.jsonpath.JsonPath.read(semConta.getResponse().getContentAsString(), "$.lote.id");
+
+		mockMvc.perform(resolverConta(c, loteId, primeira.getId())).andExpect(status().isOk());
+		mockMvc.perform(resolverConta(c, loteId, segunda.getId())).andExpect(status().isBadRequest());
+		assertThat(loteRepository.findByIdAndEmpresaId(UUID.fromString(loteId), c.empresa().getId()))
+				.get().satisfies(lote -> assertThat(lote.getConta().getId()).isEqualTo(primeira.getId()));
+	}
+
+	// CRIATI-IMP-FIX-007, item 6: duas resolucoes concorrentes com contas
+	// diferentes nao podem gerar troca de conta nem inconsistencia entre
+	// lote e transacoes - o lock pessimista em buscarLoteParaAtualizar
+	// serializa as chamadas; exatamente uma tem sucesso.
+	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	void resolucoesConcorrentesDeContaNaoGeramInconsistencia() throws Exception {
+		Cenario c = cenario("11100000000120", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira contaX = contaSimples(c, "Conta concorrente X");
+		ContaFinanceira contaY = contaSimples(c, "Conta concorrente Y");
+		MvcResult semConta = mockMvc.perform(uploadOfxSemConta(c,
+				arquivoOfx("concorrencia-conta.ofx", umaTransacao("concorrencia-conta-1", "Concorrente"))))
+				.andExpect(status().isCreated()).andReturn();
+		UUID loteId = UUID.fromString(
+				com.jayway.jsonpath.JsonPath.read(semConta.getResponse().getContentAsString(), "$.lote.id"));
+		ContextoEmpresaAtual contexto = new ContextoEmpresaAtual(c.usuario().getId(), c.empresa().getId(), null,
+				PerfilUsuario.ADMINISTRADOR);
+
+		CountDownLatch inicio = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		List<Throwable> falhas = new java.util.concurrent.CopyOnWriteArrayList<>();
+		try {
+			Future<?> primeira = executor.submit(() -> {
+				aguardar(inicio);
+				try {
+					importacaoBancariaService.resolverConta(loteId, contaX.getId(), contexto);
+				} catch (RuntimeException excecao) {
+					falhas.add(excecao);
+				}
+			});
+			Future<?> segunda = executor.submit(() -> {
+				aguardar(inicio);
+				try {
+					importacaoBancariaService.resolverConta(loteId, contaY.getId(), contexto);
+				} catch (RuntimeException excecao) {
+					falhas.add(excecao);
+				}
+			});
+			inicio.countDown();
+			primeira.get(20, TimeUnit.SECONDS);
+			segunda.get(20, TimeUnit.SECONDS);
+		} finally {
+			executor.shutdownNow();
+		}
+
+		assertThat(falhas).hasSize(1);
+		assertThat(falhas.get(0)).isInstanceOf(DadosInvalidosException.class);
+		var loteFinal = loteRepository.findByIdAndEmpresaId(loteId, c.empresa().getId()).orElseThrow();
+		assertThat(loteFinal.getConta().getId()).isIn(contaX.getId(), contaY.getId());
+		List<TransacaoBancariaImportada> transacoesFinais = transacaoRepository
+				.findAllByEmpresaIdAndLoteIdOrderBySequenciaAsc(c.empresa().getId(), loteId);
+		assertThat(transacoesFinais).allSatisfy(
+				t -> assertThat(t.getConta().getId()).isEqualTo(loteFinal.getConta().getId()));
+	}
+
+	// CRIATI-IMP-FIX-007, item 5: metadados OFX (BANKID/BRANCHID/ACCTID/
+	// ACCTTYPE) devem ser persistidos sempre que existirem no arquivo, com ou
+	// sem contaId informado no upload - autodetecao (contaSugerida), por sua
+	// vez, so faz sentido e so roda quando a conta ainda esta em aberto.
+	@Test
+	void metadadosOfxSaoPersistidosMesmoComContaInformadaNoUpload() throws Exception {
+		Cenario c = cenario("11100000000121", PerfilUsuario.ADMINISTRADOR);
+		ContaFinanceira conta = contaSimples(c, "Conta ja informada no upload");
+		mockMvc.perform(multipart(URL + "/ofx").file(arquivoOfx("com-conta-e-metadados.ofx",
+				umaTransacao("meta-1", "Com conta e metadados"), "0347", "0009", "888777"))
+				.param("contaId", conta.getId().toString()).session(c.session()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.lote.contaId").value(conta.getId().toString()))
+				.andExpect(jsonPath("$.lote.identificacaoBancoId").value("0347"))
+				.andExpect(jsonPath("$.lote.identificacaoAgencia").value("0009"))
+				.andExpect(jsonPath("$.lote.identificacaoNumeroConta").value("888777"))
+				.andExpect(jsonPath("$.lote.contaSugeridaId").doesNotExist());
+	}
+
+	private static void aguardar(CountDownLatch inicio) {
+		try {
+			inicio.await();
+		} catch (InterruptedException excecao) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException(excecao);
+		}
+	}
+
 	// ---------------------------------------------------------------- helpers
 
 	private org.springframework.test.web.servlet.RequestBuilder uploadOfxSemConta(
@@ -283,6 +498,15 @@ class ImportacaoBancariaContaOpcionalControllerTests {
 			Cenario cenario, String loteId, String transacaoId, UUID categoriaId, String descricao) {
 		String corpo = """
 				{"transacoes":[{"transacaoId":"%s","categoriaId":"%s","descricaoFinal":"%s"}]}
+				""".formatted(transacaoId, categoriaId, descricao);
+		return post(URL + "/" + loteId + "/confirmacoes").session(cenario.session()).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content(corpo);
+	}
+
+	private org.springframework.test.web.servlet.RequestBuilder confirmarComDuplicidade(
+			Cenario cenario, String loteId, String transacaoId, UUID categoriaId, String descricao) {
+		String corpo = """
+				{"transacoes":[{"transacaoId":"%s","categoriaId":"%s","descricaoFinal":"%s","confirmarDuplicidade":true}]}
 				""".formatted(transacaoId, categoriaId, descricao);
 		return post(URL + "/" + loteId + "/confirmacoes").session(cenario.session()).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON).content(corpo);

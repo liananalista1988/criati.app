@@ -33,6 +33,7 @@
 					</div>
 				</div>
 				<div id="importacao-detalhe-mensagem" class="criati-alert" role="alert" hidden></div>
+				<div id="importacao-conta-divergencia" class="criati-alert criati-alert-aviso" role="alert" hidden></div>
 				<p id="importacao-detalhe-carregando" aria-live="polite">Carregando importação...</p>
 				<div id="importacao-detalhe-nao-encontrada" class="criati-empty-state" hidden>
 					<p>Importação não encontrada ou indisponível para a empresa atual.</p>
@@ -40,6 +41,20 @@
 				</div>
 
 				<div id="importacao-detalhe-conteudo" hidden>
+					<section th:if="${podeGerenciarImportacoes}" class="criati-card financeiro-painel-operacional" id="importacao-conta-pendente" hidden>
+						<h2>Conta financeira pendente</h2>
+						<p id="importacao-conta-sugestao-texto" class="criati-card-sub"></p>
+						<div class="criati-form-grid">
+							<div class="criati-field">
+								<label for="importacao-conta-resolver">Conta financeira</label>
+								<select class="criati-select" id="importacao-conta-resolver"><option value="">Carregando contas...</option></select>
+							</div>
+						</div>
+						<div class="financeiro-acoes-formulario">
+							<button class="criati-btn criati-btn-primary" id="importacao-conta-resolver-botao" type="button">Definir conta</button>
+						</div>
+					</section>
+
 					<section class="criati-card financeiro-painel-operacional" id="importacao-resumo" aria-live="polite" hidden>
 						<h2>Resumo da confirmação</h2>
 						<div class="financeiro-operacional-cards">

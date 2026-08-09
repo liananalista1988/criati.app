@@ -23,6 +23,7 @@ import br.app.criati.financeiro.service.InstituicaoFinanceiraService;
 import br.app.criati.financeiro.service.SaldoFinanceiroService;
 import br.app.criati.financeiro.shared.service.PessoaFinanceiraService;
 import br.app.criati.security.UsuarioPrincipal;
+import br.app.criati.shared.enums.PerfilUsuario;
 import br.app.criati.shared.enums.StatusCadastro;
 import br.app.criati.shared.enums.TipoContaFinanceira;
 import br.app.criati.tenant.ContextoEmpresaAtual;
@@ -63,7 +64,7 @@ public class ContaFinanceiraController {
 			@AuthenticationPrincipal UsuarioPrincipal principal) {
 		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
 		return contaService.listar(contexto, status, tipo, titularId, instituicaoId, busca).stream()
-				.map(this::paraResponse).toList();
+				.map(conta -> paraResponse(conta, contexto)).toList();
 	}
 
 	@GetMapping("/resumo")
@@ -106,13 +107,14 @@ public class ContaFinanceiraController {
 				request.nome(), request.titularId(), request.instituicaoId(), request.tipo(), request.moeda(),
 				request.saldoInicial(), request.dataSaldoInicial(), request.permiteConciliacao(),
 				request.agenciaBancaria(), request.numeroContaBancaria(), request.digitoContaBancaria(), contexto);
-		return ResponseEntity.status(HttpStatus.CREATED).body(paraResponse(conta));
+		return ResponseEntity.status(HttpStatus.CREATED).body(paraResponse(conta, contexto));
 	}
 
 	@GetMapping("/{id}")
 	public ContaFinanceiraResponse buscar(
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
-		return paraResponse(contaService.buscar(id, exigirAcesso(session, principal)));
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return paraResponse(contaService.buscar(id, contexto), contexto);
 	}
 
 	@PutMapping("/{id}")
@@ -125,27 +127,33 @@ public class ContaFinanceiraController {
 		return paraResponse(contaService.editar(
 				id, request.nome(), request.titularId(), request.instituicaoId(), request.tipo(), request.moeda(),
 				request.saldoInicial(), request.dataSaldoInicial(), request.permiteConciliacao(),
-				request.agenciaBancaria(), request.numeroContaBancaria(), request.digitoContaBancaria(), contexto));
+				request.agenciaBancaria(), request.numeroContaBancaria(), request.digitoContaBancaria(), contexto),
+				contexto);
 	}
 
 	@PostMapping("/{id}/inativar")
 	public ContaFinanceiraResponse inativar(
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
-		return paraResponse(contaService.inativar(id, exigirAcesso(session, principal)));
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return paraResponse(contaService.inativar(id, contexto), contexto);
 	}
 
 	@PostMapping("/{id}/reativar")
 	public ContaFinanceiraResponse reativar(
 			@PathVariable UUID id, HttpSession session, @AuthenticationPrincipal UsuarioPrincipal principal) {
-		return paraResponse(contaService.reativar(id, exigirAcesso(session, principal)));
+		ContextoEmpresaAtual contexto = exigirAcesso(session, principal);
+		return paraResponse(contaService.reativar(id, contexto), contexto);
 	}
 
 	private ContextoEmpresaAtual exigirAcesso(HttpSession session, UsuarioPrincipal principal) {
 		return contextoService.exigirAcesso(session, principal.getUsuario().getId());
 	}
 
-	private ContaFinanceiraResponse paraResponse(ContaFinanceira conta) {
-		return ContaFinanceiraResponse.from(
-				conta, saldoService.calcularSaldoAtual(conta), contaService.possuiPossivelDuplicidade(conta));
+	// Identificacao bancaria completa (agencia/numero/digito) so vai para
+	// ADMINISTRADOR, unico perfil que tambem pode editar a conta
+	// (CRIATI-IMP-FIX-007, item 7) - os demais recebem os valores mascarados.
+	private ContaFinanceiraResponse paraResponse(ContaFinanceira conta, ContextoEmpresaAtual contexto) {
+		return ContaFinanceiraResponse.from(conta, saldoService.calcularSaldoAtual(conta),
+				contaService.possuiPossivelDuplicidade(conta), contexto.perfil() == PerfilUsuario.ADMINISTRADOR);
 	}
 }

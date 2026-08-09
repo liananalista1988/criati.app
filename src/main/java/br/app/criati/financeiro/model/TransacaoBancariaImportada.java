@@ -79,7 +79,10 @@ public class TransacaoBancariaImportada {
 	@Column(name = "duplicada_no_arquivo", nullable = false, updatable = false)
 	private boolean duplicadaNoArquivo;
 
-	@Column(name = "possivelmente_ja_importada", nullable = false, updatable = false)
+	// Atualizavel: recalculada quando o lote resolve a conta a posteriori
+	// (LoteImportacaoBancaria/ImportacaoBancariaService.resolverConta,
+	// CRIATI-IMP-FIX-007) - antes disso nao ha conta para comparar.
+	@Column(name = "possivelmente_ja_importada", nullable = false)
 	private boolean possivelmenteJaImportada;
 
 	@Column(name = "criado_em", nullable = false, updatable = false)
@@ -139,6 +142,25 @@ public class TransacaoBancariaImportada {
 
 	public boolean estaSinalizadaComoDuplicada() {
 		return duplicadaNoArquivo || possivelmenteJaImportada;
+	}
+
+	/**
+	 * Define a conta desta transacao quando o lote resolve a conta a
+	 * posteriori (CRIATI-IMP-FIX-007) - chamado exclusivamente por
+	 * ImportacaoBancariaService.resolverConta, uma unica vez por transacao
+	 * (o lote so permite resolver conta uma vez).
+	 */
+	public void resolverConta(ContaFinanceira conta) {
+		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
+	}
+
+	/**
+	 * Recalculada sempre que a conta e definida ou redefinida (hoje so ocorre
+	 * uma vez, via resolverConta) - preserva a regra definitiva empresa+
+	 * conta+chave, agora que a conta e conhecida (CRIATI-IMP-FIX-007).
+	 */
+	public void atualizarPossivelmenteJaImportada(boolean possivelmenteJaImportada) {
+		this.possivelmenteJaImportada = possivelmenteJaImportada;
 	}
 
 	/**

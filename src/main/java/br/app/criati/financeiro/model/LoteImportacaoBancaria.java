@@ -91,7 +91,9 @@ public class LoteImportacaoBancaria {
 	@Column(name = "quantidade_duplicadas_arquivo", nullable = false, updatable = false)
 	private int quantidadeDuplicadasArquivo;
 
-	@Column(name = "quantidade_possiveis_duplicadas", nullable = false, updatable = false)
+	// Atualizavel: recalculada quando resolverConta recalcula a duplicidade
+	// historica de todas as transacoes do lote (CRIATI-IMP-FIX-007).
+	@Column(name = "quantidade_possiveis_duplicadas", nullable = false)
 	private int quantidadePossiveisDuplicadas;
 
 	@Column(name = "criado_em", nullable = false, updatable = false)
@@ -145,6 +147,16 @@ public class LoteImportacaoBancaria {
 			throw new DadosInvalidosException("Lote de importacao ja possui conta financeira resolvida");
 		}
 		this.conta = Objects.requireNonNull(conta, "conta nao pode ser nula");
+	}
+
+	/**
+	 * Recalculada por ImportacaoBancariaService.resolverConta logo apos
+	 * definir a conta, comparando cada transacao contra o historico real de
+	 * empresa+conta+chave (CRIATI-IMP-FIX-007) - antes da conta ser
+	 * resolvida esse indicador nao podia ser calculado com seguranca.
+	 */
+	public void atualizarQuantidadePossiveisDuplicadas(int quantidade) {
+		this.quantidadePossiveisDuplicadas = quantidade;
 	}
 
 	public void descartar(Usuario autor) {

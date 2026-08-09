@@ -215,6 +215,43 @@ class ContaFinanceiraControllerTests {
 				.andExpect(status().isCreated()).andExpect(jsonPath("$.nome").value("Nova Instituicao"));
 	}
 
+	// CRIATI-IMP-FIX-007, item 7: agencia/numero/digito completos so vao para
+	// ADMINISTRADOR (unico perfil que tambem pode editar a conta); GESTOR e
+	// USUARIO, com acesso apenas de leitura, recebem os valores mascarados.
+	@Test
+	void mascaraIdentificacaoBancariaParaPerfisSomenteLeituraEExibeCompletaParaAdministrador() throws Exception {
+		Cenario admin = cenario("11111111000415", PerfilUsuario.ADMINISTRADOR);
+		String corpoComIdentificacao = ("{\"nome\":\"Conta com identificacao\",\"titularId\":\"%s\",\"instituicaoId\":\"%s\","
+				+ "\"tipo\":\"CONTA_CORRENTE\",\"moeda\":\"BRL\",\"saldoInicial\":0,\"dataSaldoInicial\":\"%s\","
+				+ "\"permiteConciliacao\":true,\"agenciaBancaria\":\"0001\",\"numeroContaBancaria\":\"654321\",\"digitoContaBancaria\":\"9\"}")
+				.formatted(admin.pessoa().getId(), admin.instituicao().getId(), DATA);
+		MvcResult criada = mockMvc.perform(post(URL).session(admin.session()).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content(corpoComIdentificacao))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.agenciaBancaria").value("0001"))
+				.andExpect(jsonPath("$.numeroContaBancaria").value("654321"))
+				.andExpect(jsonPath("$.digitoContaBancaria").value("9"))
+				.andReturn();
+		String contaId = com.jayway.jsonpath.JsonPath.read(criada.getResponse().getContentAsString(), "$.id");
+
+		Usuario leitor = criarUsuario("leitor.mascaramento@criati.test");
+		criarVinculo(leitor, admin.empresa(), PerfilUsuario.USUARIO);
+		MockHttpSession sessaoLeitor = autenticarNaEmpresa(leitor.getEmail(), admin.empresa().getId());
+
+		mockMvc.perform(get(URL + "/" + contaId).session(sessaoLeitor))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.agenciaBancaria").value("••••"))
+				.andExpect(jsonPath("$.numeroContaBancaria").value("••4321"));
+		mockMvc.perform(get(URL).session(sessaoLeitor))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].digitoContaBancaria").value("•"));
+		mockMvc.perform(get(URL + "/" + contaId).session(admin.session()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.agenciaBancaria").value("0001"))
+				.andExpect(jsonPath("$.numeroContaBancaria").value("654321"))
+				.andExpect(jsonPath("$.digitoContaBancaria").value("9"));
+	}
+
 	@Test
 	void bloqueiaEscritaSemPerfilOuCsrfEPreservaLeituraAutenticada() throws Exception {
 		Cenario c = cenario("11111111000414", PerfilUsuario.GESTOR);

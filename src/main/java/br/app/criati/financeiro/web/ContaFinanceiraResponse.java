@@ -30,8 +30,15 @@ public record ContaFinanceiraResponse(
 		OffsetDateTime criadoEm,
 		OffsetDateTime atualizadoEm) {
 
+	// identificacaoBancariaCompleta: agencia/numero/digito completos so vao
+	// para quem pode editar a conta (ADMINISTRADOR); os demais perfis, com
+	// acesso apenas de leitura, recebem os valores mascarados - eles nunca
+	// precisam do dado bruto para nada na tela, so para reconhecer a conta
+	// (CRIATI-IMP-FIX-007, item 7). Mascaramento nao afeta a autodetecao
+	// interna, que le os campos da entidade diretamente, nunca deste DTO.
 	public static ContaFinanceiraResponse from(
-			ContaFinanceira conta, BigDecimal saldoAtual, boolean possivelDuplicidade) {
+			ContaFinanceira conta, BigDecimal saldoAtual, boolean possivelDuplicidade,
+			boolean identificacaoBancariaCompleta) {
 		return new ContaFinanceiraResponse(
 				conta.getId(),
 				conta.getNome(),
@@ -44,13 +51,23 @@ public record ContaFinanceiraResponse(
 				conta.getSaldoInicial(),
 				conta.getDataSaldoInicial(),
 				conta.isPermiteConciliacao(),
-				conta.getAgenciaBancaria(),
-				conta.getNumeroContaBancaria(),
-				conta.getDigitoContaBancaria(),
+				identificador(conta.getAgenciaBancaria(), identificacaoBancariaCompleta),
+				identificador(conta.getNumeroContaBancaria(), identificacaoBancariaCompleta),
+				identificador(conta.getDigitoContaBancaria(), identificacaoBancariaCompleta),
 				saldoAtual,
 				conta.getStatus(),
 				possivelDuplicidade,
 				conta.getCriadoEm(),
 				conta.getAtualizadoEm());
+	}
+
+	private static String identificador(String valor, boolean completo) {
+		if (valor == null || completo) {
+			return valor;
+		}
+		if (valor.length() <= 4) {
+			return "•".repeat(valor.length());
+		}
+		return "•".repeat(valor.length() - 4) + valor.substring(valor.length() - 4);
 	}
 }

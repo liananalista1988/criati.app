@@ -109,7 +109,8 @@
 			return;
 		}
 		elemento.textContent = mensagem;
-		elemento.className = "criati-alert " + (tipo === "sucesso" ? "criati-alert-sucesso" : "criati-alert-erro");
+		var classe = tipo === "sucesso" ? "criati-alert-sucesso" : tipo === "aviso" ? "criati-alert-aviso" : "criati-alert-erro";
+		elemento.className = "criati-alert " + classe;
 		elemento.hidden = false;
 	}
 
@@ -258,7 +259,7 @@
 
 	function linhaLote(lote) {
 		var tr = document.createElement("tr");
-		tr.appendChild(celula(lote.contaNome));
+		tr.appendChild(celula(lote.contaNome || "Pendente de definição"));
 		tr.appendChild(celula(lote.nomeOriginal));
 		tr.appendChild(celula(lote.formato));
 		tr.appendChild(celula(dataHoraBr(lote.criadoEm)));
@@ -348,7 +349,7 @@
 		if (!el("importacao-form") || el("importacao-form").dataset.inicializado === "true") return;
 		el("importacao-form").dataset.inicializado = "true";
 		api.contas.listar({ status: "ATIVO" }).then(function (resposta) {
-			preencherSelect(el("importacao-conta"), resposta.data || [], "Selecione a conta");
+			preencherSelect(el("importacao-conta"), resposta.data || [], "Selecionar depois (opcional)");
 		}).catch(function (erro) {
 			mostrarMensagem("importacao-form-mensagem", mensagemErro(erro, "Não foi possível carregar as contas."), "erro");
 		});
@@ -364,13 +365,12 @@
 		ocultarMensagem("importacao-form-mensagem");
 		var formato = formatoSelecionado();
 		var info = FORMATO_INFO[formato] || FORMATO_INFO.OFX;
+		// Conta e sempre opcional (CRIATI-IMP-FEAT-004/FIX-007): sem ela, o
+		// lote fica pendente de resolucao na tela de revisao - nunca bloqueado
+		// aqui no formulario.
 		var contaId = el("importacao-conta").value;
 		var arquivos = el("importacao-arquivo").files;
 		var arquivo = arquivos && arquivos.length ? arquivos[0] : null;
-		if (!contaId) {
-			mostrarMensagem("importacao-form-mensagem", "Selecione a conta financeira.", "erro");
-			return;
-		}
 		if (!arquivo) {
 			mostrarMensagem("importacao-form-mensagem", "Selecione um arquivo " + info.extensao + ".", "erro");
 			return;
@@ -413,6 +413,9 @@
 		if (el("importacao-confirmar-selecionadas")) {
 			el("importacao-confirmar-selecionadas").addEventListener("click", confirmarSelecionadas);
 		}
+		if (el("importacao-conta-resolver-botao")) {
+			el("importacao-conta-resolver-botao").addEventListener("click", resolverContaPendente);
+		}
 		if (el("importacao-selecionar-todas")) {
 			el("importacao-selecionar-todas").addEventListener("change", alternarSelecionarTodas);
 		}
@@ -448,7 +451,7 @@
 		}
 	}
 
-	function carregarDetalhe(mensagemSucesso) {
+	function carregarDetalhe(mensagemSucesso, tipoMensagem) {
 		ocultarMensagem("importacao-detalhe-mensagem");
 		el("importacao-detalhe-carregando").hidden = false;
 		el("importacao-detalhe-nao-encontrada").hidden = true;
@@ -458,13 +461,14 @@
 			loteAtual = respostas[0].data;
 			resumoAtual = respostas[1].data;
 			renderizarLote();
+			renderizarContaPendente();
 			renderizarResumo();
 			renderizarTransacoes();
 			renderizarLinksUteis();
 			el("importacao-detalhe-carregando").hidden = true;
 			el("importacao-detalhe-conteudo").hidden = false;
 			if (mensagemSucesso) {
-				mostrarMensagem("importacao-detalhe-mensagem", mensagemSucesso, "sucesso");
+				mostrarMensagem("importacao-detalhe-mensagem", mensagemSucesso, tipoMensagem || "sucesso");
 			}
 		}).catch(function (erro) {
 			el("importacao-detalhe-carregando").hidden = true;
@@ -485,7 +489,7 @@
 		var lote = loteAtual.lote;
 		el("importacao-detalhe-titulo").textContent = "Importação · " + lote.nomeOriginal;
 		var partesMeta = [
-			"Conta: " + lote.contaNome,
+			lote.contaId ? "Conta: " + lote.contaNome : "Conta: pendente de definição",
 			"Formato " + lote.formato,
 			STATUS_LOTE[lote.status] || lote.status,
 			"Enviado em " + dataHoraBr(lote.criadoEm)
@@ -502,6 +506,78 @@
 		if (el("importacao-descartar")) {
 			el("importacao-descartar").hidden = !descartavel;
 		}
+
+		// Aviso persistente e sempre visivel (nao depende do usuario ter visto
+		// o toast no momento da resolucao) - CRIATI-IMP-FIX-007, item 4: nunca
+		// bloqueia, so avisa quando a conta definida diverge da sugestao OFX.
+		var divergencia = el("importacao-conta-divergencia");
+		if (divergencia) {
+			var divergente = Boolean(lote.contaId) && Boolean(lote.contaSugeridaId) && lote.contaId !== lote.contaSugeridaId;
+			divergencia.hidden = !divergente;
+			if (divergente) {
+				divergencia.textContent = "Atenção: esta importação foi associada à conta \"" + lote.contaNome
+					+ "\", diferente da conta sugerida automaticamente pelos dados do arquivo (\"" + lote.contaSugeridaNome
+					+ "\"). Confira se está correto antes de confirmar as transações.";
+			}
+		}
+	}
+
+	// Bloco de resolucao de conta (CRIATI-IMP-FIX-007): so aparece para quem
+	// pode gerenciar, enquanto o lote nao tiver conta e nao estiver
+	// descartado. Sugestao automatica (contaSugeridaId), quando existir, vem
+	// pre-selecionada - o usuario sempre pode trocar por outra conta antes de
+	// confirmar (selecao manual nunca e bloqueada).
+	function renderizarContaPendente() {
+		var secao = el("importacao-conta-pendente");
+		if (!secao) {
+			return;
+		}
+		var lote = loteAtual.lote;
+		var pendente = podeGerenciarAtual && !lote.contaId && lote.status !== "DESCARTADO";
+		secao.hidden = !pendente;
+		if (!pendente) {
+			return;
+		}
+		var textoSugestao = el("importacao-conta-sugestao-texto");
+		if (lote.contaSugeridaId) {
+			textoSugestao.textContent = "Sugestão automática pelos dados bancários do arquivo: \"" + lote.contaSugeridaNome
+				+ "\". Confirme se está correta ou escolha outra conta antes de definir.";
+		} else if (lote.identificacaoBancoId || lote.identificacaoAgencia || lote.identificacaoNumeroConta) {
+			textoSugestao.textContent = "Não foi possível sugerir automaticamente uma conta compatível com os dados bancários deste arquivo. Selecione manualmente.";
+		} else {
+			textoSugestao.textContent = "Selecione a conta financeira desta importação. Nenhuma transação pode ser confirmada antes disso.";
+		}
+		api.contas.listar({ status: "ATIVO" }).then(function (resposta) {
+			preencherSelect(el("importacao-conta-resolver"), resposta.data || [], "Selecione a conta");
+			if (lote.contaSugeridaId) {
+				el("importacao-conta-resolver").value = lote.contaSugeridaId;
+			}
+		}).catch(function () {
+			window.CriatiUI.showToast("erro", "Não foi possível carregar as contas.");
+		});
+	}
+
+	function resolverContaPendente() {
+		var select = el("importacao-conta-resolver");
+		var contaId = select ? select.value : "";
+		if (!contaId) {
+			window.CriatiUI.showToast("erro", "Selecione a conta financeira.");
+			return;
+		}
+		var lote = loteAtual.lote;
+		var divergente = Boolean(lote.contaSugeridaId) && contaId !== lote.contaSugeridaId;
+		var botao = el("importacao-conta-resolver-botao");
+		window.CriatiUI.setButtonLoading(botao, true, "Definindo...");
+		api.importacoesBancarias.resolverConta(lote.id, contaId).then(function () {
+			var mensagem = divergente
+				? "Conta financeira definida. Atenção: você escolheu uma conta diferente da sugerida automaticamente pelo arquivo."
+				: "Conta financeira definida com sucesso.";
+			carregarDetalhe(mensagem, divergente ? "aviso" : "sucesso");
+		}).catch(function (erro) {
+			window.CriatiUI.showToast("erro", mensagemErro(erro, "Não foi possível definir a conta financeira."));
+		}).finally(function () {
+			window.CriatiUI.setButtonLoading(botao, false);
+		});
 	}
 
 	function renderizarResumo() {
@@ -526,7 +602,12 @@
 
 	function linhaTransacao(transacao) {
 		var lote = loteAtual.lote;
-		var podeSelecionar = podeGerenciarAtual && transacao.situacao === "PENDENTE" && lote.status !== "DESCARTADO";
+		// Sem conta resolvida o backend rejeita qualquer confirmacao
+		// (ConfirmacaoImportacaoBancariaService.exigirContaResolvida) - a
+		// revisao por linha so fica disponivel depois que a conta e definida
+		// (ver renderizarContaPendente / CRIATI-IMP-FIX-007).
+		var podeSelecionar = podeGerenciarAtual && transacao.situacao === "PENDENTE" && lote.status !== "DESCARTADO"
+			&& Boolean(lote.contaId);
 		var sinalizada = transacao.duplicadaNoArquivo || transacao.possivelmenteJaImportada;
 
 		var tr = document.createElement("tr");
@@ -698,7 +779,7 @@
 			el("importacao-selecionar-todas").checked = false;
 		}
 		var existePendenteSelecionavel = podeGerenciarAtual && loteAtual.lote.status !== "DESCARTADO"
-			&& transacoes.some(function (t) { return t.situacao === "PENDENTE"; });
+			&& Boolean(loteAtual.lote.contaId) && transacoes.some(function (t) { return t.situacao === "PENDENTE"; });
 		if (el("importacao-transacoes-toolbar")) {
 			el("importacao-transacoes-toolbar").hidden = !existePendenteSelecionavel;
 		}

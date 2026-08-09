@@ -156,12 +156,12 @@ public class ImportacaoBancariaService {
 				.orElseThrow(EmpresaNaoEncontradaException::new);
 		Usuario autor = buscarAutor(contexto.usuarioId());
 
-		IdentificacaoBancariaOfx identificacao = null;
-		ContaFinanceira contaSugerida = null;
-		if (conta == null) {
-			identificacao = identificador.apply(bytes).orElse(null);
-			contaSugerida = autodetectarConta(identificacao, contexto.empresaId());
-		}
+		// Metadados do extrato (BANKID/BRANCHID/ACCTID/ACCTTYPE) sao persistidos
+		// sempre que o formato fornecer, tenha ou nao contaId sido informado no
+		// upload (CRIATI-IMP-FIX-007) - autodetecao (contaSugerida), por outro
+		// lado, so faz sentido quando ainda nao ha conta resolvida.
+		IdentificacaoBancariaOfx identificacao = identificador.apply(bytes).orElse(null);
+		ContaFinanceira contaSugerida = conta == null ? autodetectarConta(identificacao, contexto.empresaId()) : null;
 
 		Set<String> chavesNoArquivo = new HashSet<>();
 		List<TransacaoPreparada> preparadas = new ArrayList<>();
@@ -236,6 +236,15 @@ public class ImportacaoBancariaService {
 		return semZeros.isEmpty() ? "0" : semZeros;
 	}
 
+	/**
+	 * Resolve a conta de um lote criado sem contaId (CRIATI-IMP-FEAT-004) e,
+	 * na mesma operacao transacional, recalcula a duplicidade historica de
+	 * TODAS as suas transacoes contra empresa+conta+chave - agora que a
+	 * conta e finalmente conhecida (CRIATI-IMP-FIX-007). Antes da resolucao
+	 * nenhuma transacao deste lote podia ter sido comparada contra o
+	 * historico; nunca confirmar a partir de um estado de duplicidade
+	 * desatualizado exige que essa checagem aconteca aqui, nao so no upload.
+	 */
 	@Transactional
 	public PreviaImportacaoBancaria resolverConta(UUID loteId, UUID contaId, ContextoEmpresaAtual contexto) {
 		exigirEscrita(contexto);
@@ -245,10 +254,25 @@ public class ImportacaoBancariaService {
 		}
 		ContaFinanceira conta = buscarConta(contaId, contexto.empresaId());
 		lote.resolverConta(conta);
+
+		List<TransacaoBancariaImportada> transacoes = transacaoRepository
+				.findAllByEmpresaIdAndLoteIdOrderBySequenciaAsc(contexto.empresaId(), lote.getId());
+		int possiveisDuplicadas = 0;
+		for (TransacaoBancariaImportada transacao : transacoes) {
+			transacao.resolverConta(conta);
+			boolean possivelmenteJaImportada = transacaoRepository
+					.existsByEmpresaIdAndContaIdAndChaveDuplicidadeAndLoteIdNot(
+							contexto.empresaId(), conta.getId(), transacao.getChaveDuplicidade(), lote.getId());
+			transacao.atualizarPossivelmenteJaImportada(possivelmenteJaImportada);
+			if (possivelmenteJaImportada) {
+				possiveisDuplicadas++;
+			}
+		}
+		lote.atualizarQuantidadePossiveisDuplicadas(possiveisDuplicadas);
+
 		loteRepository.save(lote);
-		transacaoRepository.atualizarContaDoLote(contexto.empresaId(), lote.getId(), conta);
-		return new PreviaImportacaoBancaria(lote,
-				transacaoRepository.findAllByEmpresaIdAndLoteIdOrderBySequenciaAsc(contexto.empresaId(), lote.getId()));
+		transacaoRepository.saveAll(transacoes);
+		return new PreviaImportacaoBancaria(lote, transacoes);
 	}
 
 	@Transactional(readOnly = true)
